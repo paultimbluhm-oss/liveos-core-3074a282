@@ -2,14 +2,18 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { GraduationCap, FolderKanban, CalendarX, ClipboardList } from 'lucide-react';
+import { GraduationCap, FolderKanban, CalendarX, ClipboardList, BookOpen, Award } from 'lucide-react';
 import { ProjectsSection } from '@/components/schule/ProjectsSection';
 import { SchoolTasksSection } from '@/components/schule/SchoolTasksSection';
 import { AbsencesSection } from '@/components/schule/AbsencesSection';
 import { UnifiedTimetableSection } from '@/components/schule/UnifiedTimetableSection';
+import { HomeworkSection } from '@/components/schule/HomeworkSection';
+import { GradesSection } from '@/components/schule/GradesSection';
 
 const sections = [
   { id: 'stundenplan', icon: GraduationCap, label: 'Stundenplan', color: 'text-blue-500' },
+  { id: 'hausaufgaben', icon: BookOpen, label: 'Hausaufgaben', color: 'text-green-500' },
+  { id: 'noten', icon: Award, label: 'Noten', color: 'text-amber-500' },
   { id: 'projekte', icon: FolderKanban, label: 'Projekte', color: 'text-purple-500' },
   { id: 'fehltage', icon: CalendarX, label: 'Fehltage', color: 'text-rose-500' },
   { id: 'aufgaben', icon: ClipboardList, label: 'Aufgaben', color: 'text-orange-500' },
@@ -33,6 +37,26 @@ export default function Schule() {
       <AppLayout>
         <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
           <UnifiedTimetableSection onBack={() => setActiveSection(null)} />
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (activeSection === 'hausaufgaben') {
+    return (
+      <AppLayout>
+        <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
+          <HomeworkSection onBack={() => setActiveSection(null)} />
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (activeSection === 'noten') {
+    return (
+      <AppLayout>
+        <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
+          <GradesSection onBack={() => setActiveSection(null)} />
         </div>
       </AppLayout>
     );
@@ -72,7 +96,7 @@ export default function Schule() {
     <AppLayout>
       <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
         {/* Section Cards Grid - compact for mobile */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 md:gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 md:gap-3">
           {sections.map((s, i) => (
             <div
               key={s.id}

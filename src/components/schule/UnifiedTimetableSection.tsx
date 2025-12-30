@@ -19,6 +19,7 @@ import { EditSubjectDialog } from './EditSubjectDialog';
 import { AddHolidayDialog } from './AddHolidayDialog';
 import { SubjectsOverviewDialog } from './SubjectsOverviewDialog';
 import { DefaultFreePeriodDialog } from './DefaultFreePeriodDialog';
+import { SubjectActionSheet } from './SubjectActionSheet';
 
 interface Subject {
   id: string;
@@ -93,6 +94,8 @@ export function UnifiedTimetableSection({ onBack }: UnifiedTimetableSectionProps
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
   const [subjectSheetOpen, setSubjectSheetOpen] = useState(false);
+  const [actionSheetOpen, setActionSheetOpen] = useState(false);
+  const [selectedEntry, setSelectedEntry] = useState<TimetableEntry | null>(null);
   
   const [currentDay, setCurrentDay] = useState(() => {
     const today = new Date().getDay();
@@ -625,7 +628,10 @@ export function UnifiedTimetableSection({ onBack }: UnifiedTimetableSectionProps
             return (
               <div 
                 key={entry.id}
-                onClick={() => openEdit(entry)}
+                onClick={() => {
+                  setSelectedEntry(entry);
+                  setActionSheetOpen(true);
+                }}
                 className={`flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer ${
                   isFree 
                     ? 'bg-muted/30 border-border/30' 
@@ -704,6 +710,19 @@ export function UnifiedTimetableSection({ onBack }: UnifiedTimetableSectionProps
           }}
         />
       )}
+
+      {/* Subject Action Sheet */}
+      <SubjectActionSheet
+        open={actionSheetOpen}
+        onOpenChange={setActionSheetOpen}
+        entry={selectedEntry}
+        onDataChanged={fetchData}
+        onEditEntry={() => {
+          if (selectedEntry) {
+            openEdit(selectedEntry);
+          }
+        }}
+      />
     </div>
   );
 }
