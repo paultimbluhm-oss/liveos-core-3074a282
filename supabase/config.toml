@@ -1,1 +1,13 @@
 project_id = "usvexhegaiufodtstkxp"
+
+[functions.get-school-holidays]
+verify_jwt = false
+
+[functions.daily-balance-capture]
+verify_jwt = false
+
+[functions.search-stocks]
+verify_jwt = false
+
+[functions.get-stock-price]
+verify_jwt = false
