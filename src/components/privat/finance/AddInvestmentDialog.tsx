@@ -269,14 +269,14 @@ export function AddInvestmentDialog({ onInvestmentAdded }: AddInvestmentDialogPr
       quantity: parseFloat(quantity),
       purchase_price: purchasePriceNum,
       currency: currency,
-      source_account_id: selectedAccountNew || null,
+      source_account_id: selectedAccountNew && selectedAccountNew !== 'none' ? selectedAccountNew : null,
     });
 
     if (error) {
       toast.error('Fehler beim Hinzufügen');
     } else {
       // Deduct from account if selected
-      if (selectedAccountNew) {
+      if (selectedAccountNew && selectedAccountNew !== 'none') {
         const account = accounts.find(a => a.id === selectedAccountNew);
         if (account) {
           await supabaseClient.from('accounts').update({
@@ -329,7 +329,7 @@ export function AddInvestmentDialog({ onInvestmentAdded }: AddInvestmentDialogPr
       toast.error('Fehler beim Hinzufügen');
     } else {
       // Deduct from account if selected
-      if (selectedAccountExisting) {
+      if (selectedAccountExisting && selectedAccountExisting !== 'none') {
         const account = accounts.find(a => a.id === selectedAccountExisting);
         if (account) {
           await supabaseClient.from('accounts').update({
@@ -510,7 +510,7 @@ export function AddInvestmentDialog({ onInvestmentAdded }: AddInvestmentDialogPr
                             <SelectValue placeholder="Kein Konto" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">Kein Konto</SelectItem>
+                            <SelectItem value="none">Kein Konto</SelectItem>
                             {accounts.map((acc) => (
                               <SelectItem key={acc.id} value={acc.id}>
                                 {acc.name} ({acc.balance.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })})
@@ -721,7 +721,7 @@ export function AddInvestmentDialog({ onInvestmentAdded }: AddInvestmentDialogPr
                           <SelectValue placeholder="Kein Konto" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Kein Konto</SelectItem>
+                          <SelectItem value="none">Kein Konto</SelectItem>
                           {accounts.map((acc) => (
                             <SelectItem key={acc.id} value={acc.id}>
                               {acc.name} ({acc.balance.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })})
