@@ -5,17 +5,17 @@ import { de } from 'date-fns/locale';
 interface AbsenceData {
   id: string;
   date: string;
-  reason: 'sick' | 'doctor' | 'school_project' | 'other' | 'efa';
+  reason: string;
   excused: boolean;
-  description: string | null;
+  description?: string | null;
   isDoublePeriod?: boolean;
   periodStart?: number;
   periodEnd?: number;
-  timetable_entries: {
+  timetable_entries?: {
     period: number;
     teacher_short: string;
     subjects: { name: string; short_name: string | null } | null;
-  };
+  } | null;
 }
 
 interface AbsenceStats {

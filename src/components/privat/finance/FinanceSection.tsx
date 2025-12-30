@@ -110,13 +110,14 @@ export function FinanceSection({ onBack }: FinanceSectionProps) {
 
     await supabase
       .from('balance_history')
-      .upsert({
+      .upsert([{
         user_id: user.id,
         date: today,
+        balance: totalBalance,
         total_balance: totalBalance,
         accounts_balance: accountsBalance,
         investments_balance: investmentsBalance,
-      }, { onConflict: 'user_id,date' });
+      }], { onConflict: 'user_id,date' });
   };
 
   const fetchPrices = async (invs: Investment[]) => {

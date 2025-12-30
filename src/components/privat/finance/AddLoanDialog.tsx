@@ -60,7 +60,7 @@ export function AddLoanDialog({ onLoanAdded, accounts: propAccounts }: AddLoanDi
     const supabase = getSupabase();
 
     // Create the loan
-    const { error } = await supabase.from('loans').insert({
+    const { error } = await supabase.from('loans').insert([{
       user_id: user.id,
       person_name: personName.trim(),
       amount: amountNum,
@@ -69,7 +69,10 @@ export function AddLoanDialog({ onLoanAdded, accounts: propAccounts }: AddLoanDi
       loan_date: loanDate,
       due_date: dueDate || null,
       source_account_id: sourceAccountId || null,
-    });
+      lender_name: personName.trim(),
+      original_amount: amountNum,
+      remaining_amount: amountNum,
+    }]);
 
     if (error) {
       toast.error('Fehler beim Hinzufügen');
