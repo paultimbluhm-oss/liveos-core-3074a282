@@ -159,15 +159,37 @@ export function LoansSection({ onRefresh, accounts: propAccounts }: LoansSection
   };
 
   const deleteLoan = async (id: string) => {
-    if (!confirm('Eintrag wirklich löschen?')) return;
+    if (!confirm('Eintrag wirklich löschen? Der Kontostand wird wiederhergestellt.')) return;
     
     const supabase = getSupabase();
+    const loan = loans.find(l => l.id === id);
+    
+    // Reverse the initial transaction if applicable
+    if (loan && loan.source_account_id && !loan.is_returned) {
+      const account = accounts.find(a => a.id === loan.source_account_id);
+      if (account) {
+        if (loan.loan_type === 'lent') {
+          // Money was deducted when lending, add it back
+          await supabase
+            .from('accounts')
+            .update({ balance: (account.balance || 0) + loan.amount })
+            .eq('id', loan.source_account_id);
+        } else {
+          // Money was added when borrowing, deduct it
+          await supabase
+            .from('accounts')
+            .update({ balance: (account.balance || 0) - loan.amount })
+            .eq('id', loan.source_account_id);
+        }
+      }
+    }
+    
     const { error } = await supabase.from('loans').delete().eq('id', id);
     
     if (error) {
       toast.error('Fehler beim Löschen');
     } else {
-      toast.success('Eintrag gelöscht');
+      toast.success('Eintrag gelöscht, Kontostand wiederhergestellt');
       fetchLoans();
       onRefresh();
     }
