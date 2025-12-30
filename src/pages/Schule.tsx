@@ -1,0 +1,98 @@
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { AppLayout } from '@/components/layout/AppLayout';
+import { GraduationCap, FolderKanban, CalendarX, ClipboardList } from 'lucide-react';
+import { ProjectsSection } from '@/components/schule/ProjectsSection';
+import { SchoolTasksSection } from '@/components/schule/SchoolTasksSection';
+import { AbsencesSection } from '@/components/schule/AbsencesSection';
+import { UnifiedTimetableSection } from '@/components/schule/UnifiedTimetableSection';
+
+const sections = [
+  { id: 'stundenplan', icon: GraduationCap, label: 'Stundenplan', color: 'from-blue-500 to-indigo-600' },
+  { id: 'projekte', icon: FolderKanban, label: 'Projekte', color: 'from-purple-500 to-violet-600' },
+  { id: 'fehltage', icon: CalendarX, label: 'Fehltage', color: 'from-rose-500 to-red-600' },
+  { id: 'aufgaben', icon: ClipboardList, label: 'Aufgaben', color: 'from-orange-500 to-amber-600' },
+];
+
+export default function Schule() {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+  const [activeSection, setActiveSection] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/auth');
+    }
+  }, [user, loading, navigate]);
+
+  if (loading || !user) return null;
+
+  if (activeSection === 'stundenplan') {
+    return (
+      <AppLayout>
+        <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
+          <UnifiedTimetableSection onBack={() => setActiveSection(null)} />
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (activeSection === 'projekte') {
+    return (
+      <AppLayout>
+        <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
+          <ProjectsSection onBack={() => setActiveSection(null)} />
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (activeSection === 'fehltage') {
+    return (
+      <AppLayout>
+        <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
+          <AbsencesSection onBack={() => setActiveSection(null)} />
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (activeSection === 'aufgaben') {
+    return (
+      <AppLayout>
+        <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
+          <SchoolTasksSection onBack={() => setActiveSection(null)} />
+        </div>
+      </AppLayout>
+    );
+  }
+
+  return (
+    <AppLayout>
+      <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
+        {/* Section Cards Grid - compact for mobile */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 md:gap-3">
+          {sections.map((s, i) => (
+            <div
+              key={s.id}
+              onClick={() => setActiveSection(s.id)}
+              className="group relative overflow-hidden rounded-xl bg-card/80 backdrop-blur-sm border border-border/50 p-3 md:p-4 hover:border-primary/50 transition-all duration-300 cursor-pointer fade-in"
+              style={{ animationDelay: `${i * 0.05}s` }}
+            >
+              {/* Gradient overlay on hover */}
+              <div className={`absolute inset-0 bg-gradient-to-br ${s.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`} />
+              
+              <div className="relative z-10 flex flex-col items-center gap-2 text-center">
+                <div className={`p-2.5 md:p-3 rounded-xl bg-gradient-to-br ${s.color} shadow-lg`}>
+                  <s.icon className="w-5 h-5 md:w-6 md:h-6 text-white" />
+                </div>
+                <h3 className="font-medium text-xs md:text-sm group-hover:text-primary transition-colors">{s.label}</h3>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </AppLayout>
+  );
+}

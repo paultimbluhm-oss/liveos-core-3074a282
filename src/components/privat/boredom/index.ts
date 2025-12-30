@@ -1,0 +1,1 @@
+export { BoredomSection } from './BoredomSection';
