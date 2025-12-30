@@ -27,11 +27,11 @@ interface TimetableEntry {
 interface LessonAbsence {
   id: string;
   date: string;
-  reason: 'sick' | 'doctor' | 'school_project' | 'other' | 'efa';
+  reason: string;
   excused: boolean;
-  description: string | null;
+  description?: string | null;
   timetable_entry_id: string;
-  timetable_entries: TimetableEntry;
+  timetable_entries?: TimetableEntry | null;
 }
 
 interface AbsencesSectionProps {

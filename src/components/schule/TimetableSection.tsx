@@ -36,7 +36,7 @@ interface TimetableEntry {
 interface LessonAbsence {
   id: string;
   date: string;
-  reason: 'sick' | 'doctor' | 'school_project' | 'other' | 'efa';
+  reason: string;
   excused: boolean;
   timetable_entry_id: string;
 }

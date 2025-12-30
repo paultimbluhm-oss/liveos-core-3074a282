@@ -176,8 +176,8 @@ export function CelebrationOverlay({ type, amount, message, onComplete }: Celebr
             <motion.div
               initial={{ scale: 0, rotate: -180 }}
               animate={{ 
-                scale: [0, 1.2, 1],
-                rotate: [- 180, 15, 0],
+                scale: 1,
+                rotate: 0,
               }}
               exit={{ scale: 0, opacity: 0 }}
               transition={{ 
@@ -239,8 +239,8 @@ export function CelebrationOverlay({ type, amount, message, onComplete }: Celebr
                 {/* Icon with animation */}
                 <motion.div
                   animate={{ 
-                    rotate: type === 'levelUp' ? [0, 360] : [0, 10, -10, 0],
-                    scale: [1, 1.2, 1],
+                    rotate: type === 'levelUp' ? 360 : 0,
+                    scale: 1.1,
                   }}
                   transition={{
                     rotate: { 
@@ -248,7 +248,7 @@ export function CelebrationOverlay({ type, amount, message, onComplete }: Celebr
                       repeat: Infinity, 
                       ease: type === 'levelUp' ? 'linear' : 'easeInOut' 
                     },
-                    scale: { duration: 0.5, repeat: Infinity },
+                    scale: { duration: 0.5, repeat: Infinity, repeatType: 'reverse' },
                   }}
                   className="flex justify-center mb-4"
                 >
@@ -300,22 +300,22 @@ export function CelebrationOverlay({ type, amount, message, onComplete }: Celebr
                 {type === 'levelUp' && (
                   <>
                     <motion.div
-                      animate={{ rotate: 360, scale: [1, 1.2, 1] }}
-                      transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+                      animate={{ rotate: 360, scale: 1.2 }}
+                      transition={{ rotate: { duration: 3, repeat: Infinity, ease: 'linear' }, scale: { duration: 0.5, repeat: Infinity, repeatType: 'reverse' } }}
                       className="absolute -top-3 -left-3"
                     >
                       <Sparkles className="w-6 h-6 text-yellow-300" />
                     </motion.div>
                     <motion.div
-                      animate={{ rotate: -360, scale: [1, 1.2, 1] }}
-                      transition={{ duration: 2.5, repeat: Infinity, ease: 'linear' }}
+                      animate={{ rotate: -360, scale: 1.2 }}
+                      transition={{ rotate: { duration: 2.5, repeat: Infinity, ease: 'linear' }, scale: { duration: 0.5, repeat: Infinity, repeatType: 'reverse' } }}
                       className="absolute -top-3 -right-3"
                     >
                       <Sparkles className="w-6 h-6 text-yellow-300" />
                     </motion.div>
                     <motion.div
-                      animate={{ rotate: 360, scale: [1, 1.3, 1] }}
-                      transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                      animate={{ rotate: 360, scale: 1.3 }}
+                      transition={{ rotate: { duration: 2, repeat: Infinity, ease: 'linear' }, scale: { duration: 0.5, repeat: Infinity, repeatType: 'reverse' } }}
                       className="absolute -bottom-3 left-1/2 -translate-x-1/2"
                     >
                       <Star className="w-5 h-5 text-yellow-400" fill="#facc15" />
