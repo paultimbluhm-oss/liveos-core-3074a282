@@ -1,14 +1,13 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Clock, Utensils, Users, Home, Monitor, Sparkles, Moon, Heart, Dumbbell, BookOpen } from 'lucide-react';
+import { ArrowLeft, Plus, Minus, Clock, Utensils, Users, Home, Monitor, Sparkles, Moon, Dumbbell, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { format, subDays } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { toast } from 'sonner';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from 'recharts';
 
 interface LifetimeSectionProps {
   onBack: () => void;
@@ -36,11 +35,29 @@ const CATEGORIES = [
   { id: 'sonstiges', label: 'Sonstiges', icon: Clock, color: '#64748b' },
 ];
 
+const TIME_OPTIONS = [
+  { value: '0', label: '-' },
+  { value: '15', label: '15m' },
+  { value: '30', label: '30m' },
+  { value: '45', label: '45m' },
+  { value: '60', label: '1h' },
+  { value: '90', label: '1h 30m' },
+  { value: '120', label: '2h' },
+  { value: '150', label: '2h 30m' },
+  { value: '180', label: '3h' },
+  { value: '240', label: '4h' },
+  { value: '300', label: '5h' },
+  { value: '360', label: '6h' },
+  { value: '420', label: '7h' },
+  { value: '480', label: '8h' },
+  { value: '540', label: '9h' },
+  { value: '600', label: '10h' },
+];
+
 export function LifetimeSection({ onBack }: LifetimeSectionProps) {
   const { user } = useAuth();
   const [entries, setEntries] = useState<TimeEntry[]>([]);
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [inputValues, setInputValues] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -59,36 +76,13 @@ export function LifetimeSection({ onBack }: LifetimeSectionProps) {
     
     if (data) {
       setEntries(data);
-      // Pre-fill input values
-      const values: Record<string, string> = {};
-      data.forEach(e => {
-        values[e.category] = formatMinutesToInput(e.minutes);
-      });
-      setInputValues(values);
     }
     setLoading(false);
   };
 
-  const formatMinutesToInput = (minutes: number): string => {
-    const h = Math.floor(minutes / 60);
-    const m = minutes % 60;
-    if (h === 0) return `${m}`;
-    return `${h}:${m.toString().padStart(2, '0')}`;
-  };
-
-  const parseInputToMinutes = (input: string): number => {
-    if (!input.trim()) return 0;
-    if (input.includes(':')) {
-      const [h, m] = input.split(':').map(Number);
-      return (h || 0) * 60 + (m || 0);
-    }
-    return parseInt(input) || 0;
-  };
-
-  const handleSave = async (categoryId: string) => {
+  const handleTimeChange = async (categoryId: string, minutes: number) => {
     if (!user) return;
     
-    const minutes = parseInputToMinutes(inputValues[categoryId] || '');
     const existingEntry = entries.find(e => e.category === categoryId);
     
     if (minutes === 0 && existingEntry) {
@@ -106,47 +100,51 @@ export function LifetimeSection({ onBack }: LifetimeSectionProps) {
       }
     }
     
-    toast.success('Gespeichert');
     fetchEntries();
+  };
+
+  const adjustTime = async (categoryId: string, delta: number) => {
+    const entry = entries.find(e => e.category === categoryId);
+    const currentMinutes = entry?.minutes || 0;
+    const newMinutes = Math.max(0, currentMinutes + delta);
+    await handleTimeChange(categoryId, newMinutes);
   };
 
   const getTotalMinutes = () => entries.reduce((sum, e) => sum + e.minutes, 0);
 
-  const getChartData = () => {
-    return entries
-      .filter(e => e.minutes > 0)
-      .map(e => {
-        const cat = CATEGORIES.find(c => c.id === e.category);
-        return {
-          name: cat?.label || e.category,
-          value: e.minutes,
-          color: cat?.color || '#64748b',
-        };
-      })
-      .sort((a, b) => b.value - a.value);
-  };
-
   const formatTime = (minutes: number) => {
+    if (minutes === 0) return '-';
     const h = Math.floor(minutes / 60);
     const m = minutes % 60;
-    if (h === 0) return `${m} Min`;
+    if (h === 0) return `${m}m`;
+    if (m === 0) return `${h}h`;
     return `${h}h ${m}m`;
+  };
+
+  const getEntryMinutes = (categoryId: string) => {
+    return entries.find(e => e.category === categoryId)?.minutes || 0;
   };
 
   return (
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0">
-          <ArrowLeft className="w-5 h-5" />
+        <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0 h-8 w-8">
+          <ArrowLeft className="w-4 h-4" />
         </Button>
-        <div className="flex-1">
-          <h1 className="text-lg font-semibold">Lifetime Tracking</h1>
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 rounded-lg border-2 border-indigo-500 bg-transparent">
+            <Clock className="w-4 h-4 text-indigo-500" />
+          </div>
+          <h1 className="text-lg font-bold">Lifetime</h1>
+        </div>
+        <div className="ml-auto text-sm text-muted-foreground">
+          {formatTime(getTotalMinutes())}
         </div>
       </div>
 
       {/* Date Selector */}
-      <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4">
+      <div className="flex gap-1.5 overflow-x-auto pb-2 -mx-4 px-4">
         {[0, 1, 2, 3, 4, 5, 6].map(daysAgo => {
           const date = subDays(new Date(), daysAgo);
           const dateStr = format(date, 'yyyy-MM-dd');
@@ -155,7 +153,7 @@ export function LifetimeSection({ onBack }: LifetimeSectionProps) {
             <button
               key={daysAgo}
               onClick={() => setSelectedDate(dateStr)}
-              className={`flex flex-col items-center px-3 py-2 rounded-lg border transition-all shrink-0 ${
+              className={`flex flex-col items-center px-2.5 py-1.5 rounded-lg border transition-all shrink-0 ${
                 isSelected
                   ? 'bg-primary text-primary-foreground border-primary'
                   : 'bg-card border-border hover:border-primary/50'
@@ -172,88 +170,78 @@ export function LifetimeSection({ onBack }: LifetimeSectionProps) {
         })}
       </div>
 
-      {/* Chart */}
-      {entries.length > 0 && (
-        <Card className="p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">Zeitverteilung</span>
-            <span className="text-xs text-muted-foreground">
-              Gesamt: {formatTime(getTotalMinutes())}
-            </span>
-          </div>
-          <div className="h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={getChartData()}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={40}
-                  outerRadius={70}
-                  paddingAngle={2}
-                  dataKey="value"
-                >
-                  {getChartData().map((entry, index) => (
-                    <Cell key={index} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Legend
-                  formatter={(value, entry: any) => (
-                    <span className="text-xs">{value} ({formatTime(entry.payload.value)})</span>
-                  )}
-                  wrapperStyle={{ fontSize: '11px' }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-      )}
-
-      {/* Categories Grid */}
-      <div className="grid grid-cols-2 gap-2">
+      {/* Categories List - Mobile optimized */}
+      <div className="space-y-1.5">
         {CATEGORIES.map(cat => {
           const Icon = cat.icon;
-          const entry = entries.find(e => e.category === cat.id);
-          const hasValue = entry && entry.minutes > 0;
+          const minutes = getEntryMinutes(cat.id);
+          const hasValue = minutes > 0;
           
           return (
-            <Card 
+            <div 
               key={cat.id} 
-              className={`p-3 ${hasValue ? 'border-primary/30 bg-primary/5' : ''}`}
+              className={`flex items-center gap-3 p-2.5 rounded-xl bg-card border transition-all ${
+                hasValue ? 'border-primary/30' : 'border-border/50'
+              }`}
             >
-              <div className="flex items-center gap-2 mb-2">
-                <div 
-                  className="p-1.5 rounded-lg"
-                  style={{ backgroundColor: `${cat.color}20`, color: cat.color }}
+              {/* Icon & Label */}
+              <div 
+                className="p-2 rounded-lg shrink-0"
+                style={{ backgroundColor: `${cat.color}15`, color: cat.color }}
+              >
+                <Icon className="w-4 h-4" />
+              </div>
+              
+              <span className="text-sm font-medium flex-1">{cat.label}</span>
+              
+              {/* Time Display */}
+              <span className={`text-sm font-medium min-w-[50px] text-right ${
+                hasValue ? 'text-foreground' : 'text-muted-foreground'
+              }`}>
+                {formatTime(minutes)}
+              </span>
+              
+              {/* Quick Adjust Buttons */}
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  onClick={() => adjustTime(cat.id, -15)}
+                  disabled={minutes === 0}
                 >
-                  <Icon className="w-4 h-4" />
-                </div>
-                <span className="text-sm font-medium flex-1">{cat.label}</span>
-                {hasValue && (
-                  <span className="text-xs text-muted-foreground">
-                    {formatTime(entry.minutes)}
-                  </span>
-                )}
+                  <Minus className="w-3.5 h-3.5" />
+                </Button>
+                
+                <Select
+                  value={String(minutes)}
+                  onValueChange={(val) => handleTimeChange(cat.id, parseInt(val))}
+                >
+                  <SelectTrigger className="w-[70px] h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TIME_OPTIONS.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  onClick={() => adjustTime(cat.id, 15)}
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </Button>
               </div>
-              <div className="flex gap-2">
-                <Input
-                  type="text"
-                  placeholder="0:00"
-                  value={inputValues[cat.id] || ''}
-                  onChange={(e) => setInputValues(prev => ({ ...prev, [cat.id]: e.target.value }))}
-                  onBlur={() => handleSave(cat.id)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSave(cat.id)}
-                  className="h-8 text-sm"
-                />
-              </div>
-            </Card>
+            </div>
           );
         })}
       </div>
-
-      <p className="text-xs text-muted-foreground text-center">
-        Format: Minuten (z.B. 45) oder Stunden:Minuten (z.B. 1:30)
-      </p>
     </div>
   );
 }
