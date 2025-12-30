@@ -114,24 +114,34 @@ export function AbsencesSection({ onBack }: AbsencesSectionProps) {
   const stats = useMemo(() => {
     const HOURS_PER_DAY = 8;
     const realAbsences = allAbsences.filter(a => a.reason !== 'efa');
+    const efaAbsences = allAbsences.filter(a => a.reason === 'efa');
     
     const total = realAbsences.length;
     const excused = realAbsences.filter(a => a.excused).length;
     const unexcused = realAbsences.filter(a => !a.excused).length;
     const sickCount = realAbsences.filter(a => a.reason === 'sick').length;
     const doctorCount = realAbsences.filter(a => a.reason === 'doctor').length;
-    const projectCount = realAbsences.filter(a => a.reason === 'school_project').length;
+    const schoolProjectCount = realAbsences.filter(a => a.reason === 'school_project').length;
     const otherCount = realAbsences.filter(a => a.reason === 'other').length;
+    const efaCount = efaAbsences.length;
     
     return {
       total,
       totalDays: (total / HOURS_PER_DAY).toFixed(1),
       excused,
+      excusedDays: (excused / HOURS_PER_DAY).toFixed(1),
       unexcused,
+      unexcusedDays: (unexcused / HOURS_PER_DAY).toFixed(1),
       sickCount,
+      sickDays: (sickCount / HOURS_PER_DAY).toFixed(1),
       doctorCount,
-      projectCount,
+      doctorDays: (doctorCount / HOURS_PER_DAY).toFixed(1),
+      schoolProjectCount,
+      schoolProjectDays: (schoolProjectCount / HOURS_PER_DAY).toFixed(1),
       otherCount,
+      otherDays: (otherCount / HOURS_PER_DAY).toFixed(1),
+      efaCount,
+      efaDays: (efaCount / HOURS_PER_DAY).toFixed(1),
     };
   }, [allAbsences]);
 
@@ -305,7 +315,7 @@ export function AbsencesSection({ onBack }: AbsencesSectionProps) {
         {REASONS.map(r => {
           const count = r.value === 'sick' ? stats.sickCount : 
                        r.value === 'doctor' ? stats.doctorCount :
-                       r.value === 'school_project' ? stats.projectCount : stats.otherCount;
+                       r.value === 'school_project' ? stats.schoolProjectCount : stats.otherCount;
           const Icon = r.icon;
           return (
             <div key={r.value} className="p-2 rounded-lg bg-secondary/30 text-center">
