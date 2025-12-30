@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, BookOpen, Calendar, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, BookOpen, Calendar, Plus, Trash2, CalendarIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, isPast, isToday, isTomorrow, addDays } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -13,7 +13,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useGamification } from '@/contexts/GamificationContext';
-
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
 interface Homework {
   id: string;
   title: string;
@@ -261,22 +263,31 @@ export function HomeworkSection({ onBack }: HomeworkSectionProps) {
                       {qd.label}
                     </Button>
                   ))}
-                  <div className="relative">
-                    <Button
-                      type="button"
-                      variant={dueDate && !quickDates.find(q => q.value === dueDate) ? 'default' : 'outline'}
-                      size="sm"
-                      className="h-7 text-xs"
-                    >
-                      Datum
-                    </Button>
-                    <Input
-                      type="date"
-                      className="absolute inset-0 opacity-0 cursor-pointer"
-                      value={dueDate}
-                      onChange={(e) => setDueDate(e.target.value)}
-                    />
-                  </div>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant={dueDate && !quickDates.find(q => q.value === dueDate) ? 'default' : 'outline'}
+                        size="sm"
+                        className="h-7 text-xs gap-1"
+                      >
+                        <CalendarIcon className="w-3 h-3" />
+                        {dueDate && !quickDates.find(q => q.value === dueDate)
+                          ? format(new Date(dueDate), 'd. MMM', { locale: de })
+                          : 'Datum'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarComponent
+                        mode="single"
+                        selected={dueDate ? new Date(dueDate) : undefined}
+                        onSelect={(date) => date && setDueDate(format(date, 'yyyy-MM-dd'))}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                        locale={de}
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2">
