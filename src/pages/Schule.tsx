@@ -9,10 +9,10 @@ import { AbsencesSection } from '@/components/schule/AbsencesSection';
 import { UnifiedTimetableSection } from '@/components/schule/UnifiedTimetableSection';
 
 const sections = [
-  { id: 'stundenplan', icon: GraduationCap, label: 'Stundenplan', color: 'from-blue-500 to-indigo-600' },
-  { id: 'projekte', icon: FolderKanban, label: 'Projekte', color: 'from-purple-500 to-violet-600' },
-  { id: 'fehltage', icon: CalendarX, label: 'Fehltage', color: 'from-rose-500 to-red-600' },
-  { id: 'aufgaben', icon: ClipboardList, label: 'Aufgaben', color: 'from-orange-500 to-amber-600' },
+  { id: 'stundenplan', icon: GraduationCap, label: 'Stundenplan', color: 'text-blue-500' },
+  { id: 'projekte', icon: FolderKanban, label: 'Projekte', color: 'text-purple-500' },
+  { id: 'fehltage', icon: CalendarX, label: 'Fehltage', color: 'text-rose-500' },
+  { id: 'aufgaben', icon: ClipboardList, label: 'Aufgaben', color: 'text-orange-500' },
 ];
 
 export default function Schule() {
@@ -80,12 +80,9 @@ export default function Schule() {
               className="group relative overflow-hidden rounded-xl bg-card/80 backdrop-blur-sm border border-border/50 p-3 md:p-4 hover:border-primary/50 transition-all duration-300 cursor-pointer fade-in"
               style={{ animationDelay: `${i * 0.05}s` }}
             >
-              {/* Gradient overlay on hover */}
-              <div className={`absolute inset-0 bg-gradient-to-br ${s.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`} />
-              
               <div className="relative z-10 flex flex-col items-center gap-2 text-center">
-                <div className={`p-2.5 md:p-3 rounded-xl bg-gradient-to-br ${s.color} shadow-lg`}>
-                  <s.icon className="w-5 h-5 md:w-6 md:h-6 text-white" />
+                <div className={`p-2.5 md:p-3 rounded-xl border-2 border-current ${s.color} bg-transparent`}>
+                  <s.icon className="w-5 h-5 md:w-6 md:h-6" strokeWidth={1.5} />
                 </div>
                 <h3 className="font-medium text-xs md:text-sm group-hover:text-primary transition-colors">{s.label}</h3>
               </div>
