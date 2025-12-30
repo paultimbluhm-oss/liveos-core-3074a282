@@ -289,19 +289,55 @@ export function UnifiedTimetableSection({ onBack }: UnifiedTimetableSectionProps
         fetchData();
       }
     } else {
-      const { error } = await supabase
-        .from('timetable_entries')
-        .upsert({ ...baseData, period: periodNum }, { onConflict: 'user_id,day_of_week,period' });
+      // Check if entry already exists for this slot
+      const existingEntry = entries.find(e => 
+        e.day_of_week === dayNum && 
+        e.period === periodNum && 
+        (e.week_type === weekType || e.week_type === 'both' || weekType === 'both')
+      );
 
-      if (error) {
-        toast.error('Fehler beim Speichern');
-        return;
+      if (existingEntry) {
+        // Update existing entry
+        const { error } = await supabase
+          .from('timetable_entries')
+          .update({ ...baseData, period: periodNum })
+          .eq('id', existingEntry.id);
+
+        if (error) {
+          toast.error('Fehler beim Speichern');
+          return;
+        }
+      } else {
+        // Insert new entry
+        const { error } = await supabase
+          .from('timetable_entries')
+          .insert({ ...baseData, period: periodNum });
+
+        if (error) {
+          toast.error('Fehler beim Speichern');
+          return;
+        }
       }
 
+      // Handle double lesson
       if (isDoubleLesson && periodNum + 1 !== 7 && periodNum < 9) {
-        await supabase
-          .from('timetable_entries')
-          .upsert({ ...baseData, period: periodNum + 1 }, { onConflict: 'user_id,day_of_week,period' });
+        const nextPeriod = periodNum + 1;
+        const existingNext = entries.find(e => 
+          e.day_of_week === dayNum && 
+          e.period === nextPeriod && 
+          (e.week_type === weekType || e.week_type === 'both' || weekType === 'both')
+        );
+
+        if (existingNext) {
+          await supabase
+            .from('timetable_entries')
+            .update({ ...baseData, period: nextPeriod })
+            .eq('id', existingNext.id);
+        } else {
+          await supabase
+            .from('timetable_entries')
+            .insert({ ...baseData, period: nextPeriod });
+        }
       }
 
       toast.success('Hinzugefügt');

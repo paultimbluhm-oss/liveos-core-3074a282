@@ -34,39 +34,70 @@ export function DefaultFreePeriodDialog({ onFreePeriodAdded }: DefaultFreePeriod
     const periodNum = parseInt(period);
     const dayNum = parseInt(dayOfWeek);
     
-    // Create timetable entries for free periods (with special marker)
     const baseData = {
       user_id: user.id,
       day_of_week: dayNum,
       subject_id: null,
-      teacher_short: 'FREI', // Special marker for free period
+      teacher_short: 'FREI',
       room: null,
       week_type: weekType,
     };
 
-    // Insert first period
-    const { error: error1 } = await supabase
+    // Check if entry exists
+    const { data: existing } = await supabase
       .from('timetable_entries')
-      .upsert({ ...baseData, period: periodNum }, { onConflict: 'user_id,day_of_week,period' });
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('day_of_week', dayNum)
+      .eq('period', periodNum)
+      .maybeSingle();
 
-    if (error1) {
-      toast.error('Fehler beim Speichern');
-      console.error(error1);
-      setLoading(false);
-      return;
+    if (existing) {
+      const { error } = await supabase
+        .from('timetable_entries')
+        .update(baseData)
+        .eq('id', existing.id);
+
+      if (error) {
+        toast.error('Fehler beim Speichern');
+        console.error(error);
+        setLoading(false);
+        return;
+      }
+    } else {
+      const { error } = await supabase
+        .from('timetable_entries')
+        .insert({ ...baseData, period: periodNum });
+
+      if (error) {
+        toast.error('Fehler beim Speichern');
+        console.error(error);
+        setLoading(false);
+        return;
+      }
     }
 
-    // Insert second period if double
+    // Handle double period
     if (isDouble) {
       const nextPeriod = periodNum + 1;
       if (nextPeriod <= 9 && nextPeriod !== 7) {
-        const { error: error2 } = await supabase
+        const { data: existingNext } = await supabase
           .from('timetable_entries')
-          .upsert({ ...baseData, period: nextPeriod }, { onConflict: 'user_id,day_of_week,period' });
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('day_of_week', dayNum)
+          .eq('period', nextPeriod)
+          .maybeSingle();
 
-        if (error2) {
-          toast.error('Fehler beim Speichern der zweiten Stunde');
-          console.error(error2);
+        if (existingNext) {
+          await supabase
+            .from('timetable_entries')
+            .update(baseData)
+            .eq('id', existingNext.id);
+        } else {
+          await supabase
+            .from('timetable_entries')
+            .insert({ ...baseData, period: nextPeriod });
         }
       }
     }
