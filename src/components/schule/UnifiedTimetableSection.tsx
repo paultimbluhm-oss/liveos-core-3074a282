@@ -388,14 +388,17 @@ export function UnifiedTimetableSection({ onBack }: UnifiedTimetableSectionProps
     ? Math.round((allFinalGrades.reduce((a, b) => a + b, 0) / allFinalGrades.length) * 10) / 10 
     : null;
 
-  const todayLessons = entries.filter(e => {
+  // Get all entries for the current day (including free periods)
+  const todayEntries = entries.filter(e => {
     if (e.day_of_week !== currentDay + 1) return false;
-    if (e.teacher_short === 'FREI' && !e.subject_id) return false;
     if (e.week_type === 'both') return true;
     if (e.week_type === 'odd' && isOddWeek) return true;
     if (e.week_type === 'even' && !isOddWeek) return true;
     return false;
   }).sort((a, b) => a.period - b.period);
+
+  // Lessons for stats (excluding free periods)
+  const todayLessons = todayEntries.filter(e => !(e.teacher_short === 'FREI' && !e.subject_id));
 
   const getGradeColor = (grade: number | null) => {
     if (grade === null) return 'bg-muted text-muted-foreground';
@@ -610,27 +613,34 @@ export function UnifiedTimetableSection({ onBack }: UnifiedTimetableSectionProps
 
       {/* Day Schedule */}
       <div className="space-y-1.5">
-        {todayLessons.length === 0 ? (
+        {todayEntries.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <Calendar className="w-8 h-8 mx-auto mb-2 opacity-30" />
-            <p className="text-sm">Keine Stunden</p>
+            <p className="text-sm">Keine Stunden eingetragen</p>
           </div>
         ) : (
-          todayLessons.map((entry, idx) => {
+          todayEntries.map((entry) => {
+            const isFree = entry.teacher_short === 'FREI' && !entry.subject_id;
             const grade = entry.subject_id ? subjectGrades[entry.subject_id]?.finalGrade : null;
             return (
               <div 
                 key={entry.id}
                 onClick={() => openEdit(entry)}
-                className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border/50 hover:border-primary/30 transition-all cursor-pointer"
+                className={`flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer ${
+                  isFree 
+                    ? 'bg-muted/30 border-border/30' 
+                    : 'bg-card border-border/50 hover:border-primary/30'
+                }`}
               >
-                <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${
+                  isFree ? 'bg-muted/50 text-muted-foreground' : 'bg-muted text-muted-foreground'
+                }`}>
                   {entry.period}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-sm truncate">
-                      {entry.subjects?.short_name || entry.subjects?.name || entry.teacher_short}
+                    <span className={`font-medium text-sm truncate ${isFree ? 'text-muted-foreground' : ''}`}>
+                      {isFree ? 'Freistunde' : (entry.subjects?.short_name || entry.subjects?.name || entry.teacher_short)}
                     </span>
                     {entry.week_type !== 'both' && (
                       <span className="text-[10px] px-1 py-0.5 rounded bg-muted text-muted-foreground">
@@ -638,10 +648,12 @@ export function UnifiedTimetableSection({ onBack }: UnifiedTimetableSectionProps
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                    {entry.room && <span>{entry.room}</span>}
-                    <span>{entry.teacher_short}</span>
-                  </div>
+                  {!isFree && (
+                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                      {entry.room && <span>{entry.room}</span>}
+                      <span>{entry.teacher_short}</span>
+                    </div>
+                  )}
                 </div>
                 {grade !== null && (
                   <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold ${getGradeColor(grade)}`}>
