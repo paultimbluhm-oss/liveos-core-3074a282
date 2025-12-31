@@ -6,15 +6,18 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Contact, ContactStatus, STATUS_OPTIONS, POSITION_OPTIONS } from './types';
+import { Trash2, Link2 } from 'lucide-react';
 
 interface AddContactDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (contact: Partial<Contact>) => void;
   editContact?: Contact | null;
+  onDelete?: () => void;
+  onLink?: () => void;
 }
 
-export function AddContactDialog({ open, onOpenChange, onSave, editContact }: AddContactDialogProps) {
+export function AddContactDialog({ open, onOpenChange, onSave, editContact, onDelete, onLink }: AddContactDialogProps) {
   const [name, setName] = useState('');
   const [company, setCompany] = useState('');
   const [position, setPosition] = useState('');
@@ -72,7 +75,7 @@ export function AddContactDialog({ open, onOpenChange, onSave, editContact }: Ad
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {editContact ? 'Kontakt bearbeiten' : 'Neuer Kontakt'}
@@ -91,54 +94,52 @@ export function AddContactDialog({ open, onOpenChange, onSave, editContact }: Ad
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="company">Unternehmen</Label>
-              <Input
-                id="company"
-                value={company}
-                onChange={(e) => setCompany(e.target.value)}
-                placeholder="Musterfirma GmbH"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="position">Position</Label>
-              <Select value={position || "none"} onValueChange={(v) => setPosition(v === "none" ? "" : v)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Position auswählen..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Keine Angabe</SelectItem>
-                  {POSITION_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="company">Unternehmen</Label>
+            <Input
+              id="company"
+              value={company}
+              onChange={(e) => setCompany(e.target.value)}
+              placeholder="Musterfirma GmbH"
+            />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">E-Mail</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="max@beispiel.de"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="phone">Telefon</Label>
-              <Input
-                id="phone"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+49 123 456789"
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="position">Position</Label>
+            <Select value={position || "none"} onValueChange={(v) => setPosition(v === "none" ? "" : v)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Position..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Keine Angabe</SelectItem>
+                {POSITION_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="email">E-Mail</Label>
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="max@beispiel.de"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="phone">Telefon</Label>
+            <Input
+              id="phone"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="+49 123 456789"
+            />
           </div>
 
           <div className="space-y-2">
@@ -147,7 +148,7 @@ export function AddContactDialog({ open, onOpenChange, onSave, editContact }: Ad
               id="address"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              placeholder="Musterstraße 123, 12345 Musterstadt"
+              placeholder="Musterstr. 123, 12345 Stadt"
             />
           </div>
 
@@ -173,18 +174,32 @@ export function AddContactDialog({ open, onOpenChange, onSave, editContact }: Ad
               id="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Zusätzliche Informationen..."
-              rows={3}
+              placeholder="Zusaetzliche Infos..."
+              rows={2}
             />
           </div>
 
-          <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Abbrechen
-            </Button>
-            <Button type="submit">
-              {editContact ? 'Speichern' : 'Hinzufügen'}
-            </Button>
+          <div className="flex items-center justify-between pt-2">
+            <div className="flex gap-2">
+              {editContact && onDelete && (
+                <Button type="button" variant="ghost" size="icon" onClick={onDelete} className="text-destructive hover:text-destructive">
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              )}
+              {editContact && onLink && (
+                <Button type="button" variant="ghost" size="icon" onClick={onLink}>
+                  <Link2 className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                Abbrechen
+              </Button>
+              <Button type="submit">
+                {editContact ? 'Speichern' : 'Hinzufuegen'}
+              </Button>
+            </div>
           </div>
         </form>
       </DialogContent>

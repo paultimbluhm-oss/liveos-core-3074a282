@@ -1,20 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Plus, Users, Search, Building2, Network, LayoutGrid } from 'lucide-react';
+import { Plus, Search, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { Contact, Order, ContactStatus, ContactConnection, STATUS_CONFIG } from './types';
-import { ContactCard } from './ContactCard';
+import { Contact, Order, ContactConnection, STATUS_CONFIG } from './types';
 import { AddContactDialog } from './AddContactDialog';
 import { LinkContactDialog } from './LinkContactDialog';
-import { ContactTreeView } from './ContactTreeView';
-import { CompanyGroupView } from './CompanyGroupView';
-import { motion, AnimatePresence } from 'framer-motion';
-
-type ViewMode = 'companies' | 'grid' | 'network';
 
 export function ContactsSection() {
   const { user } = useAuth();
@@ -23,8 +16,6 @@ export function ContactsSection() {
   const [connections, setConnections] = useState<ContactConnection[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<ContactStatus | 'all'>('all');
-  const [viewMode, setViewMode] = useState<ViewMode>('companies');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [editContact, setEditContact] = useState<Contact | null>(null);
@@ -77,8 +68,8 @@ export function ContactsSection() {
 
   const handleDeleteContact = async (contact: Contact) => {
     const { error } = await supabase.from('contacts').delete().eq('id', contact.id);
-    if (error) toast.error('Fehler beim Löschen');
-    else { toast.success('Kontakt gelöscht'); fetchData(); }
+    if (error) toast.error('Fehler beim Loeschen');
+    else { toast.success('Kontakt geloescht'); fetchData(); }
   };
 
   const handleLinkContacts = async (fromId: string, toId: string, type: string, description: string) => {
@@ -88,146 +79,95 @@ export function ContactsSection() {
       relationship_type: type, description: description || null,
     });
 
-    if (error) toast.error('Fehler beim Verknüpfen');
-    else { toast.success('Kontakte verknüpft'); fetchData(); }
-  };
-
-  const handleUpdateConnection = async (id: string, type: string, description: string) => {
-    const { error } = await supabase.from('contact_connections')
-      .update({ relationship_type: type, description: description || null })
-      .eq('id', id);
-
-    if (error) toast.error('Fehler beim Aktualisieren');
-    else { toast.success('Verbindung aktualisiert'); fetchData(); }
-  };
-
-  const handleDeleteConnection = async (id: string) => {
-    const { error } = await supabase.from('contact_connections').delete().eq('id', id);
-
-    if (error) toast.error('Fehler beim Löschen');
-    else { toast.success('Verbindung gelöscht'); fetchData(); }
-  };
-
-  const getConnectionCount = (contactId: string) => {
-    return connections.filter(c => c.from_contact_id === contactId || c.to_contact_id === contactId).length;
+    if (error) toast.error('Fehler beim Verknuepfen');
+    else { toast.success('Kontakte verknuepft'); fetchData(); }
   };
 
   const filteredContacts = contacts.filter((contact) => {
-    const matchesSearch = contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    return contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       contact.company?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || contact.status === statusFilter;
-    return matchesSearch && matchesStatus;
   });
 
-  const stats = { total: contacts.length, companies: new Set(contacts.filter(c => c.company).map(c => c.company)).size, connections: connections.length };
+  const getOrderCount = (contactId: string) => orders.filter(o => o.contact_id === contactId).length;
 
   if (loading) {
-    return <div className="h-32 rounded-xl bg-muted/30 animate-pulse" />;
+    return <div className="space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-16 rounded-xl bg-muted/30 animate-pulse" />)}</div>;
   }
 
   return (
-    <div className="space-y-6">
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-4 text-center">
-          <div className="flex justify-center mb-2"><div className="p-2 rounded-lg bg-primary/20"><Users className="w-5 h-5 text-primary" /></div></div>
-          <p className="text-2xl font-bold">{stats.total}</p>
-          <p className="text-xs text-muted-foreground">Kontakte</p>
-        </motion.div>
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass-card p-4 text-center">
-          <div className="flex justify-center mb-2"><div className="p-2 rounded-lg bg-info/20"><Building2 className="w-5 h-5 text-info" /></div></div>
-          <p className="text-2xl font-bold">{stats.companies}</p>
-          <p className="text-xs text-muted-foreground">Unternehmen</p>
-        </motion.div>
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass-card p-4 text-center">
-          <div className="flex justify-center mb-2"><div className="p-2 rounded-lg bg-success/20"><Network className="w-5 h-5 text-success" /></div></div>
-          <p className="text-2xl font-bold">{stats.connections}</p>
-          <p className="text-xs text-muted-foreground">Verknüpfungen</p>
-        </motion.div>
-      </div>
-
-      {/* Controls */}
-      <div className="flex flex-col sm:flex-row gap-3">
+    <div className="space-y-4">
+      {/* Search + Add */}
+      <div className="flex gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input placeholder="Kontakte durchsuchen..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9" />
+          <Input 
+            placeholder="Suchen..." 
+            value={searchQuery} 
+            onChange={(e) => setSearchQuery(e.target.value)} 
+            className="pl-9 h-10" 
+          />
         </div>
-        <div className="flex gap-2">
-          <Button variant={viewMode === 'companies' ? 'default' : 'outline'} size="icon" onClick={() => setViewMode('companies')} title="Nach Unternehmen">
-            <Building2 className="w-4 h-4" />
-          </Button>
-          <Button variant={viewMode === 'grid' ? 'default' : 'outline'} size="icon" onClick={() => setViewMode('grid')} title="Rasteransicht">
-            <LayoutGrid className="w-4 h-4" />
-          </Button>
-          <Button variant={viewMode === 'network' ? 'default' : 'outline'} size="icon" onClick={() => setViewMode('network')} title="Baumdiagramm">
-            <Network className="w-4 h-4" />
-          </Button>
-        </div>
-        <Button onClick={() => { setEditContact(null); setDialogOpen(true); }}><Plus className="w-4 h-4 mr-2" />Kontakt</Button>
+        <Button size="icon" onClick={() => { setEditContact(null); setDialogOpen(true); }}>
+          <Plus className="w-4 h-4" />
+        </Button>
       </div>
 
-      {viewMode === 'network' ? (
-        <ContactTreeView 
-          contacts={filteredContacts} 
-          connections={connections} 
-          onContactClick={(c) => { setEditContact(c); setDialogOpen(true); }}
-          onUpdateConnection={handleUpdateConnection}
-          onDeleteConnection={handleDeleteConnection}
-        />
-      ) : viewMode === 'companies' ? (
-        <>
-          <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as ContactStatus | 'all')}>
-            <TabsList className="flex flex-wrap h-auto gap-1">
-              <TabsTrigger value="all" className="text-xs">Alle</TabsTrigger>
-              <TabsTrigger value="need_to_reply" className="text-xs">Antworten</TabsTrigger>
-              <TabsTrigger value="waiting_for_reply" className="text-xs">Wartend</TabsTrigger>
-              <TabsTrigger value="idea" className="text-xs">Idee</TabsTrigger>
-              <TabsTrigger value="completed" className="text-xs">Abgeschlossen</TabsTrigger>
-            </TabsList>
-          </Tabs>
-          
-          <CompanyGroupView
-            contacts={filteredContacts}
-            orders={orders}
-            onEdit={(c) => { setEditContact(c); setDialogOpen(true); }}
-            onDelete={handleDeleteContact}
-            onLinkContacts={(c) => { setLinkSourceContact(c); setLinkDialogOpen(true); }}
-            connectionCount={getConnectionCount}
-          />
-        </>
+      {/* Contact List */}
+      {filteredContacts.length === 0 ? (
+        <div className="text-center py-12">
+          <Users className="w-10 h-10 mx-auto text-muted-foreground/40 mb-3" />
+          <p className="text-sm text-muted-foreground">Keine Kontakte</p>
+        </div>
       ) : (
-        <>
-          <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as ContactStatus | 'all')}>
-            <TabsList className="flex flex-wrap h-auto gap-1">
-              <TabsTrigger value="all" className="text-xs">Alle</TabsTrigger>
-              <TabsTrigger value="need_to_reply" className="text-xs">Antworten</TabsTrigger>
-              <TabsTrigger value="waiting_for_reply" className="text-xs">Wartend</TabsTrigger>
-              <TabsTrigger value="idea" className="text-xs">Idee</TabsTrigger>
-              <TabsTrigger value="completed" className="text-xs">Abgeschlossen</TabsTrigger>
-            </TabsList>
-          </Tabs>
-
-          {filteredContacts.length === 0 ? (
-            <div className="text-center py-12">
-              <Users className="w-12 h-12 mx-auto text-muted-foreground/50 mb-4" />
-              <h3 className="font-medium text-muted-foreground mb-2">Keine Kontakte gefunden</h3>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <AnimatePresence>
-                {filteredContacts.map((contact) => (
-                  <ContactCard key={contact.id} contact={contact} orders={orders} onEdit={(c) => { setEditContact(c); setDialogOpen(true); }}
-                    onDelete={handleDeleteContact} onViewOrders={() => toast.info(`Aufträge für ${contact.name}`)}
-                    onLinkContacts={(c) => { setLinkSourceContact(c); setLinkDialogOpen(true); }} connectionCount={getConnectionCount(contact.id)} />
-                ))}
-              </AnimatePresence>
-            </div>
-          )}
-        </>
+        <div className="space-y-2">
+          {filteredContacts.map((contact) => {
+            const statusConfig = STATUS_CONFIG[contact.status];
+            const orderCount = getOrderCount(contact.id);
+            
+            return (
+              <button
+                key={contact.id}
+                onClick={() => { setEditContact(contact); setDialogOpen(true); }}
+                className="w-full text-left p-3 rounded-xl bg-card/50 border border-border/50 hover:bg-card/80 transition-colors"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium truncate">{contact.name}</span>
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] ${statusConfig.bgColor} ${statusConfig.color}`}>
+                        {statusConfig.label}
+                      </span>
+                    </div>
+                    {contact.company && (
+                      <p className="text-xs text-muted-foreground truncate mt-0.5">{contact.company}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground shrink-0">
+                    {orderCount > 0 && <span>{orderCount} Auftr.</span>}
+                    {contact.phone && <span className="hidden sm:inline">{contact.phone}</span>}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
       )}
 
-      <AddContactDialog open={dialogOpen} onOpenChange={setDialogOpen} onSave={handleSaveContact} editContact={editContact} />
-      <LinkContactDialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen} sourceContact={linkSourceContact} contacts={contacts} onSave={handleLinkContacts} />
+      <AddContactDialog 
+        open={dialogOpen} 
+        onOpenChange={setDialogOpen} 
+        onSave={handleSaveContact} 
+        editContact={editContact}
+        onDelete={editContact ? () => { handleDeleteContact(editContact); setDialogOpen(false); } : undefined}
+        onLink={editContact ? () => { setLinkSourceContact(editContact); setLinkDialogOpen(true); } : undefined}
+      />
+      <LinkContactDialog 
+        open={linkDialogOpen} 
+        onOpenChange={setLinkDialogOpen} 
+        sourceContact={linkSourceContact} 
+        contacts={contacts} 
+        onSave={handleLinkContacts} 
+      />
     </div>
   );
 }
