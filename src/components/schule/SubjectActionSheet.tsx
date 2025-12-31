@@ -6,11 +6,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { BookOpen, Award, Settings, Calendar, Plus } from 'lucide-react';
+import { BookOpen, Award, Settings, Calendar, Plus, Coffee } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { format, addDays } from 'date-fns';
+import { format, addDays, getISOWeek, startOfWeek } from 'date-fns';
 
 interface Subject {
   id: string;
@@ -37,6 +37,7 @@ interface SubjectActionSheetProps {
   entry: TimetableEntry | null;
   onDataChanged: () => void;
   onEditEntry: () => void;
+  currentDate?: Date;
 }
 
 export function SubjectActionSheet({ 
@@ -44,7 +45,8 @@ export function SubjectActionSheet({
   onOpenChange, 
   entry, 
   onDataChanged,
-  onEditEntry 
+  onEditEntry,
+  currentDate
 }: SubjectActionSheetProps) {
   const { user } = useAuth();
   const [gradeDialogOpen, setGradeDialogOpen] = useState(false);
@@ -63,6 +65,7 @@ export function SubjectActionSheet({
   const [priority, setPriority] = useState('medium');
   const [xpReward, setXpReward] = useState('10');
   const [homeworkLoading, setHomeworkLoading] = useState(false);
+  const [evaLoading, setEvaLoading] = useState(false);
 
   const subject = entry?.subjects;
   const isFree = entry?.teacher_short === 'FREI' && !entry?.subject_id;
@@ -132,6 +135,35 @@ export function SubjectActionSheet({
     setHomeworkLoading(false);
   };
 
+  const handleMarkEVA = async () => {
+    if (!user || !entry) return;
+    
+    const dateToUse = currentDate || new Date();
+    const dateStr = format(dateToUse, 'yyyy-MM-dd');
+    
+    setEvaLoading(true);
+    const { error } = await supabase.from('lesson_absences').insert({
+      user_id: user.id,
+      date: dateStr,
+      timetable_entry_id: entry.id,
+      reason: 'efa',
+      excused: true,
+    });
+
+    if (error) {
+      if (error.code === '23505') {
+        toast.error('EVA bereits eingetragen');
+      } else {
+        toast.error('Fehler beim Speichern');
+      }
+    } else {
+      toast.success('Als EVA markiert');
+      onDataChanged();
+      onOpenChange(false);
+    }
+    setEvaLoading(false);
+  };
+
   if (!entry) return null;
 
   return (
@@ -172,7 +204,27 @@ export function SubjectActionSheet({
                   <BookOpen className="w-5 h-5 text-green-500" />
                   <span className="text-xs">Hausaufgabe</span>
                 </Button>
+                <Button
+                  variant="outline"
+                  className="flex flex-col items-center gap-1.5 h-auto py-4"
+                  onClick={handleMarkEVA}
+                  disabled={evaLoading}
+                >
+                  <Coffee className="w-5 h-5 text-purple-500" />
+                  <span className="text-xs">EVA</span>
+                </Button>
               </>
+            )}
+            {isFree && (
+              <Button
+                variant="outline"
+                className="flex flex-col items-center gap-1.5 h-auto py-4"
+                onClick={handleMarkEVA}
+                disabled={evaLoading}
+              >
+                <Coffee className="w-5 h-5 text-purple-500" />
+                <span className="text-xs">EVA</span>
+              </Button>
             )}
             <Button
               variant="outline"
