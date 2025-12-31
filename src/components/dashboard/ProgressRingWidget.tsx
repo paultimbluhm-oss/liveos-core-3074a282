@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { Flame } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import { motion } from 'framer-motion';
 import { useGamification } from '@/contexts/GamificationContext';
 
@@ -74,19 +74,66 @@ export function ProgressRingWidget() {
     });
   };
 
-  // Check if streak should be reset (yesterday wasn't completed)
+  // Check if a specific date had 100% completion
+  const checkDateCompletion = async (dateStr: string): Promise<boolean> => {
+    if (!user) return false;
+
+    const [tasksRes, homeworkRes, habitsRes, habitCompletionsRes] = await Promise.all([
+      supabase
+        .from('tasks')
+        .select('id, completed, due_date')
+        .eq('user_id', user.id)
+        .not('due_date', 'is', null),
+      supabase
+        .from('homework')
+        .select('id, completed')
+        .eq('user_id', user.id)
+        .eq('due_date', dateStr),
+      supabase
+        .from('habits')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('is_active', true),
+      supabase
+        .from('habit_completions')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('completed_date', dateStr),
+    ]);
+
+    const dateTasks = (tasksRes.data || []).filter(t => {
+      if (!t.due_date) return false;
+      const taskDate = format(new Date(t.due_date), 'yyyy-MM-dd');
+      return taskDate === dateStr;
+    });
+
+    const homework = homeworkRes.data || [];
+    const habits = habitsRes.data || [];
+    const completions = habitCompletionsRes.data || [];
+
+    const totalItems = dateTasks.length + homework.length + habits.length;
+    
+    // If no items existed for that day, it doesn't count as completed for streak purposes
+    if (totalItems === 0) return false;
+
+    const tasksComplete = dateTasks.every(t => t.completed);
+    const homeworkComplete = homework.every(h => h.completed);
+    const habitsComplete = completions.length >= habits.length;
+
+    return tasksComplete && homeworkComplete && habitsComplete;
+  };
+
+  // Check if streak should be reset (missed a day)
   const checkStreakReset = async () => {
     if (!user || !profile) return;
     
     const today = format(new Date(), 'yyyy-MM-dd');
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = format(yesterday, 'yyyy-MM-dd');
+    const yesterday = format(subDays(new Date(), 1), 'yyyy-MM-dd');
     
     const lastActiveDate = profile.last_active_date;
     
     // If last active was before yesterday and streak > 0, reset it
-    if (lastActiveDate && lastActiveDate !== today && lastActiveDate !== yesterdayStr && profile.streak_days > 0) {
+    if (lastActiveDate && lastActiveDate !== today && lastActiveDate !== yesterday && profile.streak_days > 0) {
       await supabase
         .from('profiles')
         .update({ streak_days: 0 })
@@ -100,48 +147,49 @@ export function ProgressRingWidget() {
     if (!user || !profile || hasUpdatedStreakRef.current) return;
 
     const today = format(new Date(), 'yyyy-MM-dd');
+    const yesterday = format(subDays(new Date(), 1), 'yyyy-MM-dd');
+    
     const totalCompleted = stats.tasksCompleted + stats.homeworkCompleted + stats.habitsCompleted;
     const totalItems = stats.tasksTotal + stats.homeworkTotal + stats.habitsTotal;
     
-    // All done for today (either 100% completed or nothing to do)
-    const allDone = totalItems === 0 || totalCompleted === totalItems;
+    // Must have items today AND all must be completed
+    if (totalItems === 0 || totalCompleted !== totalItems) return;
     
     // Check localStorage to see if we already awarded streak today
     const streakAwardedKey = `streak_awarded_${user.id}_${today}`;
     const alreadyAwarded = localStorage.getItem(streakAwardedKey) === 'true';
     
-    if (allDone && !alreadyAwarded) {
-      hasUpdatedStreakRef.current = true;
-      localStorage.setItem(streakAwardedKey, 'true');
-      
-      // Calculate new streak
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayStr = format(yesterday, 'yyyy-MM-dd');
-      
-      const lastActiveDate = profile.last_active_date;
-      let newStreak: number;
-      
-      // If last active was yesterday, continue streak. Otherwise start fresh at 1.
-      if (lastActiveDate === yesterdayStr) {
+    if (alreadyAwarded) return;
+
+    hasUpdatedStreakRef.current = true;
+    localStorage.setItem(streakAwardedKey, 'true');
+    
+    const lastActiveDate = profile.last_active_date;
+    let newStreak = 1; // Default: start new streak at 1
+    
+    // Only continue streak if yesterday was also 100% completed
+    if (lastActiveDate === yesterday) {
+      const yesterdayComplete = await checkDateCompletion(yesterday);
+      if (yesterdayComplete) {
+        // Continue the streak
         newStreak = (profile.streak_days || 0) + 1;
-      } else {
-        // First day or streak was broken - start at 1
-        newStreak = 1;
       }
-      
-      await supabase
-        .from('profiles')
-        .update({ 
-          last_active_date: today,
-          streak_days: newStreak
-        })
-        .eq('user_id', user.id);
-      
-      // Celebrate and refresh
-      celebrateStreak(newStreak);
-      refetch();
+      // If yesterday wasn't 100%, streak stays at 1
     }
+    
+    await supabase
+      .from('profiles')
+      .update({ 
+        last_active_date: today,
+        streak_days: newStreak
+      })
+      .eq('user_id', user.id);
+    
+    // Celebrate and refresh
+    if (newStreak > 1) {
+      celebrateStreak(newStreak);
+    }
+    refetch();
   };
 
   // Check for streak reset on mount
