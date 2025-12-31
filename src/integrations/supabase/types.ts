@@ -1035,6 +1035,36 @@ export type Database = {
         }
         Relationships: []
       }
+      lifetime_goals: {
+        Row: {
+          category: string
+          created_at: string
+          day_of_week: number | null
+          id: string
+          target_minutes: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          day_of_week?: number | null
+          id?: string
+          target_minutes?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          day_of_week?: number | null
+          id?: string
+          target_minutes?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       loans: {
         Row: {
           amount: number | null

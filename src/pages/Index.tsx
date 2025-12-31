@@ -6,6 +6,7 @@ import { useStats } from '@/hooks/useStats';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { TimeDistributionWidget } from '@/components/dashboard/TimeDistributionWidget';
 import { ProgressRingWidget } from '@/components/dashboard/ProgressRingWidget';
+import { LifetimeWidget } from '@/components/dashboard/LifetimeWidget';
 import { TodayDetailsCard } from '@/components/dashboard/TodayDetailsCard';
 import { NextActionsCard } from '@/components/dashboard/NextActionsCard';
 import { HabitsOverview } from '@/components/dashboard/HabitsOverview';
@@ -68,10 +69,11 @@ export default function Index() {
   return (
     <AppLayout>
       <div className="p-4 md:p-6 lg:p-8 space-y-3 md:space-y-4 max-w-7xl mx-auto">
-        {/* Top Row: Two Ring Widgets */}
-        <div className="grid grid-cols-2 gap-3">
+        {/* Top Row: Ring Widgets */}
+        <div className="grid grid-cols-3 gap-3">
           <TimeDistributionWidget />
           <ProgressRingWidget />
+          <LifetimeWidget />
         </div>
 
         {/* Details Row: Tasks + Homework + Habits breakdown */}
