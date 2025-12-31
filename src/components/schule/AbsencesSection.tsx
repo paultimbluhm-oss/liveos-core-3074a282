@@ -425,26 +425,33 @@ export function AbsencesSection({ onBack }: AbsencesSectionProps) {
                     {entry.teacher_short}
                   </div>
                 </div>
-                {absence && (
-                  <div className="flex items-center gap-1.5">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={(e) => { e.stopPropagation(); toggleExcused(absence); }}
-                    >
-                      <CheckCircle2 className={`w-4 h-4 ${absence.excused ? 'text-emerald-500' : 'text-muted-foreground'}`} />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={(e) => { e.stopPropagation(); handleDeleteAbsence(absence.id); }}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
-                )}
+                {absence && (() => {
+                  const reasonData = REASONS.find(r => r.value === absence.reason);
+                  const ReasonIcon = reasonData?.icon || HelpCircle;
+                  return (
+                    <div className="flex items-center gap-1.5">
+                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${reasonData?.color || 'bg-muted'}`}>
+                        <ReasonIcon className="w-3.5 h-3.5 text-white" />
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={(e) => { e.stopPropagation(); toggleExcused(absence); }}
+                      >
+                        <CheckCircle2 className={`w-4 h-4 ${absence.excused ? 'text-emerald-500' : 'text-muted-foreground'}`} />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={(e) => { e.stopPropagation(); handleDeleteAbsence(absence.id); }}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  );
+                })()}
               </div>
             );
           })
