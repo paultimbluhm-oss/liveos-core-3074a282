@@ -625,6 +625,10 @@ export function UnifiedTimetableSection({ onBack }: UnifiedTimetableSectionProps
           todayEntries.map((entry) => {
             const isFree = entry.teacher_short === 'FREI' && !entry.subject_id;
             const grade = entry.subject_id ? subjectGrades[entry.subject_id]?.finalGrade : null;
+            const dateStr = format(currentDate, 'yyyy-MM-dd');
+            const evaAbsence = absences.find(a => a.timetable_entry_id === entry.id && a.date === dateStr && a.reason === 'efa');
+            const isEVA = !!evaAbsence;
+            
             return (
               <div 
                 key={entry.id}
@@ -632,22 +636,29 @@ export function UnifiedTimetableSection({ onBack }: UnifiedTimetableSectionProps
                   setSelectedEntry(entry);
                   setActionSheetOpen(true);
                 }}
-                className={`flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer ${
-                  isFree 
-                    ? 'bg-muted/30 border-border/30' 
-                    : 'bg-card border-border/50 hover:border-primary/30'
+                className={`flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer relative ${
+                  isEVA
+                    ? 'bg-purple-500/10 border-purple-500/40 ring-2 ring-purple-500/50'
+                    : isFree 
+                      ? 'bg-muted/30 border-border/30' 
+                      : 'bg-card border-border/50 hover:border-primary/30'
                 }`}
               >
                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${
-                  isFree ? 'bg-muted/50 text-muted-foreground' : 'bg-muted text-muted-foreground'
+                  isEVA ? 'bg-purple-500 text-white' : isFree ? 'bg-muted/50 text-muted-foreground' : 'bg-muted text-muted-foreground'
                 }`}>
                   {entry.period}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className={`font-medium text-sm truncate ${isFree ? 'text-muted-foreground' : ''}`}>
+                    <span className={`font-medium text-sm truncate ${isEVA ? 'line-through text-purple-400' : isFree ? 'text-muted-foreground' : ''}`}>
                       {isFree ? 'Freistunde' : (entry.subjects?.short_name || entry.subjects?.name || entry.teacher_short)}
                     </span>
+                    {isEVA && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-500 text-white font-medium">
+                        EVA
+                      </span>
+                    )}
                     {entry.week_type !== 'both' && (
                       <span className="text-[10px] px-1 py-0.5 rounded bg-muted text-muted-foreground">
                         {entry.week_type === 'odd' ? 'A' : 'B'}
@@ -655,13 +666,13 @@ export function UnifiedTimetableSection({ onBack }: UnifiedTimetableSectionProps
                     )}
                   </div>
                   {!isFree && (
-                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                    <div className={`flex items-center gap-2 text-[10px] ${isEVA ? 'text-purple-400/70' : 'text-muted-foreground'}`}>
                       {entry.room && <span>{entry.room}</span>}
                       <span>{entry.teacher_short}</span>
                     </div>
                   )}
                 </div>
-                {grade !== null && (
+                {grade !== null && !isEVA && (
                   <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold ${getGradeColor(grade)}`}>
                     {grade}
                   </div>
