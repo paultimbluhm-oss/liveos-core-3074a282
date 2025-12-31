@@ -12,6 +12,7 @@ import { NextActionsCard } from '@/components/dashboard/NextActionsCard';
 import { HabitsOverview } from '@/components/dashboard/HabitsOverview';
 import { AchievementsCard, checkAndUnlockAchievements } from '@/components/dashboard/AchievementsCard';
 import { QuickStats } from '@/components/dashboard/QuickStats';
+import { DataBackupButton } from '@/components/dashboard/DataBackupButton';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -96,6 +97,11 @@ export default function Index() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
           <NextActionsCard />
           <HabitsOverview />
+        </div>
+
+        {/* Backup Button */}
+        <div className="pt-4">
+          <DataBackupButton />
         </div>
       </div>
     </AppLayout>
