@@ -2,24 +2,22 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { Briefcase, Users, ClipboardList, TrendingUp, Package } from 'lucide-react';
+import { Users, ClipboardList, ArrowLeft } from 'lucide-react';
 import { ContactsSection } from '@/components/business/contacts';
 import { OrdersSection } from '@/components/business/orders';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 
-type BusinessSection = 'kontakte' | 'auftraege' | 'investitionen' | 'produkte';
+type BusinessSection = 'overview' | 'kontakte' | 'auftraege';
 
-const sections: { id: BusinessSection; icon: React.ElementType; label: string; desc: string }[] = [
-  { id: 'kontakte', icon: Users, label: 'Kontakte', desc: 'Kontaktverzeichnis' },
-  { id: 'auftraege', icon: ClipboardList, label: 'Aufträge', desc: 'Status & Übersicht' },
-  { id: 'investitionen', icon: TrendingUp, label: 'Investitionen', desc: 'Prognosen & Planung' },
-  { id: 'produkte', icon: Package, label: 'Produkte', desc: 'Produkte & Dienstleistungen' },
+const sections = [
+  { id: 'kontakte' as const, icon: Users, label: 'Kontakte' },
+  { id: 'auftraege' as const, icon: ClipboardList, label: 'Auftraege' },
 ];
 
 export default function Business() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const [activeSection, setActiveSection] = useState<BusinessSection>('kontakte');
+  const [activeSection, setActiveSection] = useState<BusinessSection>('overview');
 
   useEffect(() => {
     if (!loading && !user) navigate('/auth');
@@ -27,53 +25,56 @@ export default function Business() {
 
   if (loading || !user) return null;
 
+  const renderSection = () => {
+    switch (activeSection) {
+      case 'kontakte':
+        return <ContactsSection />;
+      case 'auftraege':
+        return <OrdersSection />;
+      default:
+        return null;
+    }
+  };
+
   return (
     <AppLayout>
-      <div className="p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
-        <div className="flex items-center gap-3">
-          <div className="p-3 rounded-xl bg-warning/20">
-            <Briefcase className="w-6 h-6 text-warning" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold">Business</h1>
-            <p className="text-muted-foreground">Geschäftliche Verwaltung</p>
-          </div>
-        </div>
-
-        <Tabs value={activeSection} onValueChange={(v) => setActiveSection(v as BusinessSection)}>
-          <TabsList className="grid grid-cols-4 w-full max-w-2xl">
-            {sections.map((s) => (
-              <TabsTrigger key={s.id} value={s.id} className="flex items-center gap-2">
-                <s.icon className="w-4 h-4" />
-                <span className="hidden sm:inline">{s.label}</span>
-              </TabsTrigger>
-            ))}
-          </TabsList>
-
-          <TabsContent value="kontakte" className="mt-6">
-            <ContactsSection />
-          </TabsContent>
-
-          <TabsContent value="auftraege" className="mt-6">
-            <OrdersSection />
-          </TabsContent>
-
-          <TabsContent value="investitionen" className="mt-6">
-            <div className="glass-card p-8 text-center">
-              <TrendingUp className="w-12 h-12 mx-auto text-muted-foreground/50 mb-4" />
-              <h3 className="font-medium text-muted-foreground mb-2">Investitionen</h3>
-              <p className="text-sm text-muted-foreground/70">Kommt bald...</p>
+      <div className="p-4 space-y-4 max-w-3xl mx-auto">
+        {activeSection === 'overview' ? (
+          <>
+            <h1 className="text-xl font-bold">Business</h1>
+            <div className="space-y-3">
+              {sections.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => setActiveSection(s.id)}
+                  className="w-full flex items-center gap-4 p-4 rounded-xl bg-card/50 border border-border/50 hover:bg-card/80 transition-colors"
+                >
+                  <div className="p-3 rounded-xl bg-primary/10">
+                    <s.icon className="w-5 h-5 text-primary" />
+                  </div>
+                  <span className="font-medium">{s.label}</span>
+                </button>
+              ))}
             </div>
-          </TabsContent>
-
-          <TabsContent value="produkte" className="mt-6">
-            <div className="glass-card p-8 text-center">
-              <Package className="w-12 h-12 mx-auto text-muted-foreground/50 mb-4" />
-              <h3 className="font-medium text-muted-foreground mb-2">Produkte</h3>
-              <p className="text-sm text-muted-foreground/70">Kommt bald...</p>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setActiveSection('overview')}
+                className="shrink-0"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+              <h1 className="text-xl font-bold">
+                {sections.find(s => s.id === activeSection)?.label}
+              </h1>
             </div>
-          </TabsContent>
-        </Tabs>
+            {renderSection()}
+          </>
+        )}
       </div>
     </AppLayout>
   );

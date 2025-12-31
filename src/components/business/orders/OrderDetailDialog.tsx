@@ -20,9 +20,11 @@ interface OrderDetailDialogProps {
   onOpenChange: (open: boolean) => void;
   order: Order | null;
   onUpdate: () => void;
+  onEdit?: (order: Order) => void;
+  onDelete?: (id: string) => void;
 }
 
-export function OrderDetailDialog({ open, onOpenChange, order, onUpdate }: OrderDetailDialogProps) {
+export function OrderDetailDialog({ open, onOpenChange, order, onUpdate, onEdit, onDelete }: OrderDetailDialogProps) {
   const { user } = useAuth();
   const [expenses, setExpenses] = useState<OrderExpense[]>([]);
   const [timeEntries, setTimeEntries] = useState<OrderTimeEntry[]>([]);
@@ -148,11 +150,25 @@ export function OrderDetailDialog({ open, onOpenChange, order, onUpdate }: Order
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <div className="flex items-center gap-3">
-            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusConfig.bgColor} ${statusConfig.color}`}>
-              {statusConfig.label}
-            </span>
-            <DialogTitle className="text-xl">{order.title}</DialogTitle>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusConfig.bgColor} ${statusConfig.color}`}>
+                {statusConfig.label}
+              </span>
+              <DialogTitle className="text-xl">{order.title}</DialogTitle>
+            </div>
+            <div className="flex gap-2">
+              {onEdit && (
+                <Button variant="outline" size="sm" onClick={() => onEdit(order)}>
+                  Bearbeiten
+                </Button>
+              )}
+              {onDelete && (
+                <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => onDelete(order.id)}>
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
           </div>
         </DialogHeader>
 
