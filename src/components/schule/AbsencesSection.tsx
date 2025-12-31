@@ -210,7 +210,7 @@ export function AbsencesSection({ onBack }: AbsencesSectionProps) {
 
     const { error } = await supabase
       .from('lesson_absences')
-      .upsert(inserts, { onConflict: 'user_id,date,timetable_entry_id' });
+      .insert(inserts);
 
     if (error) {
       toast.error('Fehler beim Speichern');
