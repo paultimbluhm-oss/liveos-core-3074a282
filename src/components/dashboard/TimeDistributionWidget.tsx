@@ -2,28 +2,29 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
-import { Clock, Moon, Utensils, Users, Home, Monitor, Sparkles, Dumbbell, BookOpen } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
 interface TimeEntry {
   category: string;
   minutes: number;
 }
 
-const CATEGORY_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
-  schlafen: { label: 'Schlafen', color: '#6366f1', icon: Moon },
-  essen: { label: 'Essen', color: '#f59e0b', icon: Utensils },
-  familie: { label: 'Familie', color: '#ec4899', icon: Home },
-  freunde: { label: 'Freunde', color: '#8b5cf6', icon: Users },
-  hygiene: { label: 'Hygiene', color: '#06b6d4', icon: Sparkles },
-  youtube: { label: 'YouTube', color: '#ef4444', icon: Monitor },
-  webseiten: { label: 'Webseiten', color: '#3b82f6', icon: Monitor },
-  zimmer: { label: 'Zimmer', color: '#22c55e', icon: Home },
-  sport: { label: 'Sport', color: '#14b8a6', icon: Dumbbell },
-  lernen: { label: 'Lernen', color: '#a855f7', icon: BookOpen },
-  sonstiges: { label: 'Sonstiges', color: '#64748b', icon: Clock },
+const CATEGORY_CONFIG: Record<string, { label: string; color: string }> = {
+  schlafen: { label: 'Schlafen', color: '#6366f1' },
+  essen: { label: 'Essen', color: '#f59e0b' },
+  familie: { label: 'Familie', color: '#ec4899' },
+  freunde: { label: 'Freunde', color: '#8b5cf6' },
+  hygiene: { label: 'Hygiene', color: '#06b6d4' },
+  youtube: { label: 'YouTube', color: '#ef4444' },
+  liveos: { label: 'LiveOS', color: '#3b82f6' },
+  optimieren: { label: 'Optimieren', color: '#22c55e' },
+  sport: { label: 'Sport', color: '#14b8a6' },
+  lernen: { label: 'Lernen', color: '#a855f7' },
+  sonstiges: { label: 'Sonstiges', color: '#64748b' },
 };
 
 export function TimeDistributionWidget() {
@@ -73,50 +74,76 @@ export function TimeDistributionWidget() {
   const chartData = getChartData();
   const hasData = chartData.length > 0;
 
+  // SVG arc calculation
+  const size = 96;
+  const strokeWidth = 4;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+
+  // Calculate arc segments
+  const getArcSegments = () => {
+    if (!hasData) return [];
+    const total = chartData.reduce((sum, d) => sum + d.value, 0);
+    let currentOffset = 0;
+    
+    return chartData.map(item => {
+      const percentage = item.value / total;
+      const arcLength = circumference * percentage;
+      const segment = {
+        ...item,
+        arcLength,
+        offset: currentOffset,
+      };
+      currentOffset += arcLength;
+      return segment;
+    });
+  };
+
+  const segments = getArcSegments();
+
   return (
     <>
       <div
-        className="relative w-full aspect-square rounded-2xl bg-card/80 backdrop-blur-sm border border-border/50 p-3 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-all"
+        className="relative flex items-center justify-center p-2 cursor-pointer"
         onClick={() => setDialogOpen(true)}
       >
-        {hasData ? (
-          <>
-            {/* Pie Chart as border */}
-            <div className="absolute inset-2">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={chartData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius="70%"
-                    outerRadius="95%"
-                    paddingAngle={2}
-                    dataKey="value"
-                    stroke="none"
-                  >
-                    {chartData.map((entry, index) => (
-                      <Cell key={index} fill={entry.color} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            
-            {/* Center content */}
-            <div className="relative z-10 flex flex-col items-center">
-              <Clock className="w-5 h-5 text-primary mb-1" />
-              <span className="text-lg font-bold">{formatTime(totalMinutes)}</span>
-              <span className="text-[10px] text-muted-foreground">getrackt</span>
-            </div>
-          </>
-        ) : (
-          <div className="flex flex-col items-center text-center">
-            <Clock className="w-6 h-6 text-muted-foreground/50 mb-1" />
-            <span className="text-xs text-muted-foreground">Keine Zeit</span>
-            <span className="text-[10px] text-muted-foreground">getrackt</span>
+        <div className="relative w-24 h-24 md:w-28 md:h-28">
+          {/* SVG Ring without background stroke */}
+          <svg 
+            className="w-full h-full transform -rotate-90" 
+            viewBox={`0 0 ${size} ${size}`}
+          >
+            {/* Colored segments with glow */}
+            {segments.map((segment, index) => (
+              <motion.circle
+                key={segment.name}
+                cx={size / 2}
+                cy={size / 2}
+                r={radius}
+                fill="none"
+                stroke={segment.color}
+                strokeWidth={strokeWidth}
+                strokeLinecap="round"
+                strokeDasharray={`${segment.arcLength - 2} ${circumference - segment.arcLength + 2}`}
+                strokeDashoffset={-segment.offset}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: index * 0.1, duration: 0.5 }}
+                style={{
+                  filter: `drop-shadow(0 0 6px ${segment.color}80)`,
+                }}
+              />
+            ))}
+          </svg>
+          
+          {/* Center content */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <Clock className="w-4 h-4 text-muted-foreground mb-0.5" />
+            <span className="text-lg md:text-xl font-bold font-mono">
+              {hasData ? formatTime(totalMinutes) : '-'}
+            </span>
           </div>
-        )}
+        </div>
       </div>
 
       {/* Dialog */}
@@ -171,7 +198,7 @@ export function TimeDistributionWidget() {
           ) : (
             <div className="py-8 text-center text-muted-foreground">
               <Clock className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p>Noch keine Zeit für heute getrackt</p>
+              <p>Noch keine Zeit fuer heute getrackt</p>
             </div>
           )}
           
