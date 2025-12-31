@@ -1,67 +1,33 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Minus, Clock, Utensils, Users, Home, Monitor, Sparkles, Moon, Dumbbell, BookOpen } from 'lucide-react';
+import { ArrowLeft, Plus, Minus, Clock, Target, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { format, subDays } from 'date-fns';
 import { de } from 'date-fns/locale';
-import { toast } from 'sonner';
+import { CATEGORIES, TIME_OPTIONS, TimeEntry, LifetimeGoal, formatTime } from './types';
+import { LifetimeGoalsDialog } from './LifetimeGoalsDialog';
+import { LifetimeStatsView } from './LifetimeStatsView';
 
 interface LifetimeSectionProps {
   onBack: () => void;
 }
 
-interface TimeEntry {
-  id: string;
-  category: string;
-  minutes: number;
-  entry_date: string;
-  notes: string | null;
-}
-
-const CATEGORIES = [
-  { id: 'schlafen', label: 'Schlafen', icon: Moon, color: '#6366f1' },
-  { id: 'essen', label: 'Essen', icon: Utensils, color: '#f59e0b' },
-  { id: 'familie', label: 'Familie', icon: Home, color: '#ec4899' },
-  { id: 'freunde', label: 'Freunde', icon: Users, color: '#8b5cf6' },
-  { id: 'hygiene', label: 'Hygiene', icon: Sparkles, color: '#06b6d4' },
-  { id: 'youtube', label: 'YouTube', icon: Monitor, color: '#ef4444' },
-  { id: 'webseiten', label: 'Webseiten', icon: Monitor, color: '#3b82f6' },
-  { id: 'zimmer', label: 'Zimmer', icon: Home, color: '#22c55e' },
-  { id: 'sport', label: 'Sport', icon: Dumbbell, color: '#14b8a6' },
-  { id: 'lernen', label: 'Lernen', icon: BookOpen, color: '#a855f7' },
-  { id: 'sonstiges', label: 'Sonstiges', icon: Clock, color: '#64748b' },
-];
-
-const TIME_OPTIONS = [
-  { value: '0', label: '-' },
-  { value: '15', label: '15m' },
-  { value: '30', label: '30m' },
-  { value: '45', label: '45m' },
-  { value: '60', label: '1h' },
-  { value: '90', label: '1h 30m' },
-  { value: '120', label: '2h' },
-  { value: '150', label: '2h 30m' },
-  { value: '180', label: '3h' },
-  { value: '240', label: '4h' },
-  { value: '300', label: '5h' },
-  { value: '360', label: '6h' },
-  { value: '420', label: '7h' },
-  { value: '480', label: '8h' },
-  { value: '540', label: '9h' },
-  { value: '600', label: '10h' },
-];
-
 export function LifetimeSection({ onBack }: LifetimeSectionProps) {
   const { user } = useAuth();
   const [entries, setEntries] = useState<TimeEntry[]>([]);
+  const [goals, setGoals] = useState<LifetimeGoal[]>([]);
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [loading, setLoading] = useState(true);
+  const [goalsDialogOpen, setGoalsDialogOpen] = useState(false);
+  const [showStats, setShowStats] = useState(false);
 
   useEffect(() => {
-    if (user) fetchEntries();
+    if (user) {
+      fetchEntries();
+      fetchGoals();
+    }
   }, [user, selectedDate]);
 
   const fetchEntries = async () => {
@@ -74,10 +40,17 @@ export function LifetimeSection({ onBack }: LifetimeSectionProps) {
       .eq('user_id', user.id)
       .eq('entry_date', selectedDate);
     
-    if (data) {
-      setEntries(data);
-    }
+    if (data) setEntries(data);
     setLoading(false);
+  };
+
+  const fetchGoals = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('lifetime_goals')
+      .select('*')
+      .eq('user_id', user.id);
+    if (data) setGoals(data);
   };
 
   const handleTimeChange = async (categoryId: string, minutes: number) => {
@@ -112,18 +85,21 @@ export function LifetimeSection({ onBack }: LifetimeSectionProps) {
 
   const getTotalMinutes = () => entries.reduce((sum, e) => sum + e.minutes, 0);
 
-  const formatTime = (minutes: number) => {
-    if (minutes === 0) return '-';
-    const h = Math.floor(minutes / 60);
-    const m = minutes % 60;
-    if (h === 0) return `${m}m`;
-    if (m === 0) return `${h}h`;
-    return `${h}h ${m}m`;
-  };
-
   const getEntryMinutes = (categoryId: string) => {
     return entries.find(e => e.category === categoryId)?.minutes || 0;
   };
+
+  const getGoalForCategory = (categoryId: string): number => {
+    const selectedDayOfWeek = new Date(selectedDate).getDay();
+    const dayGoal = goals.find(g => g.category === categoryId && g.day_of_week === selectedDayOfWeek);
+    if (dayGoal) return dayGoal.target_minutes;
+    const defaultGoal = goals.find(g => g.category === categoryId && g.day_of_week === null);
+    return defaultGoal?.target_minutes || 0;
+  };
+
+  if (showStats) {
+    return <LifetimeStatsView onBack={() => setShowStats(false)} />;
+  }
 
   return (
     <div className="space-y-4">
@@ -138,9 +114,29 @@ export function LifetimeSection({ onBack }: LifetimeSectionProps) {
           </div>
           <h1 className="text-lg font-bold">Lifetime</h1>
         </div>
-        <div className="ml-auto text-sm text-muted-foreground">
-          {formatTime(getTotalMinutes())}
+        <div className="ml-auto flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setShowStats(true)}
+          >
+            <BarChart3 className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setGoalsDialogOpen(true)}
+          >
+            <Target className="w-4 h-4" />
+          </Button>
         </div>
+      </div>
+
+      {/* Total & Date */}
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-muted-foreground">Gesamt: {formatTime(getTotalMinutes())}</span>
       </div>
 
       {/* Date Selector */}
@@ -170,39 +166,61 @@ export function LifetimeSection({ onBack }: LifetimeSectionProps) {
         })}
       </div>
 
-      {/* Categories List - Mobile optimized */}
+      {/* Categories List */}
       <div className="space-y-1.5">
         {CATEGORIES.map(cat => {
           const Icon = cat.icon;
           const minutes = getEntryMinutes(cat.id);
+          const goalMinutes = getGoalForCategory(cat.id);
           const hasValue = minutes > 0;
+          const hasGoal = goalMinutes > 0;
+          const percentage = hasGoal ? Math.min(100, (minutes / goalMinutes) * 100) : 0;
+          const isOverGoal = hasGoal && minutes > goalMinutes;
           
           return (
             <div 
               key={cat.id} 
-              className={`flex items-center gap-3 p-2.5 rounded-xl bg-card border transition-all ${
-                hasValue ? 'border-primary/30' : 'border-border/50'
+              className={`flex items-center gap-3 p-2.5 rounded-xl bg-card border transition-all relative overflow-hidden ${
+                isOverGoal ? 'border-destructive/50' : hasValue ? 'border-primary/30' : 'border-border/50'
               }`}
             >
+              {/* Progress bar background */}
+              {hasGoal && (
+                <div 
+                  className="absolute inset-0 opacity-10 transition-all"
+                  style={{ 
+                    width: `${percentage}%`,
+                    backgroundColor: isOverGoal ? 'hsl(var(--destructive))' : cat.color,
+                  }}
+                />
+              )}
+
               {/* Icon & Label */}
               <div 
-                className="p-2 rounded-lg shrink-0"
+                className="p-2 rounded-lg shrink-0 relative z-10"
                 style={{ backgroundColor: `${cat.color}15`, color: cat.color }}
               >
                 <Icon className="w-4 h-4" />
               </div>
               
-              <span className="text-sm font-medium flex-1">{cat.label}</span>
+              <div className="flex-1 min-w-0 relative z-10">
+                <span className="text-sm font-medium">{cat.label}</span>
+                {hasGoal && (
+                  <div className="text-[10px] text-muted-foreground">
+                    Ziel: {formatTime(goalMinutes)}
+                  </div>
+                )}
+              </div>
               
               {/* Time Display */}
-              <span className={`text-sm font-medium min-w-[50px] text-right ${
-                hasValue ? 'text-foreground' : 'text-muted-foreground'
+              <span className={`text-sm font-medium min-w-[50px] text-right relative z-10 ${
+                isOverGoal ? 'text-destructive' : hasValue ? 'text-foreground' : 'text-muted-foreground'
               }`}>
                 {formatTime(minutes)}
               </span>
               
               {/* Quick Adjust Buttons */}
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 relative z-10">
                 <Button
                   variant="outline"
                   size="icon"
@@ -242,6 +260,12 @@ export function LifetimeSection({ onBack }: LifetimeSectionProps) {
           );
         })}
       </div>
+
+      <LifetimeGoalsDialog
+        open={goalsDialogOpen}
+        onOpenChange={setGoalsDialogOpen}
+        onGoalsChange={fetchGoals}
+      />
     </div>
   );
 }
