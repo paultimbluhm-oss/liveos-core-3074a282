@@ -722,6 +722,7 @@ export function UnifiedTimetableSection({ onBack }: UnifiedTimetableSectionProps
             openEdit(selectedEntry);
           }
         }}
+        currentDate={currentDate}
       />
     </div>
   );
