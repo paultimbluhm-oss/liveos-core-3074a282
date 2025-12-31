@@ -168,6 +168,8 @@ export function AbsencesSection({ onBack }: AbsencesSectionProps) {
 
   const getDayLessons = (dayIndex: number) => {
     const day = dayIndex + 1;
+    const dateStr = format(weekDates[dayIndex], 'yyyy-MM-dd');
+    
     return timetableEntries
       .filter(e => {
         if (e.day_of_week !== day) return false;
@@ -176,6 +178,11 @@ export function AbsencesSection({ onBack }: AbsencesSectionProps) {
         if (e.week_type === 'odd' && isOddWeek) return true;
         if (e.week_type === 'even' && !isOddWeek) return true;
         return false;
+      })
+      .filter(e => {
+        // Filter out entries that have EVA absences for this date
+        const hasEVA = absences.some(a => a.timetable_entry_id === e.id && a.date === dateStr && a.reason === 'efa');
+        return !hasEVA;
       })
       .sort((a, b) => a.period - b.period);
   };
