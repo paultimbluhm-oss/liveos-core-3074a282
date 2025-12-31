@@ -15,7 +15,7 @@ import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from 'recharts';
 
 interface Account {
   id: string;
@@ -68,6 +68,9 @@ export function FinanceSection({ onBack }: FinanceSectionProps) {
   const [accountsOpen, setAccountsOpen] = useState(false);
   const [investmentsOpen, setInvestmentsOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  
+  // Statistics section
+  const [statsOpen, setStatsOpen] = useState(false);
   
   // Edit transaction
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
@@ -537,6 +540,182 @@ export function FinanceSection({ onBack }: FinanceSectionProps) {
                   </div>
                 );
               })}
+            </div>
+          )}
+        </CollapsibleContent>
+      </Collapsible>
+
+      {/* Statistics Section */}
+      <Collapsible open={statsOpen} onOpenChange={setStatsOpen}>
+        <CollapsibleTrigger asChild>
+          <div className="flex items-center justify-between p-2 bg-card/50 rounded-lg border border-border/50 cursor-pointer hover:bg-card/80 transition-colors">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-primary" />
+              <span className="font-medium text-sm">Statistiken</span>
+            </div>
+            <ChevronDown className={cn("w-4 h-4 transition-transform", statsOpen && "rotate-180")} />
+          </div>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="pt-2 space-y-3">
+          {balanceHistory.length > 1 ? (
+            <>
+              {/* Total Wealth Chart */}
+              <Card className="overflow-hidden border-border/50">
+                <CardHeader className="p-2 pb-0">
+                  <CardTitle className="text-xs font-medium text-muted-foreground">Gesamtvermögen</CardTitle>
+                </CardHeader>
+                <CardContent className="p-2">
+                  <div className="h-36">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={last90Days} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="gradientTotal" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.4}/>
+                            <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <XAxis 
+                          dataKey="date" 
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
+                          tickFormatter={(value) => format(new Date(value), 'dd.MM', { locale: de })}
+                          interval="preserveStartEnd"
+                        />
+                        <YAxis 
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
+                          tickFormatter={(value) => `${(value/1000).toFixed(0)}k`}
+                          width={35}
+                          domain={['dataMin - 100', 'dataMax + 100']}
+                        />
+                        <Tooltip content={<CustomTooltip />} />
+                        <Area 
+                          type="monotone" 
+                          dataKey="total_balance" 
+                          stroke="hsl(var(--primary))" 
+                          strokeWidth={2}
+                          fill="url(#gradientTotal)" 
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Breakdown Chart */}
+              <Card className="overflow-hidden border-border/50">
+                <CardHeader className="p-2 pb-0">
+                  <CardTitle className="text-xs font-medium text-muted-foreground">Aufschlüsselung</CardTitle>
+                </CardHeader>
+                <CardContent className="p-2">
+                  <div className="h-44">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={last90Days.map(day => {
+                        // Calculate breakdown for each day
+                        const accountsVal = day.accounts_balance || 0;
+                        const investmentsVal = day.investments_balance || 0;
+                        
+                        // Estimate breakdown based on current ratios
+                        const cashRatio = cashBills.concat(cashCoins).reduce((s, a) => s + (a.balance || 0), 0) / Math.max(totalBalance, 1);
+                        const bankRatio = bankAccounts.reduce((s, a) => s + (a.balance || 0), 0) / Math.max(totalBalance, 1);
+                        const etfRatio = stockInvestments.reduce((s, i) => s + (prices[i.id] ? i.quantity * prices[i.id] : i.purchase_price), 0) / Math.max(totalInvestments, 1);
+                        const cryptoRatio = cryptoInvestments.reduce((s, i) => s + (prices[i.id] ? i.quantity * prices[i.id] : i.purchase_price), 0) / Math.max(totalInvestments, 1);
+                        
+                        return {
+                          ...day,
+                          konten: Math.round(accountsVal * bankRatio),
+                          bargeld: Math.round(accountsVal * cashRatio),
+                          etf: Math.round(investmentsVal * etfRatio),
+                          krypto: Math.round(investmentsVal * cryptoRatio),
+                        };
+                      })} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+                        <XAxis 
+                          dataKey="date" 
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
+                          tickFormatter={(value) => format(new Date(value), 'dd.MM', { locale: de })}
+                          interval="preserveStartEnd"
+                        />
+                        <YAxis 
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
+                          tickFormatter={(value) => `${(value/1000).toFixed(0)}k`}
+                          width={35}
+                        />
+                        <Tooltip 
+                          content={({ active, payload, label }) => {
+                            if (active && payload && payload.length) {
+                              return (
+                                <div className="bg-card/95 backdrop-blur border border-border rounded-lg p-2 shadow-xl">
+                                  <p className="text-[10px] text-muted-foreground mb-1">
+                                    {format(new Date(label), 'dd. MMM', { locale: de })}
+                                  </p>
+                                  {payload.map((entry: any, index: number) => (
+                                    <div key={index} className="flex items-center gap-2 text-[10px]">
+                                      <div 
+                                        className="w-2 h-2 rounded-full" 
+                                        style={{ backgroundColor: entry.color }} 
+                                      />
+                                      <span className="text-muted-foreground">{entry.name}:</span>
+                                      <span className="font-medium">{formatCurrency(entry.value)}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                        <Legend 
+                          wrapperStyle={{ fontSize: '10px' }}
+                          iconType="circle"
+                          iconSize={6}
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="konten" 
+                          name="Konten"
+                          stroke="hsl(221, 83%, 53%)" 
+                          strokeWidth={1.5}
+                          dot={false}
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="bargeld" 
+                          name="Bargeld"
+                          stroke="hsl(142, 71%, 45%)" 
+                          strokeWidth={1.5}
+                          dot={false}
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="etf" 
+                          name="ETFs"
+                          stroke="hsl(262, 83%, 58%)" 
+                          strokeWidth={1.5}
+                          dot={false}
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="krypto" 
+                          name="Krypto"
+                          stroke="hsl(38, 92%, 50%)" 
+                          strokeWidth={1.5}
+                          dot={false}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          ) : (
+            <div className="py-6 text-center text-muted-foreground text-xs">
+              Noch nicht genügend Daten für Statistiken
             </div>
           )}
         </CollapsibleContent>
