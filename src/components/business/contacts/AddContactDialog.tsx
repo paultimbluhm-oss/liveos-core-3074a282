@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Contact, ContactStatus, ContactConnection, STATUS_OPTIONS, POSITION_OPTIONS, RELATIONSHIP_TYPES } from './types';
-import { Trash2, Link2, X, Plus } from 'lucide-react';
+import { Trash2, Link2, X, Plus, ArrowRight } from 'lucide-react';
 
 interface AddContactDialogProps {
   open: boolean;
@@ -14,10 +14,9 @@ interface AddContactDialogProps {
   onSave: (contact: Partial<Contact>) => void;
   editContact?: Contact | null;
   onDelete?: () => void;
-  // New props for connections
   connections?: ContactConnection[];
   contacts?: Contact[];
-  onAddConnection?: (toId: string, type: string, description: string) => void;
+  onAddConnection?: (fromId: string, toId: string, type: string, description: string) => void;
   onDeleteConnection?: (connectionId: string) => void;
 }
 
@@ -41,9 +40,10 @@ export function AddContactDialog({
   const [notes, setNotes] = useState('');
   const [status, setStatus] = useState<ContactStatus>('idea');
   
-  // New connection form state
+  // New connection form state - now with FROM contact
   const [showAddConnection, setShowAddConnection] = useState(false);
-  const [newConnectionContactId, setNewConnectionContactId] = useState('');
+  const [newConnectionFromId, setNewConnectionFromId] = useState('');
+  const [newConnectionToId, setNewConnectionToId] = useState('');
   const [newConnectionType, setNewConnectionType] = useState('recommended');
   const [newConnectionDescription, setNewConnectionDescription] = useState('');
 
@@ -52,10 +52,11 @@ export function AddContactDialog({
     ? connections.filter(c => c.from_contact_id === editContact.id || c.to_contact_id === editContact.id)
     : [];
 
-  // Get available contacts for linking (exclude current contact)
-  const availableContacts = editContact 
-    ? contacts.filter(c => c.id !== editContact.id)
-    : [];
+  // All contacts including current for the FROM dropdown
+  const allContactsForFrom = contacts;
+  
+  // Contacts excluding current for the TO dropdown (also exclude selected FROM)
+  const availableContactsForTo = contacts.filter(c => c.id !== newConnectionFromId);
 
   useEffect(() => {
     if (editContact) {
@@ -67,6 +68,8 @@ export function AddContactDialog({
       setAddress(editContact.address || '');
       setNotes(editContact.notes || '');
       setStatus(editContact.status || 'idea');
+      // Pre-select current contact as FROM
+      setNewConnectionFromId(editContact.id);
     } else {
       resetForm();
     }
@@ -83,7 +86,8 @@ export function AddContactDialog({
     setNotes('');
     setStatus('idea');
     setShowAddConnection(false);
-    setNewConnectionContactId('');
+    setNewConnectionFromId('');
+    setNewConnectionToId('');
     setNewConnectionType('recommended');
     setNewConnectionDescription('');
   };
@@ -109,9 +113,9 @@ export function AddContactDialog({
   };
 
   const handleAddConnection = () => {
-    if (!newConnectionContactId || !onAddConnection) return;
-    onAddConnection(newConnectionContactId, newConnectionType, newConnectionDescription);
-    setNewConnectionContactId('');
+    if (!newConnectionFromId || !newConnectionToId || !onAddConnection) return;
+    onAddConnection(newConnectionFromId, newConnectionToId, newConnectionType, newConnectionDescription);
+    setNewConnectionToId('');
     setNewConnectionType('recommended');
     setNewConnectionDescription('');
     setShowAddConnection(false);
@@ -120,13 +124,6 @@ export function AddContactDialog({
   const getContactName = (contactId: string) => {
     const contact = contacts.find(c => c.id === contactId);
     return contact?.name || 'Unbekannt';
-  };
-
-  const getOtherContactId = (connection: ContactConnection) => {
-    if (!editContact) return '';
-    return connection.from_contact_id === editContact.id 
-      ? connection.to_contact_id 
-      : connection.from_contact_id;
   };
 
   const getRelationshipLabel = (type: string) => {
@@ -247,7 +244,7 @@ export function AddContactDialog({
                   <Link2 className="w-4 h-4" />
                   Verknüpfungen
                 </Label>
-                {onAddConnection && availableContacts.length > 0 && (
+                {onAddConnection && contacts.length > 1 && (
                   <Button 
                     type="button" 
                     variant="ghost" 
@@ -261,33 +258,54 @@ export function AddContactDialog({
                 )}
               </div>
 
-              {/* Add new connection form */}
+              {/* Add new connection form - with FROM and TO dropdowns */}
               {showAddConnection && (
-                <div className="p-3 rounded-lg bg-secondary/30 space-y-2">
-                  <Select value={newConnectionContactId} onValueChange={setNewConnectionContactId}>
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue placeholder="Kontakt wählen..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableContacts.map((contact) => (
-                        <SelectItem key={contact.id} value={contact.id}>
-                          {contact.name} {contact.company && `(${contact.company})`}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={newConnectionType} onValueChange={setNewConnectionType}>
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {RELATIONSHIP_TYPES.map((type) => (
-                        <SelectItem key={type.value} value={type.value}>
-                          {type.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="p-3 rounded-lg bg-secondary/30 space-y-3">
+                  {/* FROM -> Relationship -> TO layout */}
+                  <div className="space-y-2">
+                    <Select value={newConnectionFromId} onValueChange={setNewConnectionFromId}>
+                      <SelectTrigger className="h-9 text-sm">
+                        <SelectValue placeholder="Von..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {allContactsForFrom.map((contact) => (
+                          <SelectItem key={contact.id} value={contact.id}>
+                            {contact.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    
+                    <div className="flex items-center gap-2">
+                      <Select value={newConnectionType} onValueChange={setNewConnectionType}>
+                        <SelectTrigger className="h-9 text-sm flex-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {RELATIONSHIP_TYPES.map((type) => (
+                            <SelectItem key={type.value} value={type.value}>
+                              {type.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                    </div>
+                    
+                    <Select value={newConnectionToId} onValueChange={setNewConnectionToId}>
+                      <SelectTrigger className="h-9 text-sm">
+                        <SelectValue placeholder="An..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableContactsForTo.map((contact) => (
+                          <SelectItem key={contact.id} value={contact.id}>
+                            {contact.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
                   <Input
                     value={newConnectionDescription}
                     onChange={(e) => setNewConnectionDescription(e.target.value)}
@@ -308,7 +326,7 @@ export function AddContactDialog({
                       type="button" 
                       size="sm" 
                       onClick={handleAddConnection}
-                      disabled={!newConnectionContactId}
+                      disabled={!newConnectionFromId || !newConnectionToId}
                       className="flex-1 h-8"
                     >
                       Verknüpfen
@@ -321,10 +339,9 @@ export function AddContactDialog({
               {contactConnections.length > 0 ? (
                 <div className="space-y-2">
                   {contactConnections.map((connection) => {
-                    const otherContactId = getOtherContactId(connection);
-                    const otherContactName = getContactName(otherContactId);
+                    const fromName = getContactName(connection.from_contact_id);
+                    const toName = getContactName(connection.to_contact_id);
                     const relationshipLabel = getRelationshipLabel(connection.relationship_type);
-                    const isFromThis = connection.from_contact_id === editContact.id;
                     
                     return (
                       <div 
@@ -332,11 +349,10 @@ export function AddContactDialog({
                         className="flex items-center gap-2 p-2 rounded-lg bg-secondary/30 text-sm"
                       >
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="text-muted-foreground text-xs">
-                              {isFromThis ? relationshipLabel : `${relationshipLabel} (von)`}
-                            </span>
-                            <span className="font-medium truncate">{otherContactName}</span>
+                          <div className="flex items-center gap-1.5 flex-wrap text-xs">
+                            <span className="font-medium">{fromName}</span>
+                            <span className="text-muted-foreground">{relationshipLabel}</span>
+                            <span className="font-medium">{toName}</span>
                           </div>
                           {connection.description && (
                             <p className="text-xs text-muted-foreground mt-0.5 truncate">

@@ -69,11 +69,11 @@ export function ContactsSection() {
     else { toast.success('Kontakt geloescht'); fetchData(); }
   };
 
-  const handleAddConnection = async (toId: string, type: string, description: string) => {
-    if (!user || !editContact) return;
+  const handleAddConnection = async (fromId: string, toId: string, type: string, description: string) => {
+    if (!user) return;
     const { error } = await supabase.from('contact_connections').insert({
       user_id: user.id, 
-      from_contact_id: editContact.id, 
+      from_contact_id: fromId, 
       to_contact_id: toId,
       relationship_type: type, 
       description: description || null,
