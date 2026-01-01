@@ -257,15 +257,15 @@ export function ProgressRingWidget() {
           className="w-24 h-24 md:w-28 md:h-28 transform -rotate-90" 
           viewBox={`0 0 ${size} ${size}`}
         >
-          {/* Background ring */}
+          {/* Background ring - transparent fill */}
           <circle
             cx={size / 2}
             cy={size / 2}
             r={radius}
-            fill="hsl(var(--card))"
+            fill="none"
             stroke="hsl(var(--secondary))"
             strokeWidth={strokeWidth}
-            className="opacity-60"
+            className="opacity-40"
           />
           {/* Progress ring */}
           <motion.circle
