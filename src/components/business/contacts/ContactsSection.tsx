@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Users } from 'lucide-react';
+import { Plus, Search, Users, Link2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { Contact, Order, ContactConnection, STATUS_CONFIG } from './types';
+import { Contact, Order, ContactConnection, STATUS_CONFIG, RELATIONSHIP_TYPES } from './types';
 import { AddContactDialog } from './AddContactDialog';
-import { LinkContactDialog } from './LinkContactDialog';
 
 export function ContactsSection() {
   const { user } = useAuth();
@@ -17,9 +16,7 @@ export function ContactsSection() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [editContact, setEditContact] = useState<Contact | null>(null);
-  const [linkSourceContact, setLinkSourceContact] = useState<Contact | null>(null);
 
   useEffect(() => {
     if (user) fetchData();
@@ -72,15 +69,24 @@ export function ContactsSection() {
     else { toast.success('Kontakt geloescht'); fetchData(); }
   };
 
-  const handleLinkContacts = async (fromId: string, toId: string, type: string, description: string) => {
-    if (!user) return;
+  const handleAddConnection = async (toId: string, type: string, description: string) => {
+    if (!user || !editContact) return;
     const { error } = await supabase.from('contact_connections').insert({
-      user_id: user.id, from_contact_id: fromId, to_contact_id: toId,
-      relationship_type: type, description: description || null,
+      user_id: user.id, 
+      from_contact_id: editContact.id, 
+      to_contact_id: toId,
+      relationship_type: type, 
+      description: description || null,
     });
 
     if (error) toast.error('Fehler beim Verknuepfen');
-    else { toast.success('Kontakte verknuepft'); fetchData(); }
+    else { toast.success('Verknuepfung erstellt'); fetchData(); }
+  };
+
+  const handleDeleteConnection = async (connectionId: string) => {
+    const { error } = await supabase.from('contact_connections').delete().eq('id', connectionId);
+    if (error) toast.error('Fehler beim Entfernen');
+    else { toast.success('Verknuepfung entfernt'); fetchData(); }
   };
 
   const filteredContacts = contacts.filter((contact) => {
@@ -89,6 +95,23 @@ export function ContactsSection() {
   });
 
   const getOrderCount = (contactId: string) => orders.filter(o => o.contact_id === contactId).length;
+
+  const getConnectionCount = (contactId: string) => 
+    connections.filter(c => c.from_contact_id === contactId || c.to_contact_id === contactId).length;
+
+  const getConnectionsPreview = (contactId: string) => {
+    const contactConns = connections.filter(c => 
+      c.from_contact_id === contactId || c.to_contact_id === contactId
+    );
+    
+    return contactConns.slice(0, 2).map(conn => {
+      const otherContactId = conn.from_contact_id === contactId 
+        ? conn.to_contact_id 
+        : conn.from_contact_id;
+      const otherContact = contacts.find(c => c.id === otherContactId);
+      return otherContact?.name || '';
+    }).filter(Boolean);
+  };
 
   if (loading) {
     return <div className="space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-16 rounded-xl bg-muted/30 animate-pulse" />)}</div>;
@@ -123,6 +146,8 @@ export function ContactsSection() {
           {filteredContacts.map((contact) => {
             const statusConfig = STATUS_CONFIG[contact.status];
             const orderCount = getOrderCount(contact.id);
+            const connectionCount = getConnectionCount(contact.id);
+            const connectionsPreview = getConnectionsPreview(contact.id);
             
             return (
               <button
@@ -130,9 +155,9 @@ export function ContactsSection() {
                 onClick={() => { setEditContact(contact); setDialogOpen(true); }}
                 className="w-full text-left p-3 rounded-xl bg-card/50 border border-border/50 hover:bg-card/80 transition-colors"
               >
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium truncate">{contact.name}</span>
                       <span className={`px-1.5 py-0.5 rounded text-[10px] ${statusConfig.bgColor} ${statusConfig.color}`}>
                         {statusConfig.label}
@@ -141,8 +166,19 @@ export function ContactsSection() {
                     {contact.company && (
                       <p className="text-xs text-muted-foreground truncate mt-0.5">{contact.company}</p>
                     )}
+                    
+                    {/* Connections Preview */}
+                    {connectionCount > 0 && (
+                      <div className="flex items-center gap-1.5 mt-1.5 text-xs text-muted-foreground">
+                        <Link2 className="w-3 h-3 text-primary" />
+                        <span className="truncate">
+                          {connectionsPreview.join(', ')}
+                          {connectionCount > 2 && ` +${connectionCount - 2}`}
+                        </span>
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground shrink-0">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground shrink-0">
                     {orderCount > 0 && <span>{orderCount} Auftr.</span>}
                     {contact.phone && <span className="hidden sm:inline">{contact.phone}</span>}
                   </div>
@@ -159,14 +195,10 @@ export function ContactsSection() {
         onSave={handleSaveContact} 
         editContact={editContact}
         onDelete={editContact ? () => { handleDeleteContact(editContact); setDialogOpen(false); } : undefined}
-        onLink={editContact ? () => { setLinkSourceContact(editContact); setLinkDialogOpen(true); } : undefined}
-      />
-      <LinkContactDialog 
-        open={linkDialogOpen} 
-        onOpenChange={setLinkDialogOpen} 
-        sourceContact={linkSourceContact} 
-        contacts={contacts} 
-        onSave={handleLinkContacts} 
+        connections={connections}
+        contacts={contacts}
+        onAddConnection={handleAddConnection}
+        onDeleteConnection={handleDeleteConnection}
       />
     </div>
   );
