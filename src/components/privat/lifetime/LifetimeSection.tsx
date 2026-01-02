@@ -1,14 +1,19 @@
-import { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Minus, Clock, Target, BarChart3 } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { ArrowLeft, Clock, Target, BarChart3, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { format, subDays } from 'date-fns';
-import { de } from 'date-fns/locale';
-import { CATEGORIES, TIME_OPTIONS, TimeEntry, LifetimeGoal, formatTime } from './types';
+import { format } from 'date-fns';
+import { CATEGORIES, TimeEntry, formatTime } from './types';
 import { LifetimeGoalsDialog } from './LifetimeGoalsDialog';
 import { LifetimeStatsView } from './LifetimeStatsView';
+
+const ACTIVE_TRACKER_KEY = 'lifetime_active_tracker';
+
+interface ActiveTracker {
+  categoryId: string;
+  startTime: number; // timestamp
+}
 
 interface LifetimeSectionProps {
   onBack: () => void;
@@ -17,89 +22,137 @@ interface LifetimeSectionProps {
 export function LifetimeSection({ onBack }: LifetimeSectionProps) {
   const { user } = useAuth();
   const [entries, setEntries] = useState<TimeEntry[]>([]);
-  const [goals, setGoals] = useState<LifetimeGoal[]>([]);
-  const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [loading, setLoading] = useState(true);
   const [goalsDialogOpen, setGoalsDialogOpen] = useState(false);
   const [showStats, setShowStats] = useState(false);
+  const [activeTracker, setActiveTracker] = useState<ActiveTracker | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const today = format(new Date(), 'yyyy-MM-dd');
+
+  // Load active tracker from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem(ACTIVE_TRACKER_KEY);
+    if (stored) {
+      try {
+        const tracker: ActiveTracker = JSON.parse(stored);
+        setActiveTracker(tracker);
+      } catch (e) {
+        localStorage.removeItem(ACTIVE_TRACKER_KEY);
+      }
+    }
+  }, []);
+
+  // Update elapsed time every second
+  useEffect(() => {
+    if (activeTracker) {
+      const updateElapsed = () => {
+        const elapsed = Math.floor((Date.now() - activeTracker.startTime) / 1000);
+        setElapsedSeconds(elapsed);
+      };
+      updateElapsed();
+      intervalRef.current = setInterval(updateElapsed, 1000);
+    } else {
+      setElapsedSeconds(0);
+    }
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [activeTracker]);
 
   useEffect(() => {
     if (user) {
       fetchEntries();
-      fetchGoals();
     }
-  }, [user, selectedDate]);
+  }, [user]);
 
   const fetchEntries = async () => {
     if (!user) return;
-    setLoading(true);
+    setLoading(false);
     
     const { data } = await supabase
       .from('time_entries')
       .select('*')
       .eq('user_id', user.id)
-      .eq('entry_date', selectedDate);
+      .eq('entry_date', today);
     
     if (data) setEntries(data);
-    setLoading(false);
   };
 
-  const fetchGoals = async () => {
-    if (!user) return;
-    const { data } = await supabase
-      .from('lifetime_goals')
-      .select('*')
-      .eq('user_id', user.id);
-    if (data) setGoals(data);
-  };
-
-  const handleTimeChange = async (categoryId: string, minutes: number) => {
-    if (!user) return;
+  const saveTimeForCategory = async (categoryId: string, additionalMinutes: number) => {
+    if (!user || additionalMinutes <= 0) return;
     
     const existingEntry = entries.find(e => e.category === categoryId);
     
-    if (minutes === 0 && existingEntry) {
-      await supabase.from('time_entries').delete().eq('id', existingEntry.id);
-    } else if (minutes > 0) {
-      if (existingEntry) {
-        await supabase.from('time_entries').update({ minutes }).eq('id', existingEntry.id);
-      } else {
-        await supabase.from('time_entries').insert({
-          user_id: user.id,
-          category: categoryId,
-          minutes,
-          entry_date: selectedDate,
-        });
-      }
+    if (existingEntry) {
+      const newMinutes = existingEntry.minutes + additionalMinutes;
+      await supabase
+        .from('time_entries')
+        .update({ minutes: newMinutes })
+        .eq('id', existingEntry.id);
+    } else {
+      await supabase.from('time_entries').insert({
+        user_id: user.id,
+        category: categoryId,
+        minutes: additionalMinutes,
+        entry_date: today,
+      });
     }
     
-    fetchEntries();
+    await fetchEntries();
   };
 
-  const adjustTime = async (categoryId: string, delta: number) => {
-    const entry = entries.find(e => e.category === categoryId);
-    const currentMinutes = entry?.minutes || 0;
-    const newMinutes = Math.max(0, currentMinutes + delta);
-    await handleTimeChange(categoryId, newMinutes);
+  const handleCategoryClick = async (categoryId: string) => {
+    if (!user) return;
+
+    // If clicking the same category that's already active, do nothing
+    if (activeTracker?.categoryId === categoryId) return;
+
+    // Stop current tracker and save time
+    if (activeTracker) {
+      const elapsedMinutes = Math.floor((Date.now() - activeTracker.startTime) / 60000);
+      await saveTimeForCategory(activeTracker.categoryId, elapsedMinutes);
+    }
+
+    // Start new tracker
+    const newTracker: ActiveTracker = {
+      categoryId,
+      startTime: Date.now(),
+    };
+    setActiveTracker(newTracker);
+    localStorage.setItem(ACTIVE_TRACKER_KEY, JSON.stringify(newTracker));
   };
 
   const getTotalMinutes = () => entries.reduce((sum, e) => sum + e.minutes, 0);
 
   const getEntryMinutes = (categoryId: string) => {
-    return entries.find(e => e.category === categoryId)?.minutes || 0;
+    const saved = entries.find(e => e.category === categoryId)?.minutes || 0;
+    // Add current elapsed time if this is the active category
+    if (activeTracker?.categoryId === categoryId) {
+      return saved + Math.floor(elapsedSeconds / 60);
+    }
+    return saved;
   };
 
-  const getGoalForCategory = (categoryId: string): number => {
-    const selectedDayOfWeek = new Date(selectedDate).getDay();
-    const dayGoal = goals.find(g => g.category === categoryId && g.day_of_week === selectedDayOfWeek);
-    if (dayGoal) return dayGoal.target_minutes;
-    const defaultGoal = goals.find(g => g.category === categoryId && g.day_of_week === null);
-    return defaultGoal?.target_minutes || 0;
+  const formatElapsedTime = (seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    if (h > 0) {
+      return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+    return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
   if (showStats) {
     return <LifetimeStatsView onBack={() => setShowStats(false)} />;
   }
+
+  const activeCategory = CATEGORIES.find(c => c.id === activeTracker?.categoryId);
 
   return (
     <div className="space-y-4">
@@ -134,129 +187,95 @@ export function LifetimeSection({ onBack }: LifetimeSectionProps) {
         </div>
       </div>
 
-      {/* Total & Date */}
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-muted-foreground">Gesamt: {formatTime(getTotalMinutes())}</span>
+      {/* Active Timer Display */}
+      {activeTracker && activeCategory && (
+        <div 
+          className="p-4 rounded-2xl border-2 text-center"
+          style={{ 
+            borderColor: activeCategory.color,
+            backgroundColor: `${activeCategory.color}10`
+          }}
+        >
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <activeCategory.icon 
+              className="w-5 h-5" 
+              style={{ color: activeCategory.color }} 
+            />
+            <span className="font-medium" style={{ color: activeCategory.color }}>
+              {activeCategory.label}
+            </span>
+          </div>
+          <div 
+            className="text-3xl font-mono font-bold tabular-nums"
+            style={{ color: activeCategory.color }}
+          >
+            {formatElapsedTime(elapsedSeconds)}
+          </div>
+        </div>
+      )}
+
+      {/* No active timer hint */}
+      {!activeTracker && (
+        <div className="p-4 rounded-2xl border border-dashed border-muted-foreground/30 text-center">
+          <p className="text-sm text-muted-foreground">
+            Tippe auf eine Aktivität um zu starten
+          </p>
+        </div>
+      )}
+
+      {/* Total */}
+      <div className="text-sm text-muted-foreground">
+        Heute gesamt: {formatTime(getTotalMinutes() + (activeTracker ? Math.floor(elapsedSeconds / 60) : 0))}
       </div>
 
-      {/* Date Selector */}
-      <div className="flex gap-1.5 overflow-x-auto pb-2 -mx-4 px-4">
-        {[0, 1, 2, 3, 4, 5, 6].map(daysAgo => {
-          const date = subDays(new Date(), daysAgo);
-          const dateStr = format(date, 'yyyy-MM-dd');
-          const isSelected = dateStr === selectedDate;
-          return (
-            <button
-              key={daysAgo}
-              onClick={() => setSelectedDate(dateStr)}
-              className={`flex flex-col items-center px-2.5 py-1.5 rounded-lg border transition-all shrink-0 ${
-                isSelected
-                  ? 'bg-primary text-primary-foreground border-primary'
-                  : 'bg-card border-border hover:border-primary/50'
-              }`}
-            >
-              <span className="text-[10px] uppercase">
-                {format(date, 'EEE', { locale: de })}
-              </span>
-              <span className="text-sm font-medium">
-                {format(date, 'd')}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Categories List */}
-      <div className="space-y-1.5">
+      {/* Categories Grid */}
+      <div className="grid grid-cols-3 gap-2">
         {CATEGORIES.map(cat => {
           const Icon = cat.icon;
+          const isActive = activeTracker?.categoryId === cat.id;
           const minutes = getEntryMinutes(cat.id);
-          const goalMinutes = getGoalForCategory(cat.id);
-          const hasValue = minutes > 0;
-          const hasGoal = goalMinutes > 0;
-          const percentage = hasGoal ? Math.min(100, (minutes / goalMinutes) * 100) : 0;
-          const isOverGoal = hasGoal && minutes > goalMinutes;
           
           return (
-            <div 
-              key={cat.id} 
-              className={`flex items-center gap-3 p-2.5 rounded-xl bg-card border transition-all relative overflow-hidden ${
-                isOverGoal ? 'border-destructive/50' : hasValue ? 'border-primary/30' : 'border-border/50'
+            <button
+              key={cat.id}
+              onClick={() => handleCategoryClick(cat.id)}
+              className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all ${
+                isActive 
+                  ? 'scale-[1.02]' 
+                  : 'border-border/50 hover:border-border active:scale-95'
               }`}
+              style={{
+                borderColor: isActive ? cat.color : undefined,
+                backgroundColor: isActive ? `${cat.color}15` : undefined,
+              }}
             >
-              {/* Progress bar background */}
-              {hasGoal && (
-                <div 
-                  className="absolute inset-0 opacity-10 transition-all"
-                  style={{ 
-                    width: `${percentage}%`,
-                    backgroundColor: isOverGoal ? 'hsl(var(--destructive))' : cat.color,
-                  }}
-                />
-              )}
-
-              {/* Icon & Label */}
               <div 
-                className="p-2 rounded-lg shrink-0 relative z-10"
-                style={{ backgroundColor: `${cat.color}15`, color: cat.color }}
+                className={`p-2.5 rounded-xl transition-all ${isActive ? '' : 'opacity-70'}`}
+                style={{ 
+                  backgroundColor: `${cat.color}20`,
+                  color: cat.color 
+                }}
               >
-                <Icon className="w-4 h-4" />
-              </div>
-              
-              <div className="flex-1 min-w-0 relative z-10">
-                <span className="text-sm font-medium">{cat.label}</span>
-                {hasGoal && (
-                  <div className="text-[10px] text-muted-foreground">
-                    Ziel: {formatTime(goalMinutes)}
+                {isActive ? (
+                  <div className="w-5 h-5 relative">
+                    <Icon className="w-5 h-5 absolute animate-pulse" />
                   </div>
+                ) : (
+                  <Icon className="w-5 h-5" />
                 )}
               </div>
               
-              {/* Time Display */}
-              <span className={`text-sm font-medium min-w-[50px] text-right relative z-10 ${
-                isOverGoal ? 'text-destructive' : hasValue ? 'text-foreground' : 'text-muted-foreground'
-              }`}>
-                {formatTime(minutes)}
+              <span className={`text-xs font-medium ${isActive ? '' : 'text-muted-foreground'}`}>
+                {cat.label}
               </span>
               
-              {/* Quick Adjust Buttons */}
-              <div className="flex items-center gap-1 relative z-10">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8 shrink-0"
-                  onClick={() => adjustTime(cat.id, -15)}
-                  disabled={minutes === 0}
-                >
-                  <Minus className="w-3.5 h-3.5" />
-                </Button>
-                
-                <Select
-                  value={String(minutes)}
-                  onValueChange={(val) => handleTimeChange(cat.id, parseInt(val))}
-                >
-                  <SelectTrigger className="w-[70px] h-8 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TIME_OPTIONS.map(opt => (
-                      <SelectItem key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8 shrink-0"
-                  onClick={() => adjustTime(cat.id, 15)}
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                </Button>
-              </div>
-            </div>
+              <span 
+                className={`text-[10px] tabular-nums ${isActive ? 'font-medium' : 'text-muted-foreground'}`}
+                style={{ color: isActive ? cat.color : undefined }}
+              >
+                {isActive ? formatElapsedTime(elapsedSeconds) : formatTime(minutes)}
+              </span>
+            </button>
           );
         })}
       </div>
@@ -264,7 +283,7 @@ export function LifetimeSection({ onBack }: LifetimeSectionProps) {
       <LifetimeGoalsDialog
         open={goalsDialogOpen}
         onOpenChange={setGoalsDialogOpen}
-        onGoalsChange={fetchGoals}
+        onGoalsChange={fetchEntries}
       />
     </div>
   );
