@@ -95,6 +95,33 @@ export type Database = {
         }
         Relationships: []
       }
+      active_time_tracker: {
+        Row: {
+          category_id: string
+          created_at: string
+          id: string
+          start_time: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          id?: string
+          start_time?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          id?: string
+          start_time?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       activity_skills: {
         Row: {
           activity_id: string
