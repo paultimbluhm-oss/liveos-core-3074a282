@@ -3,7 +3,7 @@ import { ArrowLeft, Clock, Target, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { format } from 'date-fns';
+import { format, startOfDay, differenceInMinutes } from 'date-fns';
 import { CATEGORIES, TimeEntry, formatTime } from './types';
 import { LifetimeGoalsDialog } from './LifetimeGoalsDialog';
 import { LifetimeStatsView } from './LifetimeStatsView';
@@ -27,6 +27,7 @@ export function LifetimeSection({ onBack }: LifetimeSectionProps) {
   const [activeTracker, setActiveTracker] = useState<ActiveTracker | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const midnightCheckRef = useRef<string | null>(null);
 
   const today = format(new Date(), 'yyyy-MM-dd');
 
@@ -87,13 +88,61 @@ export function LifetimeSection({ onBack }: LifetimeSectionProps) {
     };
   }, [user]);
 
-  // Update elapsed time every second
+  // Handle midnight crossing - save time for previous day and reset tracker
+  const handleMidnightCrossing = async () => {
+    if (!user || !activeTracker) return;
+
+    const startTime = new Date(activeTracker.start_time);
+    const now = new Date();
+    const startDate = format(startTime, 'yyyy-MM-dd');
+    const currentDate = format(now, 'yyyy-MM-dd');
+
+    // If we crossed midnight, save time for old day and reset start_time
+    if (startDate !== currentDate) {
+      // Calculate minutes from start to midnight of that day
+      const midnight = startOfDay(now);
+      const minutesUntilMidnight = differenceInMinutes(midnight, startTime);
+
+      if (minutesUntilMidnight > 0) {
+        // Save time for the previous day
+        await saveTimeForDate(activeTracker.category_id, minutesUntilMidnight, startDate);
+      }
+
+      // Update tracker with new start_time at midnight (start of today)
+      await supabase
+        .from('active_time_tracker')
+        .update({
+          start_time: midnight.toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', user.id);
+
+      // Refresh entries for today
+      await fetchEntries();
+    }
+  };
+
+  // Update elapsed time every second and check for midnight
   useEffect(() => {
     if (activeTracker) {
       const updateElapsed = () => {
-        const startTime = new Date(activeTracker.start_time).getTime();
-        const elapsed = Math.floor((Date.now() - startTime) / 1000);
-        setElapsedSeconds(elapsed);
+        const startTime = new Date(activeTracker.start_time);
+        const now = new Date();
+        const startDate = format(startTime, 'yyyy-MM-dd');
+        const currentDate = format(now, 'yyyy-MM-dd');
+
+        // Check if we crossed midnight
+        if (startDate !== currentDate && midnightCheckRef.current !== currentDate) {
+          midnightCheckRef.current = currentDate;
+          handleMidnightCrossing();
+          return;
+        }
+
+        // Calculate elapsed time only for today
+        const todayStart = startOfDay(now);
+        const effectiveStart = startTime > todayStart ? startTime : todayStart;
+        const elapsed = Math.floor((now.getTime() - effectiveStart.getTime()) / 1000);
+        setElapsedSeconds(Math.max(0, elapsed));
       };
       updateElapsed();
       intervalRef.current = setInterval(updateElapsed, 1000);
@@ -127,10 +176,49 @@ export function LifetimeSection({ onBack }: LifetimeSectionProps) {
     if (data) setEntries(data);
   };
 
+  // Save time for a specific date (used for midnight crossing)
+  const saveTimeForDate = async (categoryId: string, additionalMinutes: number, date: string) => {
+    if (!user || additionalMinutes <= 0) return;
+
+    // Fetch existing entry for that specific date
+    const { data: existingEntries } = await supabase
+      .from('time_entries')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('category', categoryId)
+      .eq('entry_date', date);
+
+    const existingEntry = existingEntries?.[0];
+    
+    if (existingEntry) {
+      const newMinutes = existingEntry.minutes + additionalMinutes;
+      await supabase
+        .from('time_entries')
+        .update({ minutes: newMinutes })
+        .eq('id', existingEntry.id);
+    } else {
+      await supabase.from('time_entries').insert({
+        user_id: user.id,
+        category: categoryId,
+        minutes: additionalMinutes,
+        entry_date: date,
+      });
+    }
+  };
+
+  // Save time for today (fetch fresh from DB to avoid stale state)
   const saveTimeForCategory = async (categoryId: string, additionalMinutes: number) => {
     if (!user || additionalMinutes <= 0) return;
-    
-    const existingEntry = entries.find(e => e.category === categoryId);
+
+    // Fetch fresh data from DB to avoid stale state
+    const { data: existingEntries } = await supabase
+      .from('time_entries')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('category', categoryId)
+      .eq('entry_date', today);
+
+    const existingEntry = existingEntries?.[0];
     
     if (existingEntry) {
       const newMinutes = existingEntry.minutes + additionalMinutes;
