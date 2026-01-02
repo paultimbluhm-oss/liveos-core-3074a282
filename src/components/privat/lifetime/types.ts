@@ -1,4 +1,4 @@
-import { Moon, Utensils, Home, Users, Sparkles, Monitor, Dumbbell, BookOpen, Clock, Settings } from 'lucide-react';
+import { Moon, Utensils, Home, Users, Sparkles, Monitor, Dumbbell, BookOpen, Clock, Settings, Heart } from 'lucide-react';
 
 export interface TimeEntry {
   id: string;
@@ -29,6 +29,8 @@ export const CATEGORIES = [
   { id: 'optimieren', label: 'Optimieren', icon: Settings, color: '#22c55e' },
   { id: 'sport', label: 'Sport', icon: Dumbbell, color: '#14b8a6' },
   { id: 'lernen', label: 'Lernen', icon: BookOpen, color: '#a855f7' },
+  { id: 'aufraeumen', label: 'Aufräumen', icon: Home, color: '#f97316' },
+  { id: 'gesundheit', label: 'Gesundheit', icon: Heart, color: '#ef4444' },
   { id: 'sonstiges', label: 'Sonstiges', icon: Clock, color: '#64748b' },
 ] as const;
 
