@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Clock, Target, BarChart3, Play } from 'lucide-react';
+import { ArrowLeft, Clock, Target, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -8,11 +8,10 @@ import { CATEGORIES, TimeEntry, formatTime } from './types';
 import { LifetimeGoalsDialog } from './LifetimeGoalsDialog';
 import { LifetimeStatsView } from './LifetimeStatsView';
 
-const ACTIVE_TRACKER_KEY = 'lifetime_active_tracker';
-
 interface ActiveTracker {
-  categoryId: string;
-  startTime: number; // timestamp
+  id: string;
+  category_id: string;
+  start_time: string;
 }
 
 interface LifetimeSectionProps {
@@ -31,24 +30,69 @@ export function LifetimeSection({ onBack }: LifetimeSectionProps) {
 
   const today = format(new Date(), 'yyyy-MM-dd');
 
-  // Load active tracker from localStorage
-  useEffect(() => {
-    const stored = localStorage.getItem(ACTIVE_TRACKER_KEY);
-    if (stored) {
-      try {
-        const tracker: ActiveTracker = JSON.parse(stored);
-        setActiveTracker(tracker);
-      } catch (e) {
-        localStorage.removeItem(ACTIVE_TRACKER_KEY);
-      }
+  // Fetch active tracker from Supabase
+  const fetchActiveTracker = async () => {
+    if (!user) return;
+    
+    const { data } = await supabase
+      .from('active_time_tracker')
+      .select('*')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    
+    if (data) {
+      setActiveTracker({
+        id: data.id,
+        category_id: data.category_id,
+        start_time: data.start_time,
+      });
+    } else {
+      setActiveTracker(null);
     }
-  }, []);
+  };
+
+  // Subscribe to realtime updates for cross-device sync
+  useEffect(() => {
+    if (!user) return;
+
+    fetchActiveTracker();
+
+    const channel = supabase
+      .channel('active-tracker-sync')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'active_time_tracker',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          if (payload.eventType === 'DELETE') {
+            setActiveTracker(null);
+          } else if (payload.new) {
+            const data = payload.new as any;
+            setActiveTracker({
+              id: data.id,
+              category_id: data.category_id,
+              start_time: data.start_time,
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   // Update elapsed time every second
   useEffect(() => {
     if (activeTracker) {
       const updateElapsed = () => {
-        const elapsed = Math.floor((Date.now() - activeTracker.startTime) / 1000);
+        const startTime = new Date(activeTracker.start_time).getTime();
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
         setElapsedSeconds(elapsed);
       };
       updateElapsed();
@@ -110,21 +154,24 @@ export function LifetimeSection({ onBack }: LifetimeSectionProps) {
     if (!user) return;
 
     // If clicking the same category that's already active, do nothing
-    if (activeTracker?.categoryId === categoryId) return;
+    if (activeTracker?.category_id === categoryId) return;
 
     // Stop current tracker and save time
     if (activeTracker) {
-      const elapsedMinutes = Math.floor((Date.now() - activeTracker.startTime) / 60000);
-      await saveTimeForCategory(activeTracker.categoryId, elapsedMinutes);
+      const startTime = new Date(activeTracker.start_time).getTime();
+      const elapsedMinutes = Math.floor((Date.now() - startTime) / 60000);
+      await saveTimeForCategory(activeTracker.category_id, elapsedMinutes);
     }
 
-    // Start new tracker
-    const newTracker: ActiveTracker = {
-      categoryId,
-      startTime: Date.now(),
-    };
-    setActiveTracker(newTracker);
-    localStorage.setItem(ACTIVE_TRACKER_KEY, JSON.stringify(newTracker));
+    // Start new tracker (upsert to ensure only one per user)
+    await supabase
+      .from('active_time_tracker')
+      .upsert({
+        user_id: user.id,
+        category_id: categoryId,
+        start_time: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id' });
   };
 
   const getTotalMinutes = () => entries.reduce((sum, e) => sum + e.minutes, 0);
@@ -132,7 +179,7 @@ export function LifetimeSection({ onBack }: LifetimeSectionProps) {
   const getEntryMinutes = (categoryId: string) => {
     const saved = entries.find(e => e.category === categoryId)?.minutes || 0;
     // Add current elapsed time if this is the active category
-    if (activeTracker?.categoryId === categoryId) {
+    if (activeTracker?.category_id === categoryId) {
       return saved + Math.floor(elapsedSeconds / 60);
     }
     return saved;
@@ -152,7 +199,7 @@ export function LifetimeSection({ onBack }: LifetimeSectionProps) {
     return <LifetimeStatsView onBack={() => setShowStats(false)} />;
   }
 
-  const activeCategory = CATEGORIES.find(c => c.id === activeTracker?.categoryId);
+  const activeCategory = CATEGORIES.find(c => c.id === activeTracker?.category_id);
 
   return (
     <div className="space-y-4">
@@ -232,7 +279,7 @@ export function LifetimeSection({ onBack }: LifetimeSectionProps) {
       <div className="grid grid-cols-3 gap-2">
         {CATEGORIES.map(cat => {
           const Icon = cat.icon;
-          const isActive = activeTracker?.categoryId === cat.id;
+          const isActive = activeTracker?.category_id === cat.id;
           const minutes = getEntryMinutes(cat.id);
           
           return (
