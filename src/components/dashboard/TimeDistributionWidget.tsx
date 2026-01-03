@@ -23,7 +23,7 @@ const CATEGORY_CONFIG: Record<string, { label: string; color: string }> = {
   schule: { label: 'Schule', color: '#3b82f6' },
   helfen: { label: 'Helfen', color: '#10b981' },
   wegzeit: { label: 'Wegzeit', color: '#64748b' },
-  sonstiges: { label: 'Sonstiges', color: '#94a3b8' },
+  arbeiten: { label: 'Arbeiten', color: '#0ea5e9' },
 };
 
 export function TimeDistributionWidget() {
