@@ -31,7 +31,7 @@ export const CATEGORIES = [
   { id: 'schule', label: 'Schule', icon: GraduationCap, color: '#3b82f6' },
   { id: 'helfen', label: 'Helfen', icon: HandHeart, color: '#10b981' },
   { id: 'wegzeit', label: 'Wegzeit', icon: Car, color: '#64748b' },
-  { id: 'sonstiges', label: 'Sonstiges', icon: Clock, color: '#94a3b8' },
+  { id: 'arbeiten', label: 'Arbeiten', icon: Clock, color: '#0ea5e9' },
 ] as const;
 
 export const TIME_OPTIONS = [
