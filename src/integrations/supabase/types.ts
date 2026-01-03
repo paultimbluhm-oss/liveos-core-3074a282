@@ -761,6 +761,71 @@ export type Database = {
         }
         Relationships: []
       }
+      health_completions: {
+        Row: {
+          completed_date: string
+          created_at: string
+          health_item_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          completed_date?: string
+          created_at?: string
+          health_item_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          completed_date?: string
+          created_at?: string
+          health_item_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "health_completions_health_item_id_fkey"
+            columns: ["health_item_id"]
+            isOneToOne: false
+            referencedRelation: "health_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      health_items: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          order_index: number | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          order_index?: number | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          order_index?: number | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       homework: {
         Row: {
           completed: boolean | null
