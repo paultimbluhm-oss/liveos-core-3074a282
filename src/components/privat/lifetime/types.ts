@@ -1,4 +1,4 @@
-import { Moon, Utensils, Home, Users, Sparkles, Monitor, Dumbbell, BookOpen, Clock, Settings, Heart } from 'lucide-react';
+import { Moon, Utensils, Users, Sparkles, Monitor, BookOpen, Clock, Settings, Heart, Home, GraduationCap, HandHeart, Car } from 'lucide-react';
 
 export interface TimeEntry {
   id: string;
@@ -21,17 +21,17 @@ export interface LifetimeGoal {
 export const CATEGORIES = [
   { id: 'schlafen', label: 'Schlafen', icon: Moon, color: '#6366f1' },
   { id: 'essen', label: 'Essen', icon: Utensils, color: '#f59e0b' },
-  { id: 'familie', label: 'Familie', icon: Home, color: '#ec4899' },
-  { id: 'freunde', label: 'Freunde', icon: Users, color: '#8b5cf6' },
+  { id: 'sozial', label: 'Sozial', icon: Users, color: '#ec4899' },
   { id: 'hygiene', label: 'Hygiene', icon: Sparkles, color: '#06b6d4' },
-  { id: 'youtube', label: 'YouTube', icon: Monitor, color: '#ef4444' },
-  { id: 'liveos', label: 'LiveOS', icon: Monitor, color: '#3b82f6' },
+  { id: 'social-media', label: 'Social Media', icon: Monitor, color: '#ef4444' },
   { id: 'optimieren', label: 'Optimieren', icon: Settings, color: '#22c55e' },
-  { id: 'sport', label: 'Sport', icon: Dumbbell, color: '#14b8a6' },
   { id: 'lernen', label: 'Lernen', icon: BookOpen, color: '#a855f7' },
   { id: 'aufraeumen', label: 'Aufräumen', icon: Home, color: '#f97316' },
   { id: 'gesundheit', label: 'Gesundheit', icon: Heart, color: '#ef4444' },
-  { id: 'sonstiges', label: 'Sonstiges', icon: Clock, color: '#64748b' },
+  { id: 'schule', label: 'Schule', icon: GraduationCap, color: '#3b82f6' },
+  { id: 'helfen', label: 'Helfen', icon: HandHeart, color: '#10b981' },
+  { id: 'wegzeit', label: 'Wegzeit', icon: Car, color: '#64748b' },
+  { id: 'sonstiges', label: 'Sonstiges', icon: Clock, color: '#94a3b8' },
 ] as const;
 
 export const TIME_OPTIONS = [

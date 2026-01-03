@@ -244,11 +244,22 @@ export function LifetimeSection({ onBack }: LifetimeSectionProps) {
     // If clicking the same category that's already active, do nothing
     if (activeTracker?.category_id === categoryId) return;
 
+    const previousTracker = activeTracker;
+    const newStartTime = new Date().toISOString();
+
+    // Optimistic UI update - immediately show the new active category
+    setActiveTracker({
+      id: activeTracker?.id || 'temp',
+      category_id: categoryId,
+      start_time: newStartTime,
+    });
+    setElapsedSeconds(0);
+
     // Stop current tracker and save time
-    if (activeTracker) {
-      const startTime = new Date(activeTracker.start_time).getTime();
+    if (previousTracker) {
+      const startTime = new Date(previousTracker.start_time).getTime();
       const elapsedMinutes = Math.floor((Date.now() - startTime) / 60000);
-      await saveTimeForCategory(activeTracker.category_id, elapsedMinutes);
+      await saveTimeForCategory(previousTracker.category_id, elapsedMinutes);
     }
 
     // Start new tracker (upsert to ensure only one per user)
@@ -257,7 +268,7 @@ export function LifetimeSection({ onBack }: LifetimeSectionProps) {
       .upsert({
         user_id: user.id,
         category_id: categoryId,
-        start_time: new Date().toISOString(),
+        start_time: newStartTime,
         updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id' });
   };
