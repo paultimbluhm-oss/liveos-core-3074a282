@@ -24,6 +24,7 @@ const CATEGORY_CONFIG: Record<string, { label: string; color: string }> = {
   helfen: { label: 'Helfen', color: '#10b981' },
   wegzeit: { label: 'Wegzeit', color: '#64748b' },
   arbeiten: { label: 'Arbeiten', color: '#0ea5e9' },
+  dokumentation: { label: 'Lebensdokumentation', color: '#78716c' },
 };
 
 export function TimeDistributionWidget() {
