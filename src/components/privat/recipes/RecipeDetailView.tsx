@@ -17,6 +17,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { EditRecipeDialog } from './EditRecipeDialog';
+import { RecipeRulesSection } from './RecipeRulesSection';
 
 const categoryConfig: Record<string, { label: string; icon: typeof Soup; color: string }> = {
   vorspeise: { label: 'Vorspeise', icon: Soup, color: 'from-cyan-500 to-teal-600' },
@@ -252,6 +253,13 @@ export function RecipeDetailView({ recipe, onBack, onUpdate }: RecipeDetailViewP
           </Card>
         )}
       </div>
+
+      {/* Nutrition Rules */}
+      <Card className="border-border/50">
+        <CardContent className="pt-4">
+          <RecipeRulesSection recipeId={recipe.id} />
+        </CardContent>
+      </Card>
 
       {/* Portion Calculator */}
       <Card className="border-border/50 bg-gradient-to-br from-card to-primary/5">

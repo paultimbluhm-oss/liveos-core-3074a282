@@ -1256,6 +1256,77 @@ export type Database = {
           },
         ]
       }
+      meal_log: {
+        Row: {
+          created_at: string
+          id: string
+          meal_date: string
+          meal_type: string
+          recipe_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          meal_date?: string
+          meal_type?: string
+          recipe_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          meal_date?: string
+          meal_type?: string
+          recipe_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meal_log_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nutrition_rules: {
+        Row: {
+          created_at: string
+          description: string | null
+          frequency_type: string
+          id: string
+          is_active: boolean | null
+          order_index: number | null
+          target_count: number
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          frequency_type?: string
+          id?: string
+          is_active?: boolean | null
+          order_index?: number | null
+          target_count?: number
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          frequency_type?: string
+          id?: string
+          is_active?: boolean | null
+          order_index?: number | null
+          target_count?: number
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       optimizations: {
         Row: {
           category: string | null
@@ -1518,6 +1589,45 @@ export type Database = {
             columns: ["recipe_id"]
             isOneToOne: false
             referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recipe_nutrition_rules: {
+        Row: {
+          created_at: string
+          id: string
+          recipe_id: string
+          rule_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          recipe_id: string
+          rule_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          recipe_id?: string
+          rule_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipe_nutrition_rules_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recipe_nutrition_rules_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "nutrition_rules"
             referencedColumns: ["id"]
           },
         ]
