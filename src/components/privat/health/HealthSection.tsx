@@ -153,11 +153,14 @@ export function HealthSection({ onBack }: HealthSectionProps) {
   };
 
   const filteredItems = items.filter(item => item.category === activeCategory);
-  const completedCount = items.filter(item => 
+  
+  // Progress only counts daily_routine items
+  const dailyItems = items.filter(item => item.category === 'daily_routine');
+  const dailyCompletedCount = dailyItems.filter(item => 
     completions.some(c => c.health_item_id === item.id)
   ).length;
-  const totalCount = items.length;
-  const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+  const dailyTotalCount = dailyItems.length;
+  const progressPercent = dailyTotalCount > 0 ? Math.round((dailyCompletedCount / dailyTotalCount) * 100) : 0;
 
   const getCategoryColor = (categoryId: string) => {
     return CATEGORIES.find(c => c.id === categoryId)?.color || '#64748b';
@@ -199,7 +202,7 @@ export function HealthSection({ onBack }: HealthSectionProps) {
           />
         </div>
         <p className="text-xs text-muted-foreground mt-2">
-          {completedCount} von {totalCount} Items erledigt
+          {dailyCompletedCount} von {dailyTotalCount} tägliche Aufgaben erledigt
         </p>
       </div>
 

@@ -1,4 +1,4 @@
-import { Moon, Utensils, Users, Sparkles, Monitor, BookOpen, Clock, Settings, Heart, Home, GraduationCap, HandHeart, Car } from 'lucide-react';
+import { Moon, Utensils, Users, Sparkles, Monitor, BookOpen, Clock, Settings, Heart, Home, GraduationCap, HandHeart, Car, Camera } from 'lucide-react';
 
 export interface TimeEntry {
   id: string;
@@ -32,6 +32,7 @@ export const CATEGORIES = [
   { id: 'helfen', label: 'Helfen', icon: HandHeart, color: '#10b981' },
   { id: 'wegzeit', label: 'Wegzeit', icon: Car, color: '#64748b' },
   { id: 'arbeiten', label: 'Arbeiten', icon: Clock, color: '#0ea5e9' },
+  { id: 'dokumentation', label: 'Lebensdokumentation', icon: Camera, color: '#78716c' },
 ] as const;
 
 export const TIME_OPTIONS = [

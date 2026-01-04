@@ -6,6 +6,7 @@ import { useStats } from '@/hooks/useStats';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { TimeDistributionWidget } from '@/components/dashboard/TimeDistributionWidget';
 import { ProgressRingWidget } from '@/components/dashboard/ProgressRingWidget';
+import { HealthProgressWidget } from '@/components/dashboard/HealthProgressWidget';
 
 import { TodayDetailsCard } from '@/components/dashboard/TodayDetailsCard';
 import { NextActionsCard } from '@/components/dashboard/NextActionsCard';
@@ -75,6 +76,9 @@ export default function Index() {
           <TimeDistributionWidget />
           <ProgressRingWidget />
         </div>
+
+        {/* Health Progress Bar */}
+        <HealthProgressWidget />
 
         {/* Details Row: Tasks + Homework + Habits breakdown */}
         <TodayDetailsCard />
