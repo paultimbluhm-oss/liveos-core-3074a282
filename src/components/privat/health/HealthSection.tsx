@@ -29,7 +29,6 @@ interface HealthSectionProps {
 const CATEGORIES = [
   { id: 'daily_routine', label: 'Tägliche Routine', color: '#22c55e' },
   { id: 'weekly_meals', label: 'Wöchentliche Gerichte', color: '#f59e0b' },
-  { id: 'breakfast', label: 'Gesundes Frühstück', color: '#06b6d4' },
   { id: 'general', label: 'Allgemeine Tipps', color: '#8b5cf6' },
 ];
 

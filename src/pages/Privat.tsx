@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { Wallet, ListChecks, Calendar, ChefHat, Check, Gift, BookHeart, Clock, Heart } from 'lucide-react';
+import { Wallet, ListChecks, Calendar, ChefHat, Check, Gift, BookHeart, Clock, Heart, UtensilsCrossed } from 'lucide-react';
 import { FinanceSection } from '@/components/privat/finance/FinanceSection';
 import { ChecklistSection } from '@/components/privat/checklists';
 import { TaskSection } from '@/components/privat/tasks';
@@ -11,7 +11,7 @@ import { HabitsSection } from '@/components/privat/habits';
 import { GiftsSection } from '@/components/privat/gifts';
 import { JournalSection } from '@/components/privat/journal';
 import { LifetimeSection } from '@/components/privat/lifetime';
-import { HealthSection } from '@/components/privat/health';
+import { HealthSection, NutritionPlanSection } from '@/components/privat/health';
 
 const sections = [
   { id: 'habits', icon: Check, label: 'Habits', color: 'text-emerald-500' },
@@ -19,6 +19,7 @@ const sections = [
   { id: 'aufgaben', icon: Calendar, label: 'Aufgaben', color: 'text-sky-500' },
   { id: 'lifetime', icon: Clock, label: 'Lifetime', color: 'text-indigo-500' },
   { id: 'gesundheit', icon: Heart, label: 'Gesundheit', color: 'text-rose-500' },
+  { id: 'ernaehrung', icon: UtensilsCrossed, label: 'Ernährung', color: 'text-orange-500' },
   { id: 'rezepte', icon: ChefHat, label: 'Rezepte', color: 'text-red-500' },
   { id: 'journal', icon: BookHeart, label: 'Journal', color: 'text-cyan-500' },
   { id: 'checklisten', icon: ListChecks, label: 'Checklisten', color: 'text-blue-500' },
@@ -123,6 +124,16 @@ export default function Privat() {
     );
   }
 
+
+  if (activeSection === 'ernaehrung') {
+    return (
+      <AppLayout>
+        <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
+          <NutritionPlanSection onBack={() => handleSetSection(null)} />
+        </div>
+      </AppLayout>
+    );
+  }
 
   if (activeSection === 'rezepte') {
     return (
