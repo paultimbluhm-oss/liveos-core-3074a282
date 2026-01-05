@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { format } from 'date-fns';
+import { format, subDays } from 'date-fns';
 
 interface ActiveTracker {
   category_id: string;
@@ -11,6 +11,7 @@ interface ActiveTracker {
 interface TimeEntry {
   category: string;
   minutes: number;
+  entry_date: string;
 }
 
 interface Goal {
@@ -22,13 +23,16 @@ interface Goal {
 export function useTimeScore() {
   const { user } = useAuth();
   const [score, setScore] = useState(0);
+  const [yesterdayScore, setYesterdayScore] = useState(0);
   const [activeTracker, setActiveTracker] = useState<ActiveTracker | null>(null);
   const [entries, setEntries] = useState<TimeEntry[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const today = format(new Date(), 'yyyy-MM-dd');
+  const yesterday = format(subDays(new Date(), 1), 'yyyy-MM-dd');
   const dayOfWeek = new Date().getDay();
+  const yesterdayDayOfWeek = subDays(new Date(), 1).getDay();
 
   // Fetch all data
   useEffect(() => {
@@ -38,9 +42,9 @@ export function useTimeScore() {
       const [entriesRes, goalsRes, trackerRes] = await Promise.all([
         supabase
           .from('time_entries')
-          .select('category, minutes')
+          .select('category, minutes, entry_date')
           .eq('user_id', user.id)
-          .eq('entry_date', today),
+          .in('entry_date', [today, yesterday]),
         supabase
           .from('lifetime_goals')
           .select('category, day_of_week, points_per_minute')
@@ -59,6 +63,8 @@ export function useTimeScore() {
           category_id: trackerRes.data.category_id,
           start_time: trackerRes.data.start_time,
         });
+      } else {
+        setActiveTracker(null);
       }
     };
 
@@ -92,33 +98,51 @@ export function useTimeScore() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, today]);
+  }, [user, today, yesterday]);
 
   // Get points per minute for a category
-  const getPointsPerMinute = (categoryId: string): number => {
+  const getPointsPerMinute = useCallback((categoryId: string, forDayOfWeek: number): number => {
     // First check day-specific
-    const dayGoal = goals.find(g => g.category === categoryId && g.day_of_week === dayOfWeek);
+    const dayGoal = goals.find(g => g.category === categoryId && g.day_of_week === forDayOfWeek);
     if (dayGoal && dayGoal.points_per_minute !== 0) return dayGoal.points_per_minute;
     
     // Fall back to default
     const defaultGoal = goals.find(g => g.category === categoryId && g.day_of_week === null);
     return defaultGoal?.points_per_minute || 0;
-  };
+  }, [goals]);
 
-  // Calculate score with live update
+  // Calculate yesterday's score
   useEffect(() => {
+    if (goals.length === 0) return;
+    
+    const yesterdayEntries = entries.filter(e => e.entry_date === yesterday);
+    let yScore = 0;
+    
+    yesterdayEntries.forEach(entry => {
+      const ppm = getPointsPerMinute(entry.category, yesterdayDayOfWeek);
+      yScore += entry.minutes * ppm;
+    });
+    
+    setYesterdayScore(Math.round(yScore));
+  }, [entries, goals, yesterday, yesterdayDayOfWeek, getPointsPerMinute]);
+
+  // Calculate today's score with live update
+  useEffect(() => {
+    if (goals.length === 0) return;
+
     const calculateScore = () => {
+      const todayEntries = entries.filter(e => e.entry_date === today);
       let totalScore = 0;
 
       // Score from saved entries
-      entries.forEach(entry => {
-        const ppm = getPointsPerMinute(entry.category);
+      todayEntries.forEach(entry => {
+        const ppm = getPointsPerMinute(entry.category, dayOfWeek);
         totalScore += entry.minutes * ppm;
       });
 
       // Score from active tracker
       if (activeTracker) {
-        const ppm = getPointsPerMinute(activeTracker.category_id);
+        const ppm = getPointsPerMinute(activeTracker.category_id, dayOfWeek);
         if (ppm !== 0) {
           const startTime = new Date(activeTracker.start_time).getTime();
           const elapsedMinutes = (Date.now() - startTime) / 60000;
@@ -126,12 +150,12 @@ export function useTimeScore() {
         }
       }
 
-      setScore(Math.round(totalScore * 10) / 10);
+      setScore(Math.round(totalScore));
     };
 
     calculateScore();
     
-    // Update every second if there's an active tracker with points
+    // Update every second if there's an active tracker
     if (activeTracker) {
       intervalRef.current = setInterval(calculateScore, 1000);
     }
@@ -141,7 +165,7 @@ export function useTimeScore() {
         clearInterval(intervalRef.current);
       }
     };
-  }, [entries, goals, activeTracker]);
+  }, [entries, goals, activeTracker, today, dayOfWeek, getPointsPerMinute]);
 
-  return { score, hasActiveTracker: !!activeTracker };
+  return { score, yesterdayScore, hasActiveTracker: !!activeTracker };
 }

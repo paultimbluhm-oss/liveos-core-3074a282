@@ -2,16 +2,15 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { Wallet, ListChecks, Calendar, ChefHat, Check, Gift, BookHeart, Clock, Heart, UtensilsCrossed } from 'lucide-react';
+import { Wallet, ListChecks, Calendar, Check, Gift, BookHeart, Clock, Heart } from 'lucide-react';
 import { FinanceSection } from '@/components/privat/finance/FinanceSection';
 import { ChecklistSection } from '@/components/privat/checklists';
 import { TaskSection } from '@/components/privat/tasks';
-import { RecipesSection } from '@/components/privat/recipes';
 import { HabitsSection } from '@/components/privat/habits';
 import { GiftsSection } from '@/components/privat/gifts';
 import { JournalSection } from '@/components/privat/journal';
 import { LifetimeSection } from '@/components/privat/lifetime';
-import { HealthSection, NutritionPlanSection } from '@/components/privat/health';
+import { UnifiedHealthSection } from '@/components/privat/health';
 
 const sections = [
   { id: 'habits', icon: Check, label: 'Habits', color: 'text-emerald-500' },
@@ -19,12 +18,11 @@ const sections = [
   { id: 'aufgaben', icon: Calendar, label: 'Aufgaben', color: 'text-sky-500' },
   { id: 'lifetime', icon: Clock, label: 'Lifetime', color: 'text-indigo-500' },
   { id: 'gesundheit', icon: Heart, label: 'Gesundheit', color: 'text-rose-500' },
-  { id: 'ernaehrung', icon: UtensilsCrossed, label: 'Ernährung', color: 'text-orange-500' },
-  { id: 'rezepte', icon: ChefHat, label: 'Rezepte', color: 'text-red-500' },
   { id: 'journal', icon: BookHeart, label: 'Journal', color: 'text-cyan-500' },
   { id: 'checklisten', icon: ListChecks, label: 'Checklisten', color: 'text-blue-500' },
   { id: 'geschenke', icon: Gift, label: 'Geschenke', color: 'text-pink-500' },
 ];
+
 export default function Privat() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
@@ -35,7 +33,6 @@ export default function Privat() {
     if (!loading && !user) navigate('/auth');
   }, [user, loading, navigate]);
 
-  // Sync URL params with activeSection
   useEffect(() => {
     const section = searchParams.get('section');
     if (section && sections.some(s => s.id === section)) {
@@ -118,28 +115,7 @@ export default function Privat() {
     return (
       <AppLayout>
         <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
-          <HealthSection onBack={() => handleSetSection(null)} />
-        </div>
-      </AppLayout>
-    );
-  }
-
-
-  if (activeSection === 'ernaehrung') {
-    return (
-      <AppLayout>
-        <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
-          <NutritionPlanSection onBack={() => handleSetSection(null)} />
-        </div>
-      </AppLayout>
-    );
-  }
-
-  if (activeSection === 'rezepte') {
-    return (
-      <AppLayout>
-        <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
-          <RecipesSection onBack={() => handleSetSection(null)} />
+          <UnifiedHealthSection onBack={() => handleSetSection(null)} />
         </div>
       </AppLayout>
     );
@@ -158,8 +134,7 @@ export default function Privat() {
   return (
     <AppLayout>
       <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
-        {/* Section Cards Grid - compact for mobile */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2 md:gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-8 gap-2 md:gap-3">
           {sections.map((s, i) => (
             <div
               key={s.id}
