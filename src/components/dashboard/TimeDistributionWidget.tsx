@@ -16,15 +16,17 @@ const CATEGORY_CONFIG: Record<string, { label: string; color: string }> = {
   sozial: { label: 'Sozial', color: '#ec4899' },
   hygiene: { label: 'Hygiene', color: '#06b6d4' },
   'social-media': { label: 'Social Media', color: '#ef4444' },
-  optimieren: { label: 'Optimieren', color: '#22c55e' },
+  persoenlich: { label: 'Persönlich', color: '#22c55e' },
   lernen: { label: 'Lernen', color: '#a855f7' },
-  aufraeumen: { label: 'Aufräumen', color: '#f97316' },
-  gesundheit: { label: 'Gesundheit', color: '#ef4444' },
   schule: { label: 'Schule', color: '#3b82f6' },
-  helfen: { label: 'Helfen', color: '#10b981' },
   wegzeit: { label: 'Wegzeit', color: '#64748b' },
   arbeiten: { label: 'Arbeiten', color: '#0ea5e9' },
-  dokumentation: { label: 'Lebensdokumentation', color: '#78716c' },
+  // Legacy mappings for old data
+  optimieren: { label: 'Persönlich', color: '#22c55e' },
+  aufraeumen: { label: 'Persönlich', color: '#22c55e' },
+  gesundheit: { label: 'Persönlich', color: '#22c55e' },
+  helfen: { label: 'Persönlich', color: '#22c55e' },
+  dokumentation: { label: 'Persönlich', color: '#22c55e' },
 };
 
 export function TimeDistributionWidget() {

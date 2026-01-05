@@ -1,4 +1,4 @@
-import { Moon, Utensils, Users, Sparkles, Monitor, BookOpen, Clock, Settings, Heart, Home, GraduationCap, HandHeart, Car, Camera } from 'lucide-react';
+import { Moon, Utensils, Users, Sparkles, Monitor, BookOpen, Clock, User, GraduationCap, Car } from 'lucide-react';
 
 export interface TimeEntry {
   id: string;
@@ -14,6 +14,7 @@ export interface LifetimeGoal {
   category: string;
   target_minutes: number;
   day_of_week: number | null;
+  points_per_minute: number;
   created_at: string;
   updated_at: string;
 }
@@ -24,15 +25,11 @@ export const CATEGORIES = [
   { id: 'sozial', label: 'Sozial', icon: Users, color: '#ec4899' },
   { id: 'hygiene', label: 'Hygiene', icon: Sparkles, color: '#06b6d4' },
   { id: 'social-media', label: 'Social Media', icon: Monitor, color: '#ef4444' },
-  { id: 'optimieren', label: 'Optimieren', icon: Settings, color: '#22c55e' },
+  { id: 'persoenlich', label: 'Persönlich', icon: User, color: '#22c55e' },
   { id: 'lernen', label: 'Lernen', icon: BookOpen, color: '#a855f7' },
-  { id: 'aufraeumen', label: 'Aufräumen', icon: Home, color: '#f97316' },
-  { id: 'gesundheit', label: 'Gesundheit', icon: Heart, color: '#ef4444' },
   { id: 'schule', label: 'Schule', icon: GraduationCap, color: '#3b82f6' },
-  { id: 'helfen', label: 'Helfen', icon: HandHeart, color: '#10b981' },
   { id: 'wegzeit', label: 'Wegzeit', icon: Car, color: '#64748b' },
   { id: 'arbeiten', label: 'Arbeiten', icon: Clock, color: '#0ea5e9' },
-  { id: 'dokumentation', label: 'Lebensdokumentation', icon: Camera, color: '#78716c' },
 ] as const;
 
 export const TIME_OPTIONS = [
@@ -52,6 +49,19 @@ export const TIME_OPTIONS = [
   { value: '480', label: '8h' },
   { value: '540', label: '9h' },
   { value: '600', label: '10h' },
+];
+
+export const POINTS_OPTIONS = [
+  { value: '0', label: '-' },
+  { value: '0.5', label: '0.5' },
+  { value: '1', label: '1' },
+  { value: '2', label: '2' },
+  { value: '3', label: '3' },
+  { value: '5', label: '5' },
+  { value: '10', label: '10' },
+  { value: '-1', label: '-1' },
+  { value: '-2', label: '-2' },
+  { value: '-5', label: '-5' },
 ];
 
 export const WEEKDAYS = [

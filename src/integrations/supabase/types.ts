@@ -1133,6 +1133,7 @@ export type Database = {
           created_at: string
           day_of_week: number | null
           id: string
+          points_per_minute: number | null
           target_minutes: number
           updated_at: string
           user_id: string
@@ -1142,6 +1143,7 @@ export type Database = {
           created_at?: string
           day_of_week?: number | null
           id?: string
+          points_per_minute?: number | null
           target_minutes?: number
           updated_at?: string
           user_id: string
@@ -1151,6 +1153,7 @@ export type Database = {
           created_at?: string
           day_of_week?: number | null
           id?: string
+          points_per_minute?: number | null
           target_minutes?: number
           updated_at?: string
           user_id?: string

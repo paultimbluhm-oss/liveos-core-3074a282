@@ -11,10 +11,12 @@ import {
   X,
   Settings,
   Flame,
+  Zap,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
+import { useTimeScore } from '@/hooks/useTimeScore';
 import { Button } from '@/components/ui/button';
 import {
   Tooltip,
@@ -46,6 +48,7 @@ export function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { signOut, user } = useAuth();
   const { profile } = useProfile();
+  const { score, hasActiveTracker } = useTimeScore();
   const location = useLocation();
 
   const streakDays = profile?.streak_days || 0;
@@ -85,10 +88,22 @@ export function Sidebar() {
           <span className="text-sm font-semibold">{pageTitle}</span>
         </div>
         
-        {/* Streak in header */}
-        <div className={`flex items-center gap-1 px-2 py-1 rounded-full ${streakDays > 0 ? 'bg-streak/10 text-streak' : 'text-muted-foreground'}`}>
-          <Flame className="w-3.5 h-3.5" />
-          <span className="text-xs font-bold font-mono">{streakDays}</span>
+        {/* Time Score & Streak in header */}
+        <div className="flex items-center gap-2">
+          {/* Time Score */}
+          <div className={cn(
+            "flex items-center gap-1 px-2 py-1 rounded-full transition-colors",
+            hasActiveTracker ? "bg-primary/10 text-primary" : "text-muted-foreground"
+          )}>
+            <Zap className={cn("w-3.5 h-3.5", hasActiveTracker && "animate-pulse")} />
+            <span className="text-xs font-bold font-mono tabular-nums">{score.toFixed(0)}</span>
+          </div>
+          
+          {/* Streak */}
+          <div className={`flex items-center gap-1 px-2 py-1 rounded-full ${streakDays > 0 ? 'bg-streak/10 text-streak' : 'text-muted-foreground'}`}>
+            <Flame className="w-3.5 h-3.5" />
+            <span className="text-xs font-bold font-mono">{streakDays}</span>
+          </div>
         </div>
       </div>
 
