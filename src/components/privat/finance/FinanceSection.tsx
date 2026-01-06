@@ -295,7 +295,7 @@ export function FinanceSection({ onBack }: FinanceSectionProps) {
     }
   }, [totalBalance, totalInvestments]);
 
-  // Monthly overview calculations
+  // Monthly overview calculations (excluding transfers/Umschichtungen)
   const monthlyStats = useMemo(() => {
     const now = new Date();
     const monthStart = startOfMonth(now);
@@ -306,12 +306,13 @@ export function FinanceSection({ onBack }: FinanceSectionProps) {
       return txDate >= monthStart && txDate <= monthEnd;
     });
     
+    // Exclude transfers from income/expense calculations
     const income = monthTransactions
-      .filter(tx => tx.transaction_type === 'income')
+      .filter(tx => tx.transaction_type === 'income' && tx.category !== 'transfer')
       .reduce((sum, tx) => sum + tx.amount, 0);
       
     const expenses = monthTransactions
-      .filter(tx => tx.transaction_type === 'expense')
+      .filter(tx => tx.transaction_type === 'expense' && tx.category !== 'transfer')
       .reduce((sum, tx) => sum + tx.amount, 0);
       
     return { income, expenses, difference: income - expenses };

@@ -26,6 +26,7 @@ interface NutritionRule {
   description: string | null;
   frequency_type: 'daily' | 'weekly';
   target_count: number;
+  rule_type?: 'min' | 'max' | null;
   is_active: boolean;
 }
 
@@ -110,8 +111,9 @@ export function UnifiedHealthSection({ onBack }: UnifiedHealthSectionProps) {
   const [mealDialogOpen, setMealDialogOpen] = useState(false);
   const [selectedMealType, setSelectedMealType] = useState<string>('lunch');
   const [newRuleTitle, setNewRuleTitle] = useState('');
-  const [newRuleFrequency, setNewRuleFrequency] = useState<'daily' | 'weekly'>('daily');
+  const [newRuleFrequency, setNewRuleFrequency] = useState<'daily' | 'weekly'>('weekly');
   const [newRuleTarget, setNewRuleTarget] = useState('1');
+  const [newRuleType, setNewRuleType] = useState<'min' | 'max'>('min');
   
   // Recipes state
   const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -165,7 +167,7 @@ export function UnifiedHealthSection({ onBack }: UnifiedHealthSectionProps) {
 
   // Nutrition rule progress
   const ruleProgress = useMemo(() => {
-    const progress: Record<string, { current: number; target: number; fulfilled: boolean }> = {};
+    const progress: Record<string, { current: number; target: number; fulfilled: boolean; ruleType: 'min' | 'max'; exceeded: boolean }> = {};
     nutritionRules.forEach(rule => {
       const relevantMeals = mealLog.filter(m => 
         rule.frequency_type === 'daily' ? m.meal_date === today : true
@@ -174,18 +176,37 @@ export function UnifiedHealthSection({ onBack }: UnifiedHealthSectionProps) {
       relevantMeals.forEach(meal => {
         if (recipeRules.some(rr => rr.recipe_id === meal.recipe_id && rr.rule_id === rule.id)) count++;
       });
-      progress[rule.id] = { current: count, target: rule.target_count, fulfilled: count >= rule.target_count };
+      const ruleType = rule.rule_type || 'min';
+      const fulfilled = ruleType === 'min' ? count >= rule.target_count : count <= rule.target_count;
+      const exceeded = ruleType === 'max' && count > rule.target_count;
+      progress[rule.id] = { current: count, target: rule.target_count, fulfilled, ruleType, exceeded };
     });
     return progress;
   }, [nutritionRules, mealLog, recipeRules, today]);
 
   const suggestedRecipes = useMemo(() => {
-    const unfulfilledRuleIds = nutritionRules.filter(r => !ruleProgress[r.id]?.fulfilled).map(r => r.id);
-    if (unfulfilledRuleIds.length === 0) return recipes;
-    const suggested = recipes.filter(recipe => 
-      recipeRules.some(rr => rr.recipe_id === recipe.id && unfulfilledRuleIds.includes(rr.rule_id))
+    // Get min-rules that are not yet fulfilled
+    const unfulfilledMinRuleIds = nutritionRules
+      .filter(r => (r.rule_type || 'min') === 'min' && !ruleProgress[r.id]?.fulfilled)
+      .map(r => r.id);
+    // Get max-rules that are exceeded (avoid these recipes)
+    const exceededMaxRuleIds = nutritionRules
+      .filter(r => r.rule_type === 'max' && ruleProgress[r.id]?.exceeded)
+      .map(r => r.id);
+    
+    // Filter out recipes that would exceed max rules
+    const safeRecipes = recipes.filter(recipe => {
+      const recipeRuleIds = recipeRules.filter(rr => rr.recipe_id === recipe.id).map(rr => rr.rule_id);
+      return !recipeRuleIds.some(rid => exceededMaxRuleIds.includes(rid));
+    });
+    
+    if (unfulfilledMinRuleIds.length === 0) return safeRecipes;
+    
+    // Prioritize recipes that fulfill unfulfilled min-rules
+    const suggested = safeRecipes.filter(recipe => 
+      recipeRules.some(rr => rr.recipe_id === recipe.id && unfulfilledMinRuleIds.includes(rr.rule_id))
     );
-    return suggested.length > 0 ? suggested : recipes;
+    return suggested.length > 0 ? suggested : safeRecipes;
   }, [recipes, nutritionRules, ruleProgress, recipeRules]);
 
   const todayMeals = mealLog.filter(m => m.meal_date === today);
@@ -228,9 +249,17 @@ export function UnifiedHealthSection({ onBack }: UnifiedHealthSectionProps) {
 
   const handleAddNutritionRule = async () => {
     if (!user || !newRuleTitle.trim()) return;
-    await supabase.from('nutrition_rules').insert({ user_id: user.id, title: newRuleTitle.trim(), frequency_type: newRuleFrequency, target_count: parseInt(newRuleTarget) || 1, order_index: nutritionRules.length });
+    await supabase.from('nutrition_rules').insert({ 
+      user_id: user.id, 
+      title: newRuleTitle.trim(), 
+      frequency_type: newRuleFrequency, 
+      target_count: parseInt(newRuleTarget) || 1, 
+      rule_type: newRuleType,
+      order_index: nutritionRules.length 
+    });
     setNewRuleTitle('');
     setNewRuleTarget('1');
+    setNewRuleType('min');
     setRuleDialogOpen(false);
     fetchAllData();
   };
@@ -413,13 +442,24 @@ export function UnifiedHealthSection({ onBack }: UnifiedHealthSectionProps) {
                 {nutritionRules.map(rule => {
                   const progress = ruleProgress[rule.id];
                   const isFulfilled = progress?.fulfilled;
+                  const isMax = progress?.ruleType === 'max';
+                  const isExceeded = progress?.exceeded;
                   return (
-                    <div key={rule.id} className={`flex items-center gap-1.5 py-1 px-1.5 rounded text-xs ${isFulfilled ? 'bg-green-500/10' : 'bg-muted/50'}`}>
-                      <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${isFulfilled ? 'bg-green-500 border-green-500 text-white' : 'border-muted-foreground/30'}`}>
-                        {isFulfilled && <Check className="w-2 h-2" />}
+                    <div key={rule.id} className={`flex items-center gap-1.5 py-1 px-1.5 rounded text-xs ${
+                      isExceeded ? 'bg-rose-500/10' : isFulfilled ? 'bg-green-500/10' : 'bg-muted/50'
+                    }`}>
+                      <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
+                        isExceeded ? 'bg-rose-500 border-rose-500 text-white' : 
+                        isFulfilled ? 'bg-green-500 border-green-500 text-white' : 'border-muted-foreground/30'
+                      }`}>
+                        {(isFulfilled || isExceeded) && <Check className="w-2 h-2" />}
                       </div>
-                      <span className={`flex-1 ${isFulfilled ? 'line-through text-muted-foreground' : ''}`}>{rule.title}</span>
-                      <span className="text-muted-foreground">{progress?.current || 0}/{progress?.target}</span>
+                      <span className={`flex-1 ${isFulfilled && !isExceeded ? 'line-through text-muted-foreground' : ''}`}>
+                        {isMax ? 'Max' : 'Min'} {rule.title}
+                      </span>
+                      <span className={isExceeded ? 'text-rose-500' : 'text-muted-foreground'}>
+                        {progress?.current || 0}/{progress?.target}
+                      </span>
                       <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteNutritionRule(rule.id)}>
                         <Trash2 className="w-2.5 h-2.5" />
                       </Button>
@@ -441,6 +481,11 @@ export function UnifiedHealthSection({ onBack }: UnifiedHealthSectionProps) {
       {/* Recipes Tab */}
       {activeTab === 'recipes' && (
         <div className="space-y-2">
+          <div className="flex justify-end">
+            <Button size="sm" onClick={() => setRecipeDialogOpen(true)}>
+              <Plus className="w-3 h-3 mr-1" /> Rezept
+            </Button>
+          </div>
           <AddRecipeDialog open={recipeDialogOpen} onOpenChange={setRecipeDialogOpen} onSuccess={fetchAllData} />
           
           {recipes.length === 0 ? (
@@ -505,17 +550,24 @@ export function UnifiedHealthSection({ onBack }: UnifiedHealthSectionProps) {
         <DialogContent>
           <DialogHeader><DialogTitle>Neue Ernährungsregel</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <Input placeholder="z.B. Gemüse essen" value={newRuleTitle} onChange={(e) => setNewRuleTitle(e.target.value)} />
+            <Input placeholder="z.B. Fleisch, Gemüse, Zucker..." value={newRuleTitle} onChange={(e) => setNewRuleTitle(e.target.value)} />
             <div className="grid grid-cols-2 gap-2">
-              <Select value={newRuleFrequency} onValueChange={(v) => setNewRuleFrequency(v as 'daily' | 'weekly')}>
+              <Select value={newRuleType} onValueChange={(v) => setNewRuleType(v as 'min' | 'max')}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="daily">Täglich</SelectItem>
-                  <SelectItem value="weekly">Wöchentlich</SelectItem>
+                  <SelectItem value="min">Mindestens</SelectItem>
+                  <SelectItem value="max">Maximal</SelectItem>
                 </SelectContent>
               </Select>
               <Input type="number" min={1} value={newRuleTarget} onChange={(e) => setNewRuleTarget(e.target.value)} placeholder="Anzahl" />
             </div>
+            <Select value={newRuleFrequency} onValueChange={(v) => setNewRuleFrequency(v as 'daily' | 'weekly')}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="daily">pro Tag</SelectItem>
+                <SelectItem value="weekly">pro Woche</SelectItem>
+              </SelectContent>
+            </Select>
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1" onClick={() => setRuleDialogOpen(false)}>Abbrechen</Button>
               <Button className="flex-1" onClick={handleAddNutritionRule} disabled={!newRuleTitle.trim()}>Speichern</Button>

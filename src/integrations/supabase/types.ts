@@ -1302,6 +1302,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           order_index: number | null
+          rule_type: string | null
           target_count: number
           title: string
           user_id: string
@@ -1313,6 +1314,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           order_index?: number | null
+          rule_type?: string | null
           target_count?: number
           title: string
           user_id: string
@@ -1324,6 +1326,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           order_index?: number | null
+          rule_type?: string | null
           target_count?: number
           title?: string
           user_id?: string
