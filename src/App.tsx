@@ -12,6 +12,7 @@ import Privat from "./pages/Privat";
 import Business from "./pages/Business";
 import Profile from "./pages/Profile";
 import Kalender from "./pages/Kalender";
+import Freunde from "./pages/Freunde";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +32,7 @@ const App = () => (
               <Route path="/schule" element={<Schule />} />
               <Route path="/privat" element={<Privat />} />
               <Route path="/business" element={<Business />} />
+              <Route path="/freunde" element={<Freunde />} />
               <Route path="/profil" element={<Profile />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
