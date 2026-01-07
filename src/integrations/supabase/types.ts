@@ -353,6 +353,83 @@ export type Database = {
         }
         Relationships: []
       }
+      challenge_progress: {
+        Row: {
+          challenge_id: string
+          current_value: number
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          challenge_id: string
+          current_value?: number
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          challenge_id?: string
+          current_value?: number
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_progress_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenges: {
+        Row: {
+          challenge_type: string
+          challenged_id: string
+          challenger_id: string
+          created_at: string
+          description: string | null
+          end_date: string
+          id: string
+          start_date: string
+          status: string
+          target_value: number | null
+          title: string
+          winner_id: string | null
+        }
+        Insert: {
+          challenge_type: string
+          challenged_id: string
+          challenger_id: string
+          created_at?: string
+          description?: string | null
+          end_date: string
+          id?: string
+          start_date?: string
+          status?: string
+          target_value?: number | null
+          title: string
+          winner_id?: string | null
+        }
+        Update: {
+          challenge_type?: string
+          challenged_id?: string
+          challenger_id?: string
+          created_at?: string
+          description?: string | null
+          end_date?: string
+          id?: string
+          start_date?: string
+          status?: string
+          target_value?: number | null
+          title?: string
+          winner_id?: string | null
+        }
+        Relationships: []
+      }
       checklist_items: {
         Row: {
           checklist_id: string
@@ -571,6 +648,113 @@ export type Database = {
           name?: string
           start_date?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      friend_privacy_settings: {
+        Row: {
+          created_at: string
+          id: string
+          share_finance: boolean
+          share_grades: boolean
+          share_habits: boolean
+          share_level: boolean
+          share_streak: boolean
+          share_tasks: boolean
+          share_xp: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          share_finance?: boolean
+          share_grades?: boolean
+          share_habits?: boolean
+          share_level?: boolean
+          share_streak?: boolean
+          share_tasks?: boolean
+          share_xp?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          share_finance?: boolean
+          share_grades?: boolean
+          share_habits?: boolean
+          share_level?: boolean
+          share_streak?: boolean
+          share_tasks?: boolean
+          share_xp?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      friend_streaks: {
+        Row: {
+          created_at: string
+          current_streak: number
+          friendship_id: string
+          id: string
+          last_both_active_date: string | null
+          longest_streak: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_streak?: number
+          friendship_id: string
+          id?: string
+          last_both_active_date?: string | null
+          longest_streak?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_streak?: number
+          friendship_id?: string
+          id?: string
+          last_both_active_date?: string | null
+          longest_streak?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "friend_streaks_friendship_id_fkey"
+            columns: ["friendship_id"]
+            isOneToOne: true
+            referencedRelation: "friendships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      friendships: {
+        Row: {
+          addressee_id: string
+          created_at: string
+          id: string
+          requester_id: string
+          status: Database["public"]["Enums"]["friendship_status"]
+          updated_at: string
+        }
+        Insert: {
+          addressee_id: string
+          created_at?: string
+          id?: string
+          requester_id: string
+          status?: Database["public"]["Enums"]["friendship_status"]
+          updated_at?: string
+        }
+        Update: {
+          addressee_id?: string
+          created_at?: string
+          id?: string
+          requester_id?: string
+          status?: Database["public"]["Enums"]["friendship_status"]
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1553,6 +1737,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string | null
+          display_name: string | null
           id: string
           last_active_date: string | null
           level: number | null
@@ -1565,6 +1750,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string | null
+          display_name?: string | null
           id?: string
           last_active_date?: string | null
           level?: number | null
@@ -1577,6 +1763,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string | null
+          display_name?: string | null
           id?: string
           last_active_date?: string | null
           level?: number | null
@@ -2186,7 +2373,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      friendship_status: "pending" | "accepted" | "rejected" | "blocked"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2313,6 +2500,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      friendship_status: ["pending", "accepted", "rejected", "blocked"],
+    },
   },
 } as const
