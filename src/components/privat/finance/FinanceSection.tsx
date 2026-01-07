@@ -121,16 +121,38 @@ export function FinanceSection({ onBack }: FinanceSectionProps) {
     const today = format(new Date(), 'yyyy-MM-dd');
     const totalBalance = accountsBalance + investmentsBalance;
 
-    await supabase
+    // Check if entry already exists for today
+    const { data: existing } = await supabase
       .from('balance_history')
-      .upsert([{
-        user_id: user.id,
-        date: today,
-        balance: totalBalance,
-        total_balance: totalBalance,
-        accounts_balance: accountsBalance,
-        investments_balance: investmentsBalance,
-      }], { onConflict: 'user_id,date' });
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('date', today)
+      .maybeSingle();
+
+    if (existing) {
+      // Update existing
+      await supabase
+        .from('balance_history')
+        .update({
+          total_balance: totalBalance,
+          accounts_balance: accountsBalance,
+          investments_balance: investmentsBalance,
+          balance: totalBalance,
+        })
+        .eq('id', existing.id);
+    } else {
+      // Insert new
+      await supabase
+        .from('balance_history')
+        .insert({
+          user_id: user.id,
+          date: today,
+          balance: totalBalance,
+          total_balance: totalBalance,
+          accounts_balance: accountsBalance,
+          investments_balance: investmentsBalance,
+        });
+    }
   };
 
   const fetchPrices = async (invs: Investment[]) => {
@@ -656,7 +678,7 @@ export function FinanceSection({ onBack }: FinanceSectionProps) {
           </div>
         </CollapsibleTrigger>
         <CollapsibleContent className="pt-2 space-y-3">
-          {balanceHistory.length > 1 ? (
+          {balanceHistory.length > 0 ? (
             <>
               {/* Chart 1: Total Wealth */}
               <Card className="overflow-hidden border-border/50">

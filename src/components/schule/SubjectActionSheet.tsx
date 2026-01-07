@@ -38,6 +38,7 @@ interface SubjectActionSheetProps {
   onDataChanged: () => void;
   onEditEntry: () => void;
   currentDate?: Date;
+  existingEvaId?: string | null;
 }
 
 export function SubjectActionSheet({ 
@@ -46,7 +47,8 @@ export function SubjectActionSheet({
   entry, 
   onDataChanged,
   onEditEntry,
-  currentDate
+  currentDate,
+  existingEvaId
 }: SubjectActionSheetProps) {
   const { user } = useAuth();
   const [gradeDialogOpen, setGradeDialogOpen] = useState(false);
@@ -164,6 +166,22 @@ export function SubjectActionSheet({
     setEvaLoading(false);
   };
 
+  const handleRemoveEVA = async () => {
+    if (!existingEvaId) return;
+    
+    setEvaLoading(true);
+    const { error } = await supabase.from('lesson_absences').delete().eq('id', existingEvaId);
+    
+    if (error) {
+      toast.error('Fehler beim Entfernen');
+    } else {
+      toast.success('EVA entfernt');
+      onDataChanged();
+      onOpenChange(false);
+    }
+    setEvaLoading(false);
+  };
+
   if (!entry) return null;
 
   return (
@@ -206,24 +224,24 @@ export function SubjectActionSheet({
                 </Button>
                 <Button
                   variant="outline"
-                  className="flex flex-col items-center gap-1.5 h-auto py-4"
-                  onClick={handleMarkEVA}
+                  className={`flex flex-col items-center gap-1.5 h-auto py-4 ${existingEvaId ? 'border-purple-500 bg-purple-500/10' : ''}`}
+                  onClick={existingEvaId ? handleRemoveEVA : handleMarkEVA}
                   disabled={evaLoading}
                 >
                   <Coffee className="w-5 h-5 text-purple-500" />
-                  <span className="text-xs">EVA</span>
+                  <span className="text-xs">{existingEvaId ? 'EVA entfernen' : 'EVA'}</span>
                 </Button>
               </>
             )}
             {isFree && (
               <Button
                 variant="outline"
-                className="flex flex-col items-center gap-1.5 h-auto py-4"
-                onClick={handleMarkEVA}
+                className={`flex flex-col items-center gap-1.5 h-auto py-4 ${existingEvaId ? 'border-purple-500 bg-purple-500/10' : ''}`}
+                onClick={existingEvaId ? handleRemoveEVA : handleMarkEVA}
                 disabled={evaLoading}
               >
                 <Coffee className="w-5 h-5 text-purple-500" />
-                <span className="text-xs">EVA</span>
+                <span className="text-xs">{existingEvaId ? 'EVA entfernen' : 'EVA'}</span>
               </Button>
             )}
             <Button
