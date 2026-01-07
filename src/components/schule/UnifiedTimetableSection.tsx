@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, Plus, Trash2, ChevronLeft, ChevronRight, GraduationCap, TrendingUp, Calendar, Clock } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, ChevronLeft, ChevronRight, GraduationCap, TrendingUp, Calendar, Clock, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, addWeeks, subWeeks, startOfWeek, addDays, getISOWeek, isWithinInterval, parseISO } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -88,6 +88,8 @@ export function UnifiedTimetableSection({ onBack }: UnifiedTimetableSectionProps
   const [absences, setAbsences] = useState<LessonAbsence[]>([]);
   const [holidays, setHolidays] = useState<SchoolHoliday[]>([]);
   const [customHolidays, setCustomHolidays] = useState<CustomHoliday[]>([]);
+  const [gradeColorSettings, setGradeColorSettings] = useState<{ green_min: number; yellow_min: number }>({ green_min: 13, yellow_min: 10 });
+  const [gradeSettingsOpen, setGradeSettingsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<TimetableEntry | null>(null);
@@ -124,7 +126,7 @@ export function UnifiedTimetableSection({ onBack }: UnifiedTimetableSectionProps
     const weekStartStr = format(currentWeekStart, 'yyyy-MM-dd');
     const weekEndStr = format(weekEnd, 'yyyy-MM-dd');
 
-    const [entriesRes, subjectsRes, absencesRes, gradesRes] = await Promise.all([
+    const [entriesRes, subjectsRes, absencesRes, gradesRes, gradeSettingsRes] = await Promise.all([
       supabase
         .from('timetable_entries')
         .select('*, subjects(id, name, short_name, teacher_short, room, grade_year, written_weight, oral_weight)')
@@ -146,11 +148,20 @@ export function UnifiedTimetableSection({ onBack }: UnifiedTimetableSectionProps
         .from('grades')
         .select('points, grade_type, subject_id')
         .eq('user_id', user.id),
+      supabase
+        .from('grade_color_settings')
+        .select('green_min, yellow_min')
+        .eq('user_id', user.id)
+        .maybeSingle(),
     ]);
 
     setEntries(entriesRes.data || []);
     setSubjects(subjectsRes.data || []);
     setAbsences(absencesRes.data || []);
+    
+    if (gradeSettingsRes.data) {
+      setGradeColorSettings(gradeSettingsRes.data);
+    }
 
     if (gradesRes.data && subjectsRes.data) {
       const gradeDataResult: Record<string, SubjectGradeData> = {};
@@ -405,9 +416,28 @@ export function UnifiedTimetableSection({ onBack }: UnifiedTimetableSectionProps
 
   const getGradeColor = (grade: number | null) => {
     if (grade === null) return 'bg-muted text-muted-foreground';
-    if (grade >= 13) return 'bg-emerald-500 text-white';
-    if (grade >= 10) return 'bg-amber-500 text-white';
+    if (grade >= gradeColorSettings.green_min) return 'bg-emerald-500 text-white';
+    if (grade >= gradeColorSettings.yellow_min) return 'bg-amber-500 text-white';
     return 'bg-rose-500 text-white';
+  };
+
+  const saveGradeColorSettings = async (greenMin: number, yellowMin: number) => {
+    if (!user) return;
+    
+    const { error } = await supabase
+      .from('grade_color_settings')
+      .upsert({ 
+        user_id: user.id, 
+        green_min: greenMin, 
+        yellow_min: yellowMin,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id' });
+    
+    if (!error) {
+      setGradeColorSettings({ green_min: greenMin, yellow_min: yellowMin });
+      toast.success('Einstellungen gespeichert');
+      setGradeSettingsOpen(false);
+    }
   };
 
   if (loading) {
@@ -688,6 +718,63 @@ export function UnifiedTimetableSection({ onBack }: UnifiedTimetableSectionProps
         <AddSubjectDialog onSubjectAdded={fetchData} />
         <DefaultFreePeriodDialog onFreePeriodAdded={fetchData} />
         <AddHolidayDialog onHolidayAdded={fetchHolidays} />
+        <Dialog open={gradeSettingsOpen} onOpenChange={setGradeSettingsOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="sm" className="h-9 gap-1">
+              <Settings className="w-4 h-4" />
+              Notenfarben
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-xs">
+            <DialogHeader>
+              <DialogTitle>Notenfarben einstellen</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 pt-2">
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 rounded bg-emerald-500" />
+                <div className="flex-1">
+                  <Label className="text-xs">ab Punkten</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="15"
+                    defaultValue={gradeColorSettings.green_min}
+                    id="greenMin"
+                    className="h-8"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 rounded bg-amber-500" />
+                <div className="flex-1">
+                  <Label className="text-xs">ab Punkten</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="15"
+                    defaultValue={gradeColorSettings.yellow_min}
+                    id="yellowMin"
+                    className="h-8"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 rounded bg-rose-500" />
+                <span className="text-sm text-muted-foreground">darunter</span>
+              </div>
+              <Button 
+                className="w-full"
+                onClick={() => {
+                  const greenMin = parseInt((document.getElementById('greenMin') as HTMLInputElement).value) || 13;
+                  const yellowMin = parseInt((document.getElementById('yellowMin') as HTMLInputElement).value) || 10;
+                  saveGradeColorSettings(greenMin, yellowMin);
+                }}
+              >
+                Speichern
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Subject Sheet */}
@@ -734,6 +821,7 @@ export function UnifiedTimetableSection({ onBack }: UnifiedTimetableSectionProps
           }
         }}
         currentDate={currentDate}
+        existingEvaId={selectedEntry ? absences.find(a => a.timetable_entry_id === selectedEntry.id && a.date === format(currentDate, 'yyyy-MM-dd') && a.reason === 'efa')?.id : null}
       />
     </div>
   );

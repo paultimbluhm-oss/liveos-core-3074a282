@@ -655,6 +655,33 @@ export type Database = {
         }
         Relationships: []
       }
+      grade_color_settings: {
+        Row: {
+          created_at: string
+          green_min: number
+          id: string
+          updated_at: string
+          user_id: string
+          yellow_min: number
+        }
+        Insert: {
+          created_at?: string
+          green_min?: number
+          id?: string
+          updated_at?: string
+          user_id: string
+          yellow_min?: number
+        }
+        Update: {
+          created_at?: string
+          green_min?: number
+          id?: string
+          updated_at?: string
+          user_id?: string
+          yellow_min?: number
+        }
+        Relationships: []
+      }
       grades: {
         Row: {
           created_at: string | null
