@@ -621,6 +621,79 @@ export type Database = {
         }
         Relationships: []
       }
+      course_members: {
+        Row: {
+          course_id: string
+          id: string
+          joined_at: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          course_id: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          course_id?: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_members_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      courses: {
+        Row: {
+          color: string | null
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+          school_year_id: string
+          short_name: string | null
+          teacher_name: string | null
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          name: string
+          school_year_id: string
+          short_name?: string | null
+          teacher_name?: string | null
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
+          school_year_id?: string
+          short_name?: string | null
+          teacher_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "courses_school_year_id_fkey"
+            columns: ["school_year_id"]
+            isOneToOne: false
+            referencedRelation: "school_years"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       custom_holidays: {
         Row: {
           color: string | null
@@ -2055,6 +2128,150 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      school_years: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+          school_id: string
+          year_number: number | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          name: string
+          school_id: string
+          year_number?: number | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
+          school_id?: string
+          year_number?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_years_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      schools: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          name: string
+          short_name: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          name: string
+          short_name?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          name?: string
+          short_name?: string | null
+        }
+        Relationships: []
+      }
+      shared_events: {
+        Row: {
+          course_id: string
+          created_at: string
+          description: string | null
+          event_date: string
+          event_type: string | null
+          id: string
+          shared_by: string
+          title: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          description?: string | null
+          event_date: string
+          event_type?: string | null
+          id?: string
+          shared_by: string
+          title: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          description?: string | null
+          event_date?: string
+          event_type?: string | null
+          id?: string
+          shared_by?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_events_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shared_homework: {
+        Row: {
+          course_id: string
+          created_at: string
+          description: string | null
+          due_date: string
+          id: string
+          priority: string | null
+          shared_by: string
+          title: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          description?: string | null
+          due_date: string
+          id?: string
+          priority?: string | null
+          shared_by: string
+          title: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          description?: string | null
+          due_date?: string
+          id?: string
+          priority?: string | null
+          shared_by?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_homework_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       skill_entries: {
         Row: {
