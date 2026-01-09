@@ -660,6 +660,7 @@ export type Database = {
           created_by: string
           id: string
           name: string
+          room: string | null
           school_year_id: string
           short_name: string | null
           teacher_name: string | null
@@ -670,6 +671,7 @@ export type Database = {
           created_by: string
           id?: string
           name: string
+          room?: string | null
           school_year_id: string
           short_name?: string | null
           teacher_name?: string | null
@@ -680,6 +682,7 @@ export type Database = {
           created_by?: string
           id?: string
           name?: string
+          room?: string | null
           school_year_id?: string
           short_name?: string | null
           teacher_name?: string | null
@@ -1814,6 +1817,8 @@ export type Database = {
           id: string
           last_active_date: string | null
           level: number | null
+          selected_school_id: string | null
+          selected_school_year_id: string | null
           streak_days: number | null
           updated_at: string | null
           user_id: string
@@ -1827,6 +1832,8 @@ export type Database = {
           id?: string
           last_active_date?: string | null
           level?: number | null
+          selected_school_id?: string | null
+          selected_school_year_id?: string | null
           streak_days?: number | null
           updated_at?: string | null
           user_id: string
@@ -1840,13 +1847,30 @@ export type Database = {
           id?: string
           last_active_date?: string | null
           level?: number | null
+          selected_school_id?: string | null
+          selected_school_year_id?: string | null
           streak_days?: number | null
           updated_at?: string | null
           user_id?: string
           username?: string | null
           xp?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_selected_school_id_fkey"
+            columns: ["selected_school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_selected_school_year_id_fkey"
+            columns: ["selected_school_year_id"]
+            isOneToOne: false
+            referencedRelation: "school_years"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       recipe_ingredients: {
         Row: {
@@ -2089,6 +2113,41 @@ export type Database = {
             columns: ["subject_id"]
             isOneToOne: false
             referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      school_subjects: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+          school_id: string
+          short_name: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          name: string
+          school_id: string
+          short_name?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
+          school_id?: string
+          short_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_subjects_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
             referencedColumns: ["id"]
           },
         ]
