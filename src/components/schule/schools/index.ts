@@ -3,3 +3,7 @@ export * from './SchoolsSection';
 export * from './SchoolYearsSection';
 export * from './CoursesSection';
 export * from './CourseDetailSection';
+export * from './SchoolSettingsDialog';
+export * from './CreateCourseDialog';
+export * from './CoursesList';
+export * from './CourseDetailView';
