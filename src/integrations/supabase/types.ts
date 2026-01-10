@@ -944,6 +944,7 @@ export type Database = {
       }
       grades: {
         Row: {
+          course_id: string | null
           created_at: string | null
           date: string | null
           description: string | null
@@ -954,6 +955,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          course_id?: string | null
           created_at?: string | null
           date?: string | null
           description?: string | null
@@ -964,6 +966,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          course_id?: string | null
           created_at?: string | null
           date?: string | null
           description?: string | null
@@ -974,6 +977,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "grades_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "grades_subject_id_fkey"
             columns: ["subject_id"]
@@ -2546,6 +2556,7 @@ export type Database = {
       }
       timetable_entries: {
         Row: {
+          course_id: string | null
           created_at: string
           day_of_week: number
           id: string
@@ -2560,6 +2571,7 @@ export type Database = {
           week_type: string | null
         }
         Insert: {
+          course_id?: string | null
           created_at?: string
           day_of_week: number
           id?: string
@@ -2574,6 +2586,7 @@ export type Database = {
           week_type?: string | null
         }
         Update: {
+          course_id?: string | null
           created_at?: string
           day_of_week?: number
           id?: string
@@ -2588,6 +2601,13 @@ export type Database = {
           week_type?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "timetable_entries_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "timetable_entries_subject_id_fkey"
             columns: ["subject_id"]

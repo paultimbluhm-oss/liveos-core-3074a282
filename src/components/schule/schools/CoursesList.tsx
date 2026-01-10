@@ -7,7 +7,7 @@ import { Plus, BookOpen, Users, UserPlus, ChevronRight, Check } from 'lucide-rea
 import { toast } from 'sonner';
 import { Course } from './types';
 import { CreateCourseDialog } from './CreateCourseDialog';
-import { CourseDetailView } from './CourseDetailView';
+import { CourseDetailSection } from './CourseDetailSection';
 
 interface CoursesListProps {
   schoolYearId: string;
@@ -101,7 +101,7 @@ export function CoursesList({ schoolYearId, schoolId, schoolName, yearName }: Co
 
   if (selectedCourse) {
     return (
-      <CourseDetailView 
+      <CourseDetailSection 
         course={selectedCourse}
         onBack={() => {
           setSelectedCourse(null);
