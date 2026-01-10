@@ -23,6 +23,7 @@ export interface Course {
   short_name: string | null;
   teacher_name: string | null;
   color: string | null;
+  room: string | null;
   created_by: string;
   created_at: string;
   member_count?: number;
