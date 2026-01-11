@@ -620,7 +620,8 @@ export function FinanceSection({ onBack }: FinanceSectionProps) {
             <div className="divide-y divide-border/30 rounded-lg border border-border/50 overflow-hidden">
               {transactions.map((tx) => {
                 const account = accounts.find((a) => a.id === tx.account_id);
-                const isIncome = tx.transaction_type === 'income';
+                const isTransfer = tx.transaction_type === 'transfer' || tx.category === 'Umschichtung';
+                const isIncome = tx.transaction_type === 'income' && !isTransfer;
                 return (
                   <div 
                     key={tx.id} 
@@ -628,22 +629,22 @@ export function FinanceSection({ onBack }: FinanceSectionProps) {
                   >
                     <div className={cn(
                       "w-1 h-8 rounded-full shrink-0",
-                      isIncome ? "bg-emerald-500" : "bg-rose-400"
+                      isTransfer ? "bg-sky-400" : isIncome ? "bg-emerald-500" : "bg-rose-400"
                     )} />
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-xs truncate">
-                        {tx.description || tx.category || 'Transaktion'}
+                        {isTransfer ? tx.description || 'Umschichtung' : tx.description || tx.category || 'Transaktion'}
                       </div>
                       <div className="text-[10px] text-muted-foreground">
-                        {account?.name} - {format(new Date(tx.date), 'dd.MM.yy', { locale: de })}
+                        {isTransfer ? 'Umschichtung' : account?.name} - {format(new Date(tx.date), 'dd.MM.yy', { locale: de })}
                       </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       <span className={cn(
                         "font-semibold text-xs",
-                        isIncome ? "text-emerald-500" : "text-rose-400"
+                        isTransfer ? "text-sky-400" : isIncome ? "text-emerald-500" : "text-rose-400"
                       )}>
-                        {isIncome ? '+' : '-'}{tx.amount.toLocaleString('de-DE', { minimumFractionDigits: 2 })}€
+                        {isTransfer ? '↔' : isIncome ? '+' : '-'}{tx.amount.toLocaleString('de-DE', { minimumFractionDigits: 2 })}€
                       </span>
                       <Button
                         variant="ghost"
