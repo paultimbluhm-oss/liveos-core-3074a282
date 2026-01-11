@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ArrowLeft, Wallet, TrendingUp, ChevronDown, RefreshCw, History, BarChart3, Edit2, TrendingDown, Minus } from 'lucide-react';
+import { ArrowLeft, Wallet, TrendingUp, ChevronDown, RefreshCw, History, BarChart3, Edit2, TrendingDown, Minus, Trash2 } from 'lucide-react';
 import { useAuth, getSupabase } from '@/hooks/useAuth';
 import { AccountCard } from './AccountCard';
 import { AddAccountDialog } from './AddAccountDialog';
@@ -11,6 +11,7 @@ import { AddTransactionDialog } from './AddTransactionDialog';
 import { EditTransactionDialog } from './EditTransactionDialog';
 import { InvestmentCard } from './InvestmentCard';
 import { LoansSection } from './LoansSection';
+import { RecurringSection } from './RecurringSection';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -599,6 +600,17 @@ export function FinanceSection({ onBack }: FinanceSectionProps) {
         </CollapsibleContent>
       </Collapsible>
 
+      {/* Recurring Transactions / Abos Section */}
+      <Card className="border-border/50">
+        <CardContent className="p-3">
+          <RecurringSection 
+            accounts={accounts} 
+            investments={investments} 
+            onTransactionExecuted={fetchData} 
+          />
+        </CardContent>
+      </Card>
+
       {/* Transaction History Section */}
       <Collapsible open={historyOpen} onOpenChange={setHistoryOpen}>
         <CollapsibleTrigger asChild>
@@ -649,7 +661,7 @@ export function FinanceSection({ onBack }: FinanceSectionProps) {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-6 w-6 opacity-50 group-hover:opacity-100"
+                        className="h-6 w-6 opacity-0 group-hover:opacity-100"
                         onClick={(e) => {
                           e.stopPropagation();
                           setEditingTransaction(tx);
@@ -657,6 +669,17 @@ export function FinanceSection({ onBack }: FinanceSectionProps) {
                         }}
                       >
                         <Edit2 className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 opacity-0 group-hover:opacity-100 text-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteTransaction(tx.id);
+                        }}
+                      >
+                        <Trash2 className="w-3 h-3" />
                       </Button>
                     </div>
                   </div>
