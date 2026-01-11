@@ -102,23 +102,17 @@ export function AddTransactionDialog({
       }
 
       // Create two transactions for transfer
+      // Create single transfer transaction (not income/expense to avoid counting in stats)
       const { error: error1 } = await supabase.from('transactions').insert({
         user_id: user.id,
         account_id: accountId,
-        transaction_type: 'expense',
+        transaction_type: 'transfer',
         amount: amountNum,
-        description: `Umschichtung zu ${accounts.find((a) => a.id === targetAccountId)?.name}`,
+        description: `${accounts.find((a) => a.id === accountId)?.name} → ${accounts.find((a) => a.id === targetAccountId)?.name}`,
         category: 'Umschichtung',
       });
 
-      const { error: error2 } = await supabase.from('transactions').insert({
-        user_id: user.id,
-        account_id: targetAccountId,
-        transaction_type: 'income',
-        amount: amountNum,
-        description: `Umschichtung von ${accounts.find((a) => a.id === accountId)?.name}`,
-        category: 'Umschichtung',
-      });
+      const error2 = null; // Only one transaction for transfers now
 
       // Update balances
       const sourceAccount = accounts.find((a) => a.id === accountId);
