@@ -534,6 +534,70 @@ export type Database = {
         }
         Relationships: []
       }
+      class_members: {
+        Row: {
+          class_id: string
+          id: string
+          joined_at: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          class_id: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          class_id?: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_members_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      classes: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+          school_year_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          name: string
+          school_year_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
+          school_year_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "classes_school_year_id_fkey"
+            columns: ["school_year_id"]
+            isOneToOne: false
+            referencedRelation: "school_years"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contact_connections: {
         Row: {
           created_at: string
@@ -653,8 +717,44 @@ export type Database = {
           },
         ]
       }
+      course_timetable_slots: {
+        Row: {
+          course_id: string
+          created_at: string
+          day_of_week: number
+          id: string
+          period: number
+          room: string | null
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          day_of_week: number
+          id?: string
+          period: number
+          room?: string | null
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          day_of_week?: number
+          id?: string
+          period?: number
+          room?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_timetable_slots_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courses: {
         Row: {
+          class_id: string | null
           color: string | null
           created_at: string
           created_by: string
@@ -666,6 +766,7 @@ export type Database = {
           teacher_name: string | null
         }
         Insert: {
+          class_id?: string | null
           color?: string | null
           created_at?: string
           created_by: string
@@ -677,6 +778,7 @@ export type Database = {
           teacher_name?: string | null
         }
         Update: {
+          class_id?: string | null
           color?: string | null
           created_at?: string
           created_by?: string
@@ -688,6 +790,13 @@ export type Database = {
           teacher_name?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "courses_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "courses_school_year_id_fkey"
             columns: ["school_year_id"]
@@ -1827,6 +1936,7 @@ export type Database = {
           id: string
           last_active_date: string | null
           level: number | null
+          selected_class_id: string | null
           selected_school_id: string | null
           selected_school_year_id: string | null
           streak_days: number | null
@@ -1842,6 +1952,7 @@ export type Database = {
           id?: string
           last_active_date?: string | null
           level?: number | null
+          selected_class_id?: string | null
           selected_school_id?: string | null
           selected_school_year_id?: string | null
           streak_days?: number | null
@@ -1857,6 +1968,7 @@ export type Database = {
           id?: string
           last_active_date?: string | null
           level?: number | null
+          selected_class_id?: string | null
           selected_school_id?: string | null
           selected_school_year_id?: string | null
           streak_days?: number | null
@@ -1866,6 +1978,13 @@ export type Database = {
           xp?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "profiles_selected_class_id_fkey"
+            columns: ["selected_class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "profiles_selected_school_id_fkey"
             columns: ["selected_school_id"]

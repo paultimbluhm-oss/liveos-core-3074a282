@@ -46,6 +46,7 @@ interface CreateCourseDialogProps {
   onOpenChange: (open: boolean) => void;
   schoolYearId: string;
   schoolId: string;
+  classId?: string;
   onCourseCreated: () => void;
 }
 
@@ -54,6 +55,7 @@ export function CreateCourseDialog({
   onOpenChange, 
   schoolYearId, 
   schoolId,
+  classId,
   onCourseCreated 
 }: CreateCourseDialogProps) {
   const { user } = useAuth();
@@ -121,6 +123,7 @@ export function CreateCourseDialog({
     
     const { data: courseData, error } = await supabase.from('courses').insert({
       school_year_id: schoolYearId,
+      class_id: classId || null,
       name: name,
       short_name: shortName || null,
       teacher_name: teacherName.trim() || null,
