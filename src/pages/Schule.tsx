@@ -26,6 +26,11 @@ interface YearInfo {
   year_number: number | null;
 }
 
+interface ClassInfo {
+  id: string;
+  name: string;
+}
+
 const sections = [
   { id: 'stundenplan', icon: GraduationCap, label: 'Stundenplan', color: 'border-blue-500 text-blue-500' },
   { id: 'hausaufgaben', icon: BookOpen, label: 'Hausaufgaben', color: 'border-green-500 text-green-500' },
@@ -42,6 +47,7 @@ export default function Schule() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [selectedSchool, setSelectedSchool] = useState<SchoolInfo | null>(null);
   const [selectedYear, setSelectedYear] = useState<YearInfo | null>(null);
+  const [selectedClass, setSelectedClass] = useState<ClassInfo | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
 
   useEffect(() => {
@@ -55,7 +61,7 @@ export default function Schule() {
     
     const { data: profile } = await supabase
       .from('profiles')
-      .select('selected_school_id, selected_school_year_id')
+      .select('selected_school_id, selected_school_year_id, selected_class_id')
       .eq('user_id', user.id)
       .single();
     
@@ -76,6 +82,18 @@ export default function Schule() {
           .single();
         
         if (year) setSelectedYear(year);
+      }
+      
+      if (profile.selected_class_id) {
+        const { data: cls } = await supabase
+          .from('classes')
+          .select('id, name')
+          .eq('id', profile.selected_class_id)
+          .single();
+        
+        if (cls) setSelectedClass(cls);
+      } else {
+        setSelectedClass(null);
       }
     }
     
@@ -158,9 +176,10 @@ export default function Schule() {
             {selectedSchool ? (
               <>
                 <h1 className="text-lg font-bold">{selectedSchool.short_name || selectedSchool.name}</h1>
-                {selectedYear && (
-                  <p className="text-xs text-muted-foreground">{selectedYear.name}</p>
-                )}
+                <p className="text-xs text-muted-foreground">
+                  {selectedYear?.name}
+                  {selectedClass && ` - ${selectedClass.name}`}
+                </p>
               </>
             ) : (
               <h1 className="text-lg font-bold">Schule</h1>
@@ -206,12 +225,17 @@ export default function Schule() {
                 <Users className="w-4 h-4 text-violet-500" strokeWidth={1.5} />
               </div>
               <h2 className="font-semibold">Kurse</h2>
+              {selectedClass && (
+                <span className="text-xs text-muted-foreground">({selectedClass.name})</span>
+              )}
             </div>
             <CoursesList 
               schoolYearId={selectedYear.id}
               schoolId={selectedSchool.id}
               schoolName={selectedSchool.name}
               yearName={selectedYear.name}
+              classId={selectedClass?.id}
+              className={selectedClass?.name}
             />
           </div>
         ) : (
@@ -221,7 +245,7 @@ export default function Schule() {
             </div>
             <p className="text-sm text-muted-foreground">Keine Schule ausgewaehlt</p>
             <p className="text-[10px] text-muted-foreground/70 mb-3">
-              Waehle eine Schule und einen Jahrgang aus
+              Waehle Schule, Jahrgang und Klasse aus
             </p>
             <Button 
               variant="outline" 

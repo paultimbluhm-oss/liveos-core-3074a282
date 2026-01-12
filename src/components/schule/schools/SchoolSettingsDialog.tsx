@@ -2,15 +2,16 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Settings, Plus, Building2, GraduationCap, Check } from 'lucide-react';
+import { Settings, Plus, Building2, GraduationCap, Users, Check, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
-import { School, SchoolYear } from './types';
+import { School, SchoolYear, Class } from './types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent } from '@/components/ui/card';
 
 interface SchoolSettingsDialogProps {
   open: boolean;
@@ -22,8 +23,10 @@ export function SchoolSettingsDialog({ open, onOpenChange, onSchoolChanged }: Sc
   const { user } = useAuth();
   const [schools, setSchools] = useState<School[]>([]);
   const [schoolYears, setSchoolYears] = useState<SchoolYear[]>([]);
+  const [classes, setClasses] = useState<Class[]>([]);
   const [selectedSchoolId, setSelectedSchoolId] = useState<string>('');
   const [selectedYearId, setSelectedYearId] = useState<string>('');
+  const [selectedClassId, setSelectedClassId] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   
@@ -37,13 +40,17 @@ export function SchoolSettingsDialog({ open, onOpenChange, onSchoolChanged }: Sc
   const [newYearName, setNewYearName] = useState('');
   const [newYearNumber, setNewYearNumber] = useState('');
   const [creatingYear, setCreatingYear] = useState(false);
+  
+  // New class form
+  const [newClassName, setNewClassName] = useState('');
+  const [creatingClass, setCreatingClass] = useState(false);
 
   const fetchData = async () => {
     if (!user) return;
     
     const [schoolsRes, profileRes] = await Promise.all([
       supabase.from('schools').select('*').order('name'),
-      supabase.from('profiles').select('selected_school_id, selected_school_year_id').eq('user_id', user.id).single(),
+      supabase.from('profiles').select('selected_school_id, selected_school_year_id, selected_class_id').eq('user_id', user.id).single(),
     ]);
     
     if (schoolsRes.data) setSchools(schoolsRes.data);
@@ -51,6 +58,7 @@ export function SchoolSettingsDialog({ open, onOpenChange, onSchoolChanged }: Sc
     if (profileRes.data) {
       setSelectedSchoolId(profileRes.data.selected_school_id || '');
       setSelectedYearId(profileRes.data.selected_school_year_id || '');
+      setSelectedClassId(profileRes.data.selected_class_id || '');
       
       if (profileRes.data.selected_school_id) {
         const { data: yearsData } = await supabase
@@ -59,10 +67,48 @@ export function SchoolSettingsDialog({ open, onOpenChange, onSchoolChanged }: Sc
           .eq('school_id', profileRes.data.selected_school_id)
           .order('year_number', { nullsFirst: false });
         if (yearsData) setSchoolYears(yearsData);
+        
+        if (profileRes.data.selected_school_year_id) {
+          await fetchClasses(profileRes.data.selected_school_year_id);
+        }
       }
     }
     
     setLoading(false);
+  };
+
+  const fetchClasses = async (yearId: string) => {
+    if (!user) return;
+    
+    const { data: classesData } = await supabase
+      .from('classes')
+      .select('*')
+      .eq('school_year_id', yearId)
+      .order('name');
+    
+    if (classesData) {
+      const enrichedClasses = await Promise.all(classesData.map(async (cls) => {
+        const { count } = await supabase
+          .from('class_members')
+          .select('*', { count: 'exact', head: true })
+          .eq('class_id', cls.id);
+        
+        const { data: membership } = await supabase
+          .from('class_members')
+          .select('id')
+          .eq('class_id', cls.id)
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        return {
+          ...cls,
+          member_count: count || 0,
+          is_member: !!membership,
+        };
+      }));
+      
+      setClasses(enrichedClasses);
+    }
   };
 
   useEffect(() => {
@@ -72,6 +118,8 @@ export function SchoolSettingsDialog({ open, onOpenChange, onSchoolChanged }: Sc
   const handleSchoolChange = async (schoolId: string) => {
     setSelectedSchoolId(schoolId);
     setSelectedYearId('');
+    setSelectedClassId('');
+    setClasses([]);
     
     if (schoolId) {
       const { data: yearsData } = await supabase
@@ -85,6 +133,17 @@ export function SchoolSettingsDialog({ open, onOpenChange, onSchoolChanged }: Sc
     }
   };
 
+  const handleYearChange = async (yearId: string) => {
+    setSelectedYearId(yearId);
+    setSelectedClassId('');
+    
+    if (yearId) {
+      await fetchClasses(yearId);
+    } else {
+      setClasses([]);
+    }
+  };
+
   const handleSave = async () => {
     if (!user) return;
     
@@ -94,6 +153,7 @@ export function SchoolSettingsDialog({ open, onOpenChange, onSchoolChanged }: Sc
       .update({
         selected_school_id: selectedSchoolId || null,
         selected_school_year_id: selectedYearId || null,
+        selected_class_id: selectedClassId || null,
       })
       .eq('user_id', user.id);
     
@@ -162,7 +222,82 @@ export function SchoolSettingsDialog({ open, onOpenChange, onSchoolChanged }: Sc
       setNewYearName('');
       setNewYearNumber('');
       handleSchoolChange(selectedSchoolId);
-      if (data) setSelectedYearId(data.id);
+      if (data) {
+        setSelectedYearId(data.id);
+        handleYearChange(data.id);
+      }
+    }
+  };
+
+  const handleCreateClass = async () => {
+    if (!user || !selectedYearId || !newClassName.trim()) {
+      toast.error('Name erforderlich');
+      return;
+    }
+    
+    setCreatingClass(true);
+    const { data, error } = await supabase.from('classes').insert({
+      school_year_id: selectedYearId,
+      name: newClassName.trim(),
+      created_by: user.id,
+    }).select().single();
+    
+    setCreatingClass(false);
+    
+    if (error) {
+      toast.error('Fehler beim Erstellen');
+    } else {
+      toast.success('Klasse erstellt');
+      setNewClassName('');
+      await fetchClasses(selectedYearId);
+      if (data) {
+        // Auto-join the class
+        await supabase.from('class_members').insert({
+          class_id: data.id,
+          user_id: user.id,
+          role: 'admin',
+        });
+        setSelectedClassId(data.id);
+        await fetchClasses(selectedYearId);
+      }
+    }
+  };
+
+  const joinClass = async (classId: string) => {
+    if (!user) return;
+    
+    const { error } = await supabase.from('class_members').insert({
+      class_id: classId,
+      user_id: user.id,
+      role: 'member',
+    });
+    
+    if (error) {
+      if (error.code === '23505') {
+        toast.error('Bereits beigetreten');
+      } else {
+        toast.error('Fehler beim Beitreten');
+      }
+    } else {
+      toast.success('Klasse beigetreten');
+      setSelectedClassId(classId);
+      await fetchClasses(selectedYearId);
+    }
+  };
+
+  const leaveClass = async (classId: string) => {
+    if (!user) return;
+    
+    const { error } = await supabase
+      .from('class_members')
+      .delete()
+      .eq('class_id', classId)
+      .eq('user_id', user.id);
+    
+    if (!error) {
+      toast.success('Klasse verlassen');
+      if (selectedClassId === classId) setSelectedClassId('');
+      await fetchClasses(selectedYearId);
     }
   };
 
@@ -195,6 +330,7 @@ export function SchoolSettingsDialog({ open, onOpenChange, onSchoolChanged }: Sc
           </TabsList>
           
           <TabsContent value="select" className="space-y-4 mt-4">
+            {/* School Selection */}
             <div>
               <Label className="text-xs">Schule</Label>
               <Select value={selectedSchoolId} onValueChange={handleSchoolChange}>
@@ -211,10 +347,11 @@ export function SchoolSettingsDialog({ open, onOpenChange, onSchoolChanged }: Sc
               </Select>
             </div>
             
+            {/* Year Selection */}
             {selectedSchoolId && (
               <div>
                 <Label className="text-xs">Jahrgang</Label>
-                <Select value={selectedYearId} onValueChange={setSelectedYearId}>
+                <Select value={selectedYearId} onValueChange={handleYearChange}>
                   <SelectTrigger className="h-9 mt-1">
                     <SelectValue placeholder="Jahrgang waehlen..." />
                   </SelectTrigger>
@@ -230,6 +367,68 @@ export function SchoolSettingsDialog({ open, onOpenChange, onSchoolChanged }: Sc
                   <p className="text-[10px] text-muted-foreground mt-1">
                     Kein Jahrgang vorhanden. Erstelle einen im Tab "Erstellen".
                   </p>
+                )}
+              </div>
+            )}
+            
+            {/* Class Selection */}
+            {selectedYearId && (
+              <div>
+                <Label className="text-xs mb-2 block">Klasse</Label>
+                {classes.length === 0 ? (
+                  <p className="text-[10px] text-muted-foreground">
+                    Keine Klasse vorhanden. Erstelle eine im Tab "Erstellen".
+                  </p>
+                ) : (
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                    {classes.map(cls => (
+                      <Card 
+                        key={cls.id} 
+                        className={`transition-colors cursor-pointer ${
+                          selectedClassId === cls.id ? 'border-primary bg-primary/5' : ''
+                        } ${cls.is_member ? 'border-primary/30' : ''}`}
+                        onClick={() => cls.is_member && setSelectedClassId(cls.id)}
+                      >
+                        <CardContent className="p-2.5 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-lg border-2 border-violet-500 flex items-center justify-center">
+                              <Users className="w-3 h-3 text-violet-500" strokeWidth={1.5} />
+                            </div>
+                            <div>
+                              <p className="text-xs font-medium">{cls.name}</p>
+                              <p className="text-[9px] text-muted-foreground">{cls.member_count} Mitglieder</p>
+                            </div>
+                          </div>
+                          
+                          {cls.is_member ? (
+                            <div className="flex items-center gap-1">
+                              {selectedClassId === cls.id && (
+                                <Check className="w-4 h-4 text-primary" strokeWidth={1.5} />
+                              )}
+                              <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                className="h-6 text-[9px] px-1.5"
+                                onClick={(e) => { e.stopPropagation(); leaveClass(cls.id); }}
+                              >
+                                Verlassen
+                              </Button>
+                            </div>
+                          ) : (
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="h-6 text-[9px] gap-1 px-2"
+                              onClick={(e) => { e.stopPropagation(); joinClass(cls.id); }}
+                            >
+                              <UserPlus className="w-3 h-3" strokeWidth={1.5} />
+                              Beitreten
+                            </Button>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
                 )}
               </div>
             )}
@@ -320,6 +519,34 @@ export function SchoolSettingsDialog({ open, onOpenChange, onSchoolChanged }: Sc
                 >
                   <Plus className="w-3 h-3 mr-1" strokeWidth={1.5} />
                   {creatingYear ? 'Wird erstellt...' : 'Jahrgang erstellen'}
+                </Button>
+              </div>
+            )}
+            
+            {/* Create Class */}
+            {selectedYearId && (
+              <div className="p-3 rounded-lg border border-border/50 space-y-3">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <Users className="w-4 h-4" strokeWidth={1.5} />
+                  Neue Klasse
+                </div>
+                <div>
+                  <Label className="text-xs">Name</Label>
+                  <Input 
+                    value={newClassName}
+                    onChange={(e) => setNewClassName(e.target.value)}
+                    placeholder="z.B. 12a oder Leistungskurs Mathe"
+                    className="h-8 mt-1"
+                  />
+                </div>
+                <Button 
+                  onClick={handleCreateClass} 
+                  variant="outline" 
+                  className="w-full h-8 text-xs"
+                  disabled={creatingClass || !newClassName.trim()}
+                >
+                  <Plus className="w-3 h-3 mr-1" strokeWidth={1.5} />
+                  {creatingClass ? 'Wird erstellt...' : 'Klasse erstellen'}
                 </Button>
               </div>
             )}

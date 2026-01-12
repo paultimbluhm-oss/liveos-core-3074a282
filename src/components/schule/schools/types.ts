@@ -16,9 +16,32 @@ export interface SchoolYear {
   created_at: string;
 }
 
+export interface Class {
+  id: string;
+  school_year_id: string;
+  name: string;
+  created_by: string;
+  created_at: string;
+  member_count?: number;
+  is_member?: boolean;
+}
+
+export interface ClassMember {
+  id: string;
+  class_id: string;
+  user_id: string;
+  role: string;
+  joined_at: string;
+  profile?: {
+    username: string | null;
+    display_name: string | null;
+  };
+}
+
 export interface Course {
   id: string;
   school_year_id: string;
+  class_id: string | null;
   name: string;
   short_name: string | null;
   teacher_name: string | null;
@@ -40,6 +63,15 @@ export interface CourseMember {
     username: string | null;
     display_name: string | null;
   };
+}
+
+export interface CourseTimetableSlot {
+  id: string;
+  course_id: string;
+  day_of_week: number;
+  period: number;
+  room: string | null;
+  created_at: string;
 }
 
 export interface SharedHomework {

@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, BookOpen, Users, UserPlus, ChevronRight, Check } from 'lucide-react';
+import { Plus, BookOpen, Users, UserPlus, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { Course } from './types';
 import { CreateCourseDialog } from './CreateCourseDialog';
@@ -14,9 +14,11 @@ interface CoursesListProps {
   schoolId: string;
   schoolName: string;
   yearName: string;
+  classId?: string;
+  className?: string;
 }
 
-export function CoursesList({ schoolYearId, schoolId, schoolName, yearName }: CoursesListProps) {
+export function CoursesList({ schoolYearId, schoolId, schoolName, yearName, classId, className }: CoursesListProps) {
   const { user } = useAuth();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,11 +28,18 @@ export function CoursesList({ schoolYearId, schoolId, schoolName, yearName }: Co
   const fetchCourses = async () => {
     if (!user) return;
     
-    const { data: coursesData, error } = await supabase
+    let query = supabase
       .from('courses')
       .select('*')
       .eq('school_year_id', schoolYearId)
       .order('name');
+    
+    // If a class is selected, filter by class_id
+    if (classId) {
+      query = query.or(`class_id.eq.${classId},class_id.is.null`);
+    }
+    
+    const { data: coursesData, error } = await query;
     
     if (!error && coursesData) {
       // Get member counts and membership status
@@ -61,7 +70,7 @@ export function CoursesList({ schoolYearId, schoolId, schoolName, yearName }: Co
 
   useEffect(() => {
     fetchCourses();
-  }, [schoolYearId, user]);
+  }, [schoolYearId, classId, user]);
 
   const joinCourse = async (courseId: string) => {
     if (!user) return;
@@ -119,12 +128,16 @@ export function CoursesList({ schoolYearId, schoolId, schoolName, yearName }: Co
     );
   }
 
+  // Filter to show only courses user is member of + available courses
+  const myCourses = courses.filter(c => c.is_member);
+  const availableCourses = courses.filter(c => !c.is_member);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-[10px] text-muted-foreground">{schoolName}</p>
-          <h3 className="font-semibold">{yearName}</h3>
+          <h3 className="font-semibold">{yearName}{className && ` - ${className}`}</h3>
         </div>
         <Button size="sm" className="h-8 gap-1" onClick={() => setCreateDialogOpen(true)}>
           <Plus className="w-4 h-4" strokeWidth={1.5} />
@@ -139,69 +152,96 @@ export function CoursesList({ schoolYearId, schoolId, schoolName, yearName }: Co
           <p className="text-[10px] text-muted-foreground/70">Erstelle einen Kurs oder tritt einem bei</p>
         </div>
       ) : (
-        <div className="space-y-2">
-          {courses.map(course => (
-            <Card 
-              key={course.id} 
-              className={`transition-colors ${course.is_member ? 'border-primary/30' : ''}`}
-            >
-              <CardContent className="p-3">
-                <div className="flex items-center justify-between">
-                  <div 
-                    className="flex items-center gap-3 flex-1 cursor-pointer"
-                    onClick={() => course.is_member && setSelectedCourse(course)}
-                  >
-                    <div className="w-9 h-9 rounded-lg border-2 border-emerald-500 flex items-center justify-center">
-                      <span className="text-xs font-bold text-emerald-500">
-                        {(course.short_name || course.name).slice(0, 2).toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium text-sm truncate">{course.name}</p>
-                      <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                        {course.teacher_name && <span>{course.teacher_name}</span>}
-                        <span className="flex items-center gap-0.5">
-                          <Users className="w-3 h-3" strokeWidth={1.5} />
-                          {course.member_count}
-                        </span>
+        <div className="space-y-4">
+          {/* My Courses */}
+          {myCourses.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">Meine Kurse</p>
+              {myCourses.map(course => (
+                <Card 
+                  key={course.id} 
+                  className="border-primary/30 cursor-pointer hover:border-primary/50 transition-colors"
+                  onClick={() => setSelectedCourse(course)}
+                >
+                  <CardContent className="p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className="w-9 h-9 rounded-lg border-2 border-emerald-500 flex items-center justify-center">
+                          <span className="text-xs font-bold text-emerald-500">
+                            {(course.short_name || course.name).slice(0, 2).toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-sm truncate">{course.name}</p>
+                          <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                            {course.teacher_name && <span>{course.teacher_name}</span>}
+                            <span className="flex items-center gap-0.5">
+                              <Users className="w-3 h-3" strokeWidth={1.5} />
+                              {course.member_count}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-1">
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          className="h-7 text-[10px] text-muted-foreground px-2"
+                          onClick={(e) => { e.stopPropagation(); leaveCourse(course.id); }}
+                        >
+                          Verlassen
+                        </Button>
+                        <ChevronRight className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
                       </div>
                     </div>
-                  </div>
-                  
-                  {course.is_member ? (
-                    <div className="flex items-center gap-1">
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+          
+          {/* Available Courses */}
+          {availableCourses.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">Verfuegbare Kurse</p>
+              {availableCourses.map(course => (
+                <Card key={course.id} className="transition-colors">
+                  <CardContent className="p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className="w-9 h-9 rounded-lg border-2 border-muted-foreground/30 flex items-center justify-center">
+                          <span className="text-xs font-bold text-muted-foreground">
+                            {(course.short_name || course.name).slice(0, 2).toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-sm truncate">{course.name}</p>
+                          <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                            {course.teacher_name && <span>{course.teacher_name}</span>}
+                            <span className="flex items-center gap-0.5">
+                              <Users className="w-3 h-3" strokeWidth={1.5} />
+                              {course.member_count}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      
                       <Button 
                         size="sm" 
-                        variant="ghost" 
-                        className="h-7 text-[10px] text-muted-foreground px-2"
-                        onClick={() => leaveCourse(course.id)}
+                        variant="outline" 
+                        className="h-7 text-[10px] gap-1"
+                        onClick={() => joinCourse(course.id)}
                       >
-                        Verlassen
-                      </Button>
-                      <Button 
-                        size="icon" 
-                        variant="ghost" 
-                        className="h-7 w-7"
-                        onClick={() => setSelectedCourse(course)}
-                      >
-                        <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
+                        <UserPlus className="w-3 h-3" strokeWidth={1.5} />
+                        Beitreten
                       </Button>
                     </div>
-                  ) : (
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      className="h-7 text-[10px] gap-1"
-                      onClick={() => joinCourse(course.id)}
-                    >
-                      <UserPlus className="w-3 h-3" strokeWidth={1.5} />
-                      Beitreten
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       )}
       
@@ -210,6 +250,7 @@ export function CoursesList({ schoolYearId, schoolId, schoolName, yearName }: Co
         onOpenChange={setCreateDialogOpen}
         schoolYearId={schoolYearId}
         schoolId={schoolId}
+        classId={classId}
         onCourseCreated={fetchCourses}
       />
     </div>
