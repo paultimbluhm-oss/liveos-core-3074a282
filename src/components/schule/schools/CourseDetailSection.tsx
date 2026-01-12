@@ -9,11 +9,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, BookOpen, Calendar, Users, Plus, Trash2, Award, Clock, CalendarX, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, BookOpen, Calendar, Users, Plus, Trash2, Award, Clock, CalendarX, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, isPast, isToday, isTomorrow, addDays } from 'date-fns';
 import { de } from 'date-fns/locale';
-import { Course, CourseMember, SharedHomework, SharedEvent } from './types';
+import { Course, CourseMember, SharedHomework, SharedEvent, CourseTimetableSlot } from './types';
 import { useGamification } from '@/contexts/GamificationContext';
 
 interface Grade {
@@ -22,17 +22,7 @@ interface Grade {
   grade_type: string;
   description: string | null;
   date: string | null;
-  course_id: string;
-}
-
-interface TimetableEntry {
-  id: string;
-  day_of_week: number;
-  period: number;
-  teacher_short: string;
-  room: string | null;
   course_id: string | null;
-  week_type: string;
 }
 
 interface LessonAbsence {
@@ -48,6 +38,10 @@ interface CourseDetailSectionProps {
   onBack: () => void;
 }
 
+const DAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr'];
+const DAYS_FULL = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag'];
+const PERIODS = [1, 2, 3, 4, 5, 6, 8, 9];
+
 export function CourseDetailSection({ course, onBack }: CourseDetailSectionProps) {
   const { user } = useAuth();
   const { addXP } = useGamification();
@@ -55,14 +49,14 @@ export function CourseDetailSection({ course, onBack }: CourseDetailSectionProps
   const [homework, setHomework] = useState<SharedHomework[]>([]);
   const [events, setEvents] = useState<SharedEvent[]>([]);
   const [grades, setGrades] = useState<Grade[]>([]);
-  const [timetableEntries, setTimetableEntries] = useState<TimetableEntry[]>([]);
+  const [sharedSlots, setSharedSlots] = useState<CourseTimetableSlot[]>([]);
   const [absences, setAbsences] = useState<LessonAbsence[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   
   const [homeworkDialogOpen, setHomeworkDialogOpen] = useState(false);
   const [eventDialogOpen, setEventDialogOpen] = useState(false);
   const [gradeDialogOpen, setGradeDialogOpen] = useState(false);
-  const [timetableDialogOpen, setTimetableDialogOpen] = useState(false);
   
   // Homework form
   const [hwTitle, setHwTitle] = useState('');
@@ -80,19 +74,11 @@ export function CourseDetailSection({ course, onBack }: CourseDetailSectionProps
   const [gradeType, setGradeType] = useState<'oral' | 'written'>('oral');
   const [gradePoints, setGradePoints] = useState('');
   const [gradeDescription, setGradeDescription] = useState('');
-  
-  // Timetable form
-  const [ttDay, setTtDay] = useState('1');
-  const [ttPeriod, setTtPeriod] = useState('1');
-  const [ttRoom, setTtRoom] = useState(course.room || '');
-
-  const DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag'];
-  const PERIODS = [1, 2, 3, 4, 5, 6, 8, 9];
 
   const fetchData = async () => {
     if (!user) return;
     
-    const [membersRes, homeworkRes, eventsRes, gradesRes, timetableRes, absencesRes] = await Promise.all([
+    const [membersRes, homeworkRes, eventsRes, gradesRes, slotsRes, absencesRes] = await Promise.all([
       supabase
         .from('course_members')
         .select('*, profiles:user_id(username, display_name)')
@@ -107,22 +93,18 @@ export function CourseDetailSection({ course, onBack }: CourseDetailSectionProps
         .select('*, profiles:shared_by(username, display_name)')
         .eq('course_id', course.id)
         .order('event_date'),
-      // Note: grades are fetched by description containing course name for now
-      // Since course_id column may not be in types yet
       supabase
         .from('grades')
         .select('*')
         .eq('user_id', user.id)
+        .eq('course_id', course.id)
         .order('date', { ascending: false }),
-      // Timetable entries linked to this course
       supabase
-        .from('timetable_entries')
+        .from('course_timetable_slots')
         .select('*')
-        .eq('user_id', user.id)
         .eq('course_id', course.id)
         .order('day_of_week')
         .order('period'),
-      // Absences for timetable entries of this course
       supabase
         .from('lesson_absences')
         .select('*')
@@ -130,10 +112,15 @@ export function CourseDetailSection({ course, onBack }: CourseDetailSectionProps
     ]);
     
     if (membersRes.data) {
-      setMembers(membersRes.data.map((m: any) => ({
+      const enrichedMembers = membersRes.data.map((m: any) => ({
         ...m,
         profile: m.profiles,
-      })));
+      }));
+      setMembers(enrichedMembers);
+      
+      // Check if current user is admin
+      const currentMember = enrichedMembers.find(m => m.user_id === user.id);
+      setIsAdmin(currentMember?.role === 'admin');
     }
     
     if (homeworkRes.data) {
@@ -151,21 +138,15 @@ export function CourseDetailSection({ course, onBack }: CourseDetailSectionProps
     }
     
     if (gradesRes.data) {
-      // Filter grades that belong to this course by checking description
-      const courseGrades = gradesRes.data.filter(g => 
-        g.description?.startsWith(`${course.short_name || course.name}:`)
-      );
-      setGrades(courseGrades);
+      setGrades(gradesRes.data);
     }
     
-    if (timetableRes.data) {
-      setTimetableEntries(timetableRes.data);
+    if (slotsRes.data) {
+      setSharedSlots(slotsRes.data);
     }
     
     if (absencesRes.data) {
-      // Filter absences for this course's timetable entries
-      const entryIds = timetableRes.data?.map(e => e.id) || [];
-      setAbsences(absencesRes.data.filter(a => entryIds.includes(a.timetable_entry_id)));
+      setAbsences(absencesRes.data);
     }
     
     setLoading(false);
@@ -262,14 +243,13 @@ export function CourseDetailSection({ course, onBack }: CourseDetailSectionProps
       return;
     }
     
-    // For grades, we need subject_id - use course name as a workaround
-    // First check if a subject exists for this course, or create a pseudo-link
     const { error } = await supabase.from('grades').insert({
       user_id: user.id,
-      subject_id: course.id, // Using course_id as subject_id for now
+      subject_id: course.id,
+      course_id: course.id,
       grade_type: gradeType,
       points: pointsNum,
-      description: `${course.short_name || course.name}: ${gradeDescription.trim() || (gradeType === 'oral' ? 'Muendliche Note' : 'Klausur')}`,
+      description: gradeDescription.trim() || (gradeType === 'oral' ? 'Muendlich' : 'Klausur'),
     });
     
     if (error) {
@@ -292,72 +272,78 @@ export function CourseDetailSection({ course, onBack }: CourseDetailSectionProps
     }
   };
 
-  // Timetable handlers
-  const handleAddToTimetable = async () => {
-    if (!user) return;
+  // Timetable slot handlers (shared - only admin)
+  const toggleSlot = async (day: number, period: number) => {
+    if (!isAdmin) return;
     
-    const dayNum = parseInt(ttDay);
-    const periodNum = parseInt(ttPeriod);
+    const existingSlot = sharedSlots.find(s => s.day_of_week === day && s.period === period);
     
-    // Check if slot already has an entry
-    const { data: existing } = await supabase
-      .from('timetable_entries')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('day_of_week', dayNum)
-      .eq('period', periodNum)
-      .maybeSingle();
-    
-    if (existing) {
-      // Update existing entry
+    if (existingSlot) {
       const { error } = await supabase
-        .from('timetable_entries')
-        .update({
-          course_id: course.id,
-          teacher_short: course.teacher_name || '',
-          room: ttRoom || null,
-        })
-        .eq('id', existing.id);
+        .from('course_timetable_slots')
+        .delete()
+        .eq('id', existingSlot.id);
       
-      if (error) {
-        toast.error('Fehler beim Aktualisieren');
-      } else {
-        toast.success('Stundenplan aktualisiert');
-        setTimetableDialogOpen(false);
+      if (!error) {
+        toast.success('Stunde entfernt');
         fetchData();
       }
     } else {
-      // Insert new entry
-      const { error } = await supabase.from('timetable_entries').insert({
-        user_id: user.id,
-        day_of_week: dayNum,
-        period: periodNum,
+      const { error } = await supabase.from('course_timetable_slots').insert({
         course_id: course.id,
-        teacher_short: course.teacher_name || '',
-        room: ttRoom || null,
-        week_type: 'both',
+        day_of_week: day,
+        period: period,
+        room: course.room || null,
       });
       
-      if (error) {
-        toast.error('Fehler beim Speichern');
-      } else {
-        toast.success('Zum Stundenplan hinzugefuegt');
-        setTimetableDialogOpen(false);
+      if (!error) {
+        toast.success('Stunde hinzugefuegt');
         fetchData();
       }
     }
   };
 
-  const removeFromTimetable = async (id: string) => {
-    const { error } = await supabase
-      .from('timetable_entries')
-      .update({ course_id: null })
-      .eq('id', id);
+  const isSlotSelected = (day: number, period: number) => {
+    return sharedSlots.some(s => s.day_of_week === day && s.period === period);
+  };
+
+  // Apply shared slots to personal timetable
+  const applyToMyTimetable = async () => {
+    if (!user || sharedSlots.length === 0) return;
     
-    if (!error) {
-      toast.success('Aus Stundenplan entfernt');
-      fetchData();
+    for (const slot of sharedSlots) {
+      // Check if slot already exists
+      const { data: existing } = await supabase
+        .from('timetable_entries')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('day_of_week', slot.day_of_week)
+        .eq('period', slot.period)
+        .maybeSingle();
+      
+      if (existing) {
+        await supabase
+          .from('timetable_entries')
+          .update({
+            course_id: course.id,
+            teacher_short: course.teacher_name || '',
+            room: slot.room || null,
+          })
+          .eq('id', existing.id);
+      } else {
+        await supabase.from('timetable_entries').insert({
+          user_id: user.id,
+          day_of_week: slot.day_of_week,
+          period: slot.period,
+          course_id: course.id,
+          teacher_short: course.teacher_name || '',
+          room: slot.room || null,
+          week_type: 'both',
+        });
+      }
     }
+    
+    toast.success('Stundenplan aktualisiert');
   };
 
   // Calculations
@@ -374,11 +360,6 @@ export function CourseDetailSection({ course, onBack }: CourseDetailSectionProps
   } else if (writtenAvg !== null) {
     finalGrade = Math.round(writtenAvg);
   }
-
-  // Absences count for this course
-  const courseAbsences = absences.filter(a => a.reason !== 'efa');
-  const excusedCount = courseAbsences.filter(a => a.excused).length;
-  const unexcusedCount = courseAbsences.filter(a => !a.excused).length;
 
   const getDueDateLabel = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -428,8 +409,18 @@ export function CourseDetailSection({ course, onBack }: CourseDetailSectionProps
           <ArrowLeft className="w-4 h-4" strokeWidth={1.5} />
         </Button>
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-lg border-2 border-emerald-500 flex items-center justify-center">
-            <span className="text-xs font-bold text-emerald-500">
+          <div 
+            className="w-9 h-9 rounded-lg flex items-center justify-center"
+            style={{ 
+              borderWidth: 2, 
+              borderColor: course.color || 'hsl(var(--primary))',
+              borderStyle: 'solid'
+            }}
+          >
+            <span 
+              className="text-xs font-bold"
+              style={{ color: course.color || 'hsl(var(--primary))' }}
+            >
               {(course.short_name || course.name).slice(0, 2).toUpperCase()}
             </span>
           </div>
@@ -455,18 +446,22 @@ export function CourseDetailSection({ course, onBack }: CourseDetailSectionProps
           <div className="text-[9px] text-muted-foreground">Schnitt</div>
         </div>
         <div className="p-2.5 rounded-xl bg-card border border-border/50 text-center">
-          <div className="text-lg font-bold">{timetableEntries.length}</div>
+          <div className="text-lg font-bold">{sharedSlots.length}</div>
           <div className="text-[9px] text-muted-foreground">Stunden</div>
         </div>
-        <div className={`p-2.5 rounded-xl border text-center ${unexcusedCount > 0 ? 'bg-rose-500/10 border-rose-500/30' : 'bg-card border-border/50'}`}>
-          <div className={`text-lg font-bold ${unexcusedCount > 0 ? 'text-rose-500' : ''}`}>{courseAbsences.length}</div>
-          <div className="text-[9px] text-muted-foreground">Fehltage</div>
+        <div className="p-2.5 rounded-xl bg-card border border-border/50 text-center">
+          <div className="text-lg font-bold">{homework.filter(h => !isPast(new Date(h.due_date))).length}</div>
+          <div className="text-[9px] text-muted-foreground">Aufgaben</div>
         </div>
       </div>
       
       {/* Tabs */}
-      <Tabs defaultValue="homework">
+      <Tabs defaultValue="schedule">
         <TabsList className="grid w-full grid-cols-5 h-9">
+          <TabsTrigger value="schedule" className="text-[9px] gap-0.5 px-1">
+            <Clock className="w-3 h-3" strokeWidth={1.5} />
+            Plan
+          </TabsTrigger>
           <TabsTrigger value="homework" className="text-[9px] gap-0.5 px-1">
             <BookOpen className="w-3 h-3" strokeWidth={1.5} />
             Aufgaben
@@ -479,15 +474,108 @@ export function CourseDetailSection({ course, onBack }: CourseDetailSectionProps
             <Award className="w-3 h-3" strokeWidth={1.5} />
             Noten
           </TabsTrigger>
-          <TabsTrigger value="schedule" className="text-[9px] gap-0.5 px-1">
-            <Clock className="w-3 h-3" strokeWidth={1.5} />
-            Plan
-          </TabsTrigger>
           <TabsTrigger value="members" className="text-[9px] gap-0.5 px-1">
             <Users className="w-3 h-3" strokeWidth={1.5} />
             Team
           </TabsTrigger>
         </TabsList>
+        
+        {/* Schedule Tab - Grid for selecting slots */}
+        <TabsContent value="schedule" className="mt-3 space-y-3">
+          {isAdmin && (
+            <p className="text-[10px] text-muted-foreground text-center">
+              Klicke auf die Felder um Stunden hinzuzufuegen
+            </p>
+          )}
+          
+          {/* Timetable Grid */}
+          <div className="overflow-x-auto">
+            <div className="grid grid-cols-6 gap-0.5 min-w-[320px]">
+              {/* Header */}
+              <div className="h-7" />
+              {DAYS.map(day => (
+                <div key={day} className="h-7 flex items-center justify-center text-[10px] font-medium text-muted-foreground">
+                  {day}
+                </div>
+              ))}
+              
+              {/* Periods */}
+              {PERIODS.map(period => (
+                <>
+                  <div key={`period-${period}`} className="h-8 flex items-center justify-center text-[10px] font-medium text-muted-foreground">
+                    {period}.
+                  </div>
+                  {DAYS.map((_, dayIndex) => {
+                    const day = dayIndex + 1;
+                    const selected = isSlotSelected(day, period);
+                    return (
+                      <button
+                        key={`${day}-${period}`}
+                        onClick={() => toggleSlot(day, period)}
+                        disabled={!isAdmin}
+                        className={`h-8 rounded transition-colors border ${
+                          selected 
+                            ? 'bg-primary text-primary-foreground border-primary' 
+                            : isAdmin
+                              ? 'bg-muted/30 border-border/50 hover:bg-muted/50'
+                              : 'bg-muted/20 border-border/30'
+                        } ${isAdmin ? 'cursor-pointer' : 'cursor-default'}`}
+                      >
+                        {selected && <Check className="w-3 h-3 mx-auto" strokeWidth={2} />}
+                      </button>
+                    );
+                  })}
+                </>
+              ))}
+            </div>
+          </div>
+          
+          {/* Apply to personal timetable button */}
+          {sharedSlots.length > 0 && (
+            <Button 
+              onClick={applyToMyTimetable}
+              variant="outline"
+              size="sm"
+              className="w-full h-8 text-xs"
+            >
+              In meinen Stundenplan uebernehmen
+            </Button>
+          )}
+          
+          {/* Slots summary */}
+          {sharedSlots.length > 0 && (
+            <div className="space-y-1.5">
+              {sharedSlots.map(slot => (
+                <div 
+                  key={slot.id}
+                  className="flex items-center gap-3 p-2.5 rounded-xl bg-card border border-border/50"
+                >
+                  <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                    {slot.period}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-sm">
+                      {DAYS_FULL[slot.day_of_week - 1]}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground">
+                      {slot.period}. Stunde {slot.room && `- ${slot.room}`}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {sharedSlots.length === 0 && (
+            <div className="py-6 text-center">
+              <Clock className="w-8 h-8 mx-auto text-muted-foreground/30 mb-2" strokeWidth={1.5} />
+              <p className="text-xs text-muted-foreground">Keine Stunden eingetragen</p>
+              {isAdmin && (
+                <p className="text-[10px] text-muted-foreground/70">Klicke im Grid oben auf die Felder</p>
+              )}
+            </div>
+          )}
+        </TabsContent>
         
         {/* Homework Tab */}
         <TabsContent value="homework" className="mt-3 space-y-3">
@@ -668,81 +756,6 @@ export function CourseDetailSection({ course, onBack }: CourseDetailSectionProps
                   </Button>
                 </div>
               ))}
-            </div>
-          )}
-        </TabsContent>
-        
-        {/* Schedule Tab */}
-        <TabsContent value="schedule" className="mt-3 space-y-3">
-          <Button 
-            size="sm" 
-            className="w-full h-8 text-xs gap-1"
-            onClick={() => setTimetableDialogOpen(true)}
-          >
-            <Plus className="w-3 h-3" strokeWidth={1.5} />
-            Zum Stundenplan
-          </Button>
-          
-          {timetableEntries.length === 0 ? (
-            <div className="py-6 text-center">
-              <Clock className="w-8 h-8 mx-auto text-muted-foreground/30 mb-2" strokeWidth={1.5} />
-              <p className="text-xs text-muted-foreground">Nicht im Stundenplan</p>
-              <p className="text-[10px] text-muted-foreground/70">Fuege diesen Kurs zu deinem Stundenplan hinzu</p>
-            </div>
-          ) : (
-            <div className="space-y-1.5">
-              {timetableEntries.map(entry => {
-                const entryAbsences = absences.filter(a => a.timetable_entry_id === entry.id);
-                return (
-                  <div 
-                    key={entry.id}
-                    className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border/50"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
-                      {entry.period}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm">
-                        {DAYS[entry.day_of_week - 1]}
-                      </div>
-                      <div className="text-[10px] text-muted-foreground">
-                        {entry.period}. Stunde {entry.room && `- ${entry.room}`}
-                        {entryAbsences.length > 0 && (
-                          <span className="ml-2 text-rose-500">{entryAbsences.length} Fehltage</span>
-                        )}
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => removeFromTimetable(entry.id)}
-                    >
-                      <Trash2 className="w-3 h-3" strokeWidth={1.5} />
-                    </Button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-          
-          {/* Absences Summary */}
-          {courseAbsences.length > 0 && (
-            <div className="pt-2">
-              <div className="flex items-center gap-2 mb-2">
-                <CalendarX className="w-4 h-4 text-rose-500" strokeWidth={1.5} />
-                <span className="text-sm font-medium">Fehltage in diesem Kurs</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="p-2 rounded-lg bg-emerald-500/10 text-center">
-                  <div className="text-lg font-bold text-emerald-500">{excusedCount}</div>
-                  <div className="text-[10px] text-muted-foreground">Entschuldigt</div>
-                </div>
-                <div className={`p-2 rounded-lg text-center ${unexcusedCount > 0 ? 'bg-rose-500/10' : 'bg-muted/30'}`}>
-                  <div className={`text-lg font-bold ${unexcusedCount > 0 ? 'text-rose-500' : ''}`}>{unexcusedCount}</div>
-                  <div className="text-[10px] text-muted-foreground">Offen</div>
-                </div>
-              </div>
             </div>
           )}
         </TabsContent>
@@ -960,60 +973,6 @@ export function CourseDetailSection({ course, onBack }: CourseDetailSectionProps
               />
             </div>
             <Button onClick={handleAddGrade} className="w-full" disabled={!gradePoints}>
-              Hinzufuegen
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Timetable Dialog */}
-      <Dialog open={timetableDialogOpen} onOpenChange={setTimetableDialogOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Clock className="w-4 h-4" strokeWidth={1.5} />
-              Zum Stundenplan
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 pt-2">
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label className="text-xs">Tag</Label>
-                <Select value={ttDay} onValueChange={setTtDay}>
-                  <SelectTrigger className="h-9 mt-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {DAYS.map((day, i) => (
-                      <SelectItem key={i + 1} value={(i + 1).toString()}>{day}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-xs">Stunde</Label>
-                <Select value={ttPeriod} onValueChange={setTtPeriod}>
-                  <SelectTrigger className="h-9 mt-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PERIODS.map(p => (
-                      <SelectItem key={p} value={p.toString()}>{p}. Stunde</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div>
-              <Label className="text-xs">Raum</Label>
-              <Input
-                value={ttRoom}
-                onChange={(e) => setTtRoom(e.target.value)}
-                placeholder="z.B. A101"
-                className="h-9 mt-1"
-              />
-            </div>
-            <Button onClick={handleAddToTimetable} className="w-full">
               Hinzufuegen
             </Button>
           </div>
