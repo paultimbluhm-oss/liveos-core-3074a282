@@ -6,7 +6,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, BookOpen } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Plus, BookOpen, X, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface SchoolSubject {
@@ -15,7 +16,6 @@ interface SchoolSubject {
   short_name: string | null;
 }
 
-// Standard school subjects for German schools
 const DEFAULT_SUBJECTS = [
   { name: 'Mathematik', short_name: 'MA' },
   { name: 'Deutsch', short_name: 'DE' },
@@ -41,6 +41,18 @@ const DEFAULT_SUBJECTS = [
   { name: 'Sozialwissenschaften', short_name: 'SW' },
 ];
 
+const DAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr'];
+const DAYS_FULL = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag'];
+const PERIODS = [1, 2, 3, 4, 5, 6, 8, 9];
+
+interface TimetableSlot {
+  id: string;
+  dayOfWeek: number;
+  period: number;
+  isDouble: boolean;
+  weekType: 'both' | 'odd' | 'even';
+}
+
 interface CreateCourseDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -62,12 +74,26 @@ export function CreateCourseDialog({
   const [schoolSubjects, setSchoolSubjects] = useState<SchoolSubject[]>([]);
   const [loading, setLoading] = useState(false);
   
+  // Basic info
   const [selectedSubject, setSelectedSubject] = useState('');
   const [customName, setCustomName] = useState('');
   const [customShortName, setCustomShortName] = useState('');
   const [teacherName, setTeacherName] = useState('');
   const [room, setRoom] = useState('');
   const [isCustom, setIsCustom] = useState(false);
+  
+  // Grading
+  const [hasGrading, setHasGrading] = useState(true);
+  const [writtenWeight, setWrittenWeight] = useState('50');
+  const [oralWeight, setOralWeight] = useState('50');
+  
+  // Timetable slots
+  const [slots, setSlots] = useState<TimetableSlot[]>([]);
+  const [showSlotForm, setShowSlotForm] = useState(false);
+  const [newSlotDay, setNewSlotDay] = useState('1');
+  const [newSlotPeriod, setNewSlotPeriod] = useState('1');
+  const [newSlotDouble, setNewSlotDouble] = useState(false);
+  const [newSlotWeekType, setNewSlotWeekType] = useState<'both' | 'odd' | 'even'>('both');
 
   useEffect(() => {
     if (open && schoolId) {
@@ -85,7 +111,6 @@ export function CreateCourseDialog({
     if (data && data.length > 0) {
       setSchoolSubjects(data);
     } else {
-      // Use default subjects if school has none defined
       setSchoolSubjects([]);
     }
   };
@@ -98,7 +123,6 @@ export function CreateCourseDialog({
       setIsCustom(false);
       setSelectedSubject(value);
       
-      // Find subject in school subjects or defaults
       const subject = schoolSubjects.find(s => s.id === value) 
         || DEFAULT_SUBJECTS.find(s => s.name === value);
       if (subject) {
@@ -106,6 +130,41 @@ export function CreateCourseDialog({
         setCustomShortName(subject.short_name || '');
       }
     }
+  };
+
+  const addSlot = () => {
+    const dayNum = parseInt(newSlotDay);
+    const periodNum = parseInt(newSlotPeriod);
+    
+    // Check for duplicates
+    const exists = slots.some(s => 
+      s.dayOfWeek === dayNum && 
+      s.period === periodNum && 
+      s.weekType === newSlotWeekType
+    );
+    
+    if (exists) {
+      toast.error('Diese Stunde existiert bereits');
+      return;
+    }
+    
+    setSlots([...slots, {
+      id: crypto.randomUUID(),
+      dayOfWeek: dayNum,
+      period: periodNum,
+      isDouble: newSlotDouble,
+      weekType: newSlotWeekType,
+    }]);
+    
+    setShowSlotForm(false);
+    setNewSlotDay('1');
+    setNewSlotPeriod('1');
+    setNewSlotDouble(false);
+    setNewSlotWeekType('both');
+  };
+
+  const removeSlot = (id: string) => {
+    setSlots(slots.filter(s => s.id !== id));
   };
 
   const handleCreate = async () => {
@@ -121,6 +180,7 @@ export function CreateCourseDialog({
     
     setLoading(true);
     
+    // Create course
     const { data: courseData, error } = await supabase.from('courses').insert({
       school_year_id: schoolYearId,
       class_id: classId || null,
@@ -129,6 +189,9 @@ export function CreateCourseDialog({
       teacher_name: teacherName.trim() || null,
       room: room.trim() || null,
       created_by: user.id,
+      has_grading: hasGrading,
+      written_weight: hasGrading ? parseInt(writtenWeight) || 50 : null,
+      oral_weight: hasGrading ? parseInt(oralWeight) || 50 : null,
     }).select().single();
     
     if (error) {
@@ -144,11 +207,88 @@ export function CreateCourseDialog({
       role: 'admin',
     });
     
+    // Create timetable slots
+    for (const slot of slots) {
+      await supabase.from('course_timetable_slots').insert({
+        course_id: courseData.id,
+        day_of_week: slot.dayOfWeek,
+        period: slot.period,
+        room: room.trim() || null,
+        week_type: slot.weekType,
+        is_double_lesson: slot.isDouble,
+      });
+      
+      // If double lesson, create second slot
+      if (slot.isDouble && slot.period < 9 && slot.period !== 6) {
+        const nextPeriod = slot.period === 6 ? 8 : slot.period + 1;
+        await supabase.from('course_timetable_slots').insert({
+          course_id: courseData.id,
+          day_of_week: slot.dayOfWeek,
+          period: nextPeriod,
+          room: room.trim() || null,
+          week_type: slot.weekType,
+          is_double_lesson: false,
+        });
+      }
+    }
+    
+    // Auto-apply slots to creator's personal timetable
+    await applyCourseSlotsToTimetable(courseData.id, user.id, name, teacherName.trim(), room.trim());
+    
     toast.success('Kurs erstellt');
     setLoading(false);
     resetForm();
     onCourseCreated();
     onOpenChange(false);
+  };
+
+  const applyCourseSlotsToTimetable = async (
+    courseId: string, 
+    userId: string, 
+    courseName: string,
+    teacher: string,
+    courseRoom: string
+  ) => {
+    // Get all slots for this course
+    const { data: courseSlots } = await supabase
+      .from('course_timetable_slots')
+      .select('*')
+      .eq('course_id', courseId);
+    
+    if (!courseSlots) return;
+    
+    for (const slot of courseSlots) {
+      // Check if slot already exists
+      const { data: existing } = await supabase
+        .from('timetable_entries')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('day_of_week', slot.day_of_week)
+        .eq('period', slot.period)
+        .eq('week_type', slot.week_type)
+        .maybeSingle();
+      
+      if (existing) {
+        await supabase
+          .from('timetable_entries')
+          .update({
+            course_id: courseId,
+            teacher_short: teacher || '',
+            room: slot.room || courseRoom || null,
+          })
+          .eq('id', existing.id);
+      } else {
+        await supabase.from('timetable_entries').insert({
+          user_id: userId,
+          day_of_week: slot.day_of_week,
+          period: slot.period,
+          course_id: courseId,
+          teacher_short: teacher || '',
+          room: slot.room || courseRoom || null,
+          week_type: slot.week_type,
+        });
+      }
+    }
   };
 
   const resetForm = () => {
@@ -158,15 +298,26 @@ export function CreateCourseDialog({
     setTeacherName('');
     setRoom('');
     setIsCustom(false);
+    setHasGrading(true);
+    setWrittenWeight('50');
+    setOralWeight('50');
+    setSlots([]);
+    setShowSlotForm(false);
   };
 
   const subjectOptions = schoolSubjects.length > 0 
     ? schoolSubjects.map(s => ({ id: s.id, name: s.name, short_name: s.short_name }))
     : DEFAULT_SUBJECTS.map(s => ({ id: s.name, name: s.name, short_name: s.short_name }));
 
+  const getWeekTypeLabel = (wt: string) => {
+    if (wt === 'odd') return 'A';
+    if (wt === 'even') return 'B';
+    return '';
+  };
+
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) resetForm(); onOpenChange(o); }}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <BookOpen className="w-4 h-4" strokeWidth={1.5} />
@@ -174,7 +325,8 @@ export function CreateCourseDialog({
           </DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-3 pt-2">
+        <div className="space-y-4 pt-2">
+          {/* Subject Selection */}
           <div>
             <Label className="text-xs">Fach</Label>
             <Select 
@@ -196,7 +348,7 @@ export function CreateCourseDialog({
           </div>
           
           {isCustom && (
-            <>
+            <div className="grid grid-cols-2 gap-2">
               <div>
                 <Label className="text-xs">Fachname</Label>
                 <Input 
@@ -215,27 +367,207 @@ export function CreateCourseDialog({
                   className="h-9 mt-1"
                 />
               </div>
-            </>
+            </div>
           )}
           
-          <div>
-            <Label className="text-xs">Lehrer</Label>
-            <Input 
-              value={teacherName}
-              onChange={(e) => setTeacherName(e.target.value)}
-              placeholder="z.B. Herr Mueller"
-              className="h-9 mt-1"
-            />
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label className="text-xs">Lehrer</Label>
+              <Input 
+                value={teacherName}
+                onChange={(e) => setTeacherName(e.target.value)}
+                placeholder="z.B. Mue"
+                className="h-9 mt-1"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Raum</Label>
+              <Input 
+                value={room}
+                onChange={(e) => setRoom(e.target.value)}
+                placeholder="z.B. A204"
+                className="h-9 mt-1"
+              />
+            </div>
           </div>
           
-          <div>
-            <Label className="text-xs">Raum</Label>
-            <Input 
-              value={room}
-              onChange={(e) => setRoom(e.target.value)}
-              placeholder="z.B. A204"
-              className="h-9 mt-1"
-            />
+          {/* Grading Section */}
+          <div className="p-3 rounded-lg border border-border/50 space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-medium">Bewertung</Label>
+              <div className="flex items-center gap-2">
+                <Checkbox 
+                  id="hasGrading" 
+                  checked={hasGrading} 
+                  onCheckedChange={(c) => setHasGrading(!!c)} 
+                />
+                <label htmlFor="hasGrading" className="text-xs text-muted-foreground">
+                  Benotung aktiv
+                </label>
+              </div>
+            </div>
+            
+            {hasGrading && (
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-[10px] text-muted-foreground">Schriftlich %</Label>
+                  <Input 
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={writtenWeight}
+                    onChange={(e) => {
+                      setWrittenWeight(e.target.value);
+                      const w = parseInt(e.target.value) || 0;
+                      setOralWeight((100 - w).toString());
+                    }}
+                    className="h-8 mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-[10px] text-muted-foreground">Muendlich %</Label>
+                  <Input 
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={oralWeight}
+                    onChange={(e) => {
+                      setOralWeight(e.target.value);
+                      const o = parseInt(e.target.value) || 0;
+                      setWrittenWeight((100 - o).toString());
+                    }}
+                    className="h-8 mt-1"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Timetable Slots Section */}
+          <div className="p-3 rounded-lg border border-border/50 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
+                <Label className="text-xs font-medium">Kursstunden</Label>
+              </div>
+              <Button 
+                type="button"
+                size="sm" 
+                variant="outline" 
+                className="h-7 text-[10px] gap-1"
+                onClick={() => setShowSlotForm(true)}
+              >
+                <Plus className="w-3 h-3" strokeWidth={1.5} />
+                Stunde
+              </Button>
+            </div>
+            
+            {/* Current Slots */}
+            {slots.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {slots.map(slot => (
+                  <div 
+                    key={slot.id}
+                    className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/10 text-primary text-[10px]"
+                  >
+                    <span className="font-medium">
+                      {DAYS[slot.dayOfWeek - 1]} {slot.period}.
+                      {slot.isDouble && '-' + (slot.period === 6 ? 8 : slot.period + 1) + '.'}
+                      {slot.weekType !== 'both' && ` (${getWeekTypeLabel(slot.weekType)})`}
+                    </span>
+                    <button 
+                      type="button"
+                      onClick={() => removeSlot(slot.id)}
+                      className="hover:text-destructive"
+                    >
+                      <X className="w-3 h-3" strokeWidth={1.5} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {slots.length === 0 && !showSlotForm && (
+              <p className="text-[10px] text-muted-foreground text-center py-2">
+                Keine Stunden hinzugefuegt
+              </p>
+            )}
+            
+            {/* Add Slot Form */}
+            {showSlotForm && (
+              <div className="p-2 rounded-md bg-muted/30 space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-[10px]">Tag</Label>
+                    <Select value={newSlotDay} onValueChange={setNewSlotDay}>
+                      <SelectTrigger className="h-8 mt-0.5">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {DAYS_FULL.map((day, i) => (
+                          <SelectItem key={i + 1} value={(i + 1).toString()}>{day}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-[10px]">Stunde</Label>
+                    <Select value={newSlotPeriod} onValueChange={setNewSlotPeriod}>
+                      <SelectTrigger className="h-8 mt-0.5">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PERIODS.map(p => (
+                          <SelectItem key={p} value={p.toString()}>{p}.</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5">
+                    <Checkbox 
+                      id="slotDouble" 
+                      checked={newSlotDouble} 
+                      onCheckedChange={(c) => setNewSlotDouble(!!c)} 
+                    />
+                    <label htmlFor="slotDouble" className="text-[10px]">Doppelstunde</label>
+                  </div>
+                  
+                  <Select value={newSlotWeekType} onValueChange={(v) => setNewSlotWeekType(v as 'both' | 'odd' | 'even')}>
+                    <SelectTrigger className="h-7 w-28 text-[10px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="both">Jede Woche</SelectItem>
+                      <SelectItem value="odd">A-Woche</SelectItem>
+                      <SelectItem value="even">B-Woche</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="flex gap-2">
+                  <Button 
+                    type="button"
+                    size="sm" 
+                    className="h-7 flex-1 text-[10px]"
+                    onClick={addSlot}
+                  >
+                    Hinzufuegen
+                  </Button>
+                  <Button 
+                    type="button"
+                    size="sm" 
+                    variant="ghost" 
+                    className="h-7 text-[10px]"
+                    onClick={() => setShowSlotForm(false)}
+                  >
+                    Abbrechen
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
           
           <Button 

@@ -51,6 +51,10 @@ export interface Course {
   created_at: string;
   member_count?: number;
   is_member?: boolean;
+  // Grading fields
+  has_grading?: boolean;
+  written_weight?: number;
+  oral_weight?: number;
 }
 
 export interface CourseMember {
@@ -71,6 +75,8 @@ export interface CourseTimetableSlot {
   day_of_week: number;
   period: number;
   room: string | null;
+  week_type: string;
+  is_double_lesson: boolean;
   created_at: string;
 }
 

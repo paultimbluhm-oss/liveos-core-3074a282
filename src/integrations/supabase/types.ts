@@ -723,24 +723,30 @@ export type Database = {
           created_at: string
           day_of_week: number
           id: string
+          is_double_lesson: boolean | null
           period: number
           room: string | null
+          week_type: string
         }
         Insert: {
           course_id: string
           created_at?: string
           day_of_week: number
           id?: string
+          is_double_lesson?: boolean | null
           period: number
           room?: string | null
+          week_type?: string
         }
         Update: {
           course_id?: string
           created_at?: string
           day_of_week?: number
           id?: string
+          is_double_lesson?: boolean | null
           period?: number
           room?: string | null
+          week_type?: string
         }
         Relationships: [
           {
@@ -758,36 +764,45 @@ export type Database = {
           color: string | null
           created_at: string
           created_by: string
+          has_grading: boolean | null
           id: string
           name: string
+          oral_weight: number | null
           room: string | null
           school_year_id: string
           short_name: string | null
           teacher_name: string | null
+          written_weight: number | null
         }
         Insert: {
           class_id?: string | null
           color?: string | null
           created_at?: string
           created_by: string
+          has_grading?: boolean | null
           id?: string
           name: string
+          oral_weight?: number | null
           room?: string | null
           school_year_id: string
           short_name?: string | null
           teacher_name?: string | null
+          written_weight?: number | null
         }
         Update: {
           class_id?: string | null
           color?: string | null
           created_at?: string
           created_by?: string
+          has_grading?: boolean | null
           id?: string
           name?: string
+          oral_weight?: number | null
           room?: string | null
           school_year_id?: string
           short_name?: string | null
           teacher_name?: string | null
+          written_weight?: number | null
         }
         Relationships: [
           {
