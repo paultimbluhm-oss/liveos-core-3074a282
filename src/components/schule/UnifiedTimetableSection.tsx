@@ -8,39 +8,30 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, Plus, Trash2, ChevronLeft, ChevronRight, GraduationCap, TrendingUp, Calendar, Clock, Settings } from 'lucide-react';
+import { ArrowLeft, Trash2, ChevronLeft, ChevronRight, GraduationCap, Calendar, Clock, Settings, Coffee } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, addWeeks, subWeeks, startOfWeek, addDays, getISOWeek, isWithinInterval, parseISO } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { SubjectCard } from './SubjectCard';
-import { AddSubjectDialog } from './AddSubjectDialog';
-import { EditSubjectDialog } from './EditSubjectDialog';
 import { AddHolidayDialog } from './AddHolidayDialog';
-import { SubjectsOverviewDialog } from './SubjectsOverviewDialog';
-import { DefaultFreePeriodDialog } from './DefaultFreePeriodDialog';
 import { SubjectActionSheet } from './SubjectActionSheet';
-
-interface Subject {
-  id: string;
-  name: string;
-  short_name: string | null;
-  teacher_short: string | null;
-  room: string | null;
-  grade_year: number;
-  written_weight: number;
-  oral_weight: number;
-}
 
 interface TimetableEntry {
   id: string;
   day_of_week: number;
   period: number;
   subject_id: string | null;
+  course_id: string | null;
   teacher_short: string;
   room: string | null;
   week_type: string;
-  subjects?: Subject | null;
+  course?: {
+    id: string;
+    name: string;
+    short_name: string | null;
+    teacher_name: string | null;
+    color: string | null;
+  } | null;
 }
 
 interface LessonAbsence {
@@ -52,7 +43,7 @@ interface LessonAbsence {
 }
 
 interface SubjectGradeData {
-  subjectId: string;
+  courseId: string;
   finalGrade: number | null;
   oralAvg: number | null;
   writtenAvg: number | null;
@@ -83,19 +74,21 @@ export function UnifiedTimetableSection({ onBack }: UnifiedTimetableSectionProps
   const { user } = useAuth();
   const isMobile = useIsMobile();
   const [entries, setEntries] = useState<TimetableEntry[]>([]);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [subjectGrades, setSubjectGrades] = useState<Record<string, SubjectGradeData>>({});
+  const [courseGrades, setCourseGrades] = useState<Record<string, SubjectGradeData>>({});
   const [absences, setAbsences] = useState<LessonAbsence[]>([]);
   const [holidays, setHolidays] = useState<SchoolHoliday[]>([]);
   const [customHolidays, setCustomHolidays] = useState<CustomHoliday[]>([]);
   const [gradeColorSettings, setGradeColorSettings] = useState<{ green_min: number; yellow_min: number }>({ green_min: 13, yellow_min: 10 });
   const [gradeSettingsOpen, setGradeSettingsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingEntry, setEditingEntry] = useState<TimetableEntry | null>(null);
-  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
-  const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
-  const [subjectSheetOpen, setSubjectSheetOpen] = useState(false);
+  
+  // Free period dialog
+  const [freePeriodDialogOpen, setFreePeriodDialogOpen] = useState(false);
+  const [fpDayOfWeek, setFpDayOfWeek] = useState('1');
+  const [fpPeriod, setFpPeriod] = useState('1');
+  const [fpIsDouble, setFpIsDouble] = useState(false);
+  const [fpWeekType, setFpWeekType] = useState('both');
+  
   const [actionSheetOpen, setActionSheetOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<TimetableEntry | null>(null);
   
@@ -108,14 +101,6 @@ export function UnifiedTimetableSection({ onBack }: UnifiedTimetableSectionProps
     startOfWeek(new Date(), { weekStartsOn: 1 })
   );
 
-  const [dayOfWeek, setDayOfWeek] = useState('1');
-  const [period, setPeriod] = useState('1');
-  const [subjectId, setSubjectId] = useState<string>('');
-  const [teacherShort, setTeacherShort] = useState('');
-  const [room, setRoom] = useState('');
-  const [isDoubleLesson, setIsDoubleLesson] = useState(false);
-  const [weekType, setWeekType] = useState<string>('both');
-
   const currentWeekNum = getISOWeek(currentWeekStart);
   const isOddWeek = currentWeekNum % 2 === 1;
 
@@ -126,18 +111,13 @@ export function UnifiedTimetableSection({ onBack }: UnifiedTimetableSectionProps
     const weekStartStr = format(currentWeekStart, 'yyyy-MM-dd');
     const weekEndStr = format(weekEnd, 'yyyy-MM-dd');
 
-    const [entriesRes, subjectsRes, absencesRes, gradesRes, gradeSettingsRes] = await Promise.all([
+    const [entriesRes, absencesRes, gradesRes, gradeSettingsRes] = await Promise.all([
       supabase
         .from('timetable_entries')
-        .select('*, subjects(id, name, short_name, teacher_short, room, grade_year, written_weight, oral_weight)')
+        .select('*, courses:course_id(id, name, short_name, teacher_name, color)')
         .eq('user_id', user.id)
         .order('day_of_week')
         .order('period'),
-      supabase
-        .from('subjects')
-        .select('id, name, short_name, teacher_short, room, grade_year, written_weight, oral_weight')
-        .eq('user_id', user.id)
-        .order('name'),
       supabase
         .from('lesson_absences')
         .select('id, date, reason, excused, timetable_entry_id')
@@ -146,8 +126,9 @@ export function UnifiedTimetableSection({ onBack }: UnifiedTimetableSectionProps
         .lte('date', weekEndStr),
       supabase
         .from('grades')
-        .select('points, grade_type, subject_id')
-        .eq('user_id', user.id),
+        .select('points, grade_type, course_id')
+        .eq('user_id', user.id)
+        .not('course_id', 'is', null),
       supabase
         .from('grade_color_settings')
         .select('green_min, yellow_min')
@@ -155,53 +136,51 @@ export function UnifiedTimetableSection({ onBack }: UnifiedTimetableSectionProps
         .maybeSingle(),
     ]);
 
-    setEntries(entriesRes.data || []);
-    setSubjects(subjectsRes.data || []);
+    const mappedEntries = (entriesRes.data || []).map((e: any) => ({
+      ...e,
+      course: e.courses,
+    }));
+    setEntries(mappedEntries);
     setAbsences(absencesRes.data || []);
     
     if (gradeSettingsRes.data) {
       setGradeColorSettings(gradeSettingsRes.data);
     }
 
-    if (gradesRes.data && subjectsRes.data) {
+    // Calculate grades per course
+    if (gradesRes.data) {
       const gradeDataResult: Record<string, SubjectGradeData> = {};
-      const subjectGradeMap: Record<string, { oral: number[], written: number[], weights: { oral: number, written: number } }> = {};
+      const courseGradeMap: Record<string, { oral: number[], written: number[] }> = {};
       
-      subjectsRes.data.forEach(subject => {
-        subjectGradeMap[subject.id] = { 
-          oral: [], 
-          written: [], 
-          weights: { oral: subject.oral_weight, written: subject.written_weight } 
-        };
-      });
-
       gradesRes.data.forEach(grade => {
-        if (subjectGradeMap[grade.subject_id]) {
-          if (grade.grade_type === 'oral') {
-            subjectGradeMap[grade.subject_id].oral.push(grade.points);
-          } else {
-            subjectGradeMap[grade.subject_id].written.push(grade.points);
-          }
+        if (!grade.course_id) return;
+        if (!courseGradeMap[grade.course_id]) {
+          courseGradeMap[grade.course_id] = { oral: [], written: [] };
+        }
+        if (grade.grade_type === 'oral') {
+          courseGradeMap[grade.course_id].oral.push(grade.points);
+        } else {
+          courseGradeMap[grade.course_id].written.push(grade.points);
         }
       });
 
-      Object.entries(subjectGradeMap).forEach(([subjectId, { oral, written, weights }]) => {
+      Object.entries(courseGradeMap).forEach(([courseId, { oral, written }]) => {
         const oralAvg = oral.length > 0 ? oral.reduce((a, b) => a + b, 0) / oral.length : null;
         const writtenAvg = written.length > 0 ? written.reduce((a, b) => a + b, 0) / written.length : null;
 
         let finalGrade: number | null = null;
         if (oralAvg !== null && writtenAvg !== null) {
-          finalGrade = Math.round((writtenAvg * weights.written + oralAvg * weights.oral) / 100);
+          finalGrade = Math.round((writtenAvg * 50 + oralAvg * 50) / 100);
         } else if (oralAvg !== null) {
           finalGrade = Math.round(oralAvg);
         } else if (writtenAvg !== null) {
           finalGrade = Math.round(writtenAvg);
         }
 
-        gradeDataResult[subjectId] = { subjectId, finalGrade, oralAvg, writtenAvg };
+        gradeDataResult[courseId] = { courseId, finalGrade, oralAvg, writtenAvg };
       });
 
-      setSubjectGrades(gradeDataResult);
+      setCourseGrades(gradeDataResult);
     }
 
     setLoading(false);
@@ -241,142 +220,93 @@ export function UnifiedTimetableSection({ onBack }: UnifiedTimetableSectionProps
     fetchData();
   }, [user, currentWeekStart]);
 
-  const resetForm = () => {
-    setDayOfWeek('1');
-    setPeriod('1');
-    setSubjectId('');
-    setTeacherShort('');
-    setRoom('');
-    setIsDoubleLesson(false);
-    setWeekType('both');
-    setEditingEntry(null);
-  };
-
-  const openEdit = (entry: TimetableEntry) => {
-    setEditingEntry(entry);
-    setDayOfWeek(entry.day_of_week.toString());
-    setPeriod(entry.period.toString());
-    setSubjectId(entry.subject_id || '');
-    setTeacherShort(entry.teacher_short);
-    setRoom(entry.room || '');
-    setWeekType(entry.week_type || 'both');
-    setIsDoubleLesson(false);
-    setDialogOpen(true);
-  };
-
-  const handleSubmit = async () => {
+  const handleAddFreePeriod = async () => {
     if (!user) return;
-    if (!teacherShort.trim()) {
-      toast.error('Lehrerkürzel fehlt');
-      return;
-    }
 
-    const periodNum = parseInt(period);
-    const dayNum = parseInt(dayOfWeek);
+    const dayNum = parseInt(fpDayOfWeek);
+    const periodNum = parseInt(fpPeriod);
 
-    if (periodNum === 7) {
-      toast.error('7. Stunde ist Pause');
-      return;
-    }
+    // Check for existing entry
+    const { data: existing } = await supabase
+      .from('timetable_entries')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('day_of_week', dayNum)
+      .eq('period', periodNum)
+      .eq('week_type', fpWeekType)
+      .maybeSingle();
 
-    const baseData = {
-      user_id: user.id,
-      day_of_week: dayNum,
-      subject_id: subjectId || null,
-      teacher_short: teacherShort.trim(),
-      room: room.trim() || null,
-      week_type: weekType,
-    };
-
-    if (editingEntry) {
-      const { error } = await supabase
+    if (existing) {
+      // Update to free period
+      await supabase
         .from('timetable_entries')
-        .update({ ...baseData, period: periodNum, week_type: weekType })
-        .eq('id', editingEntry.id);
-
-      if (error) {
-        toast.error('Fehler beim Speichern');
-      } else {
-        toast.success('Gespeichert');
-        setDialogOpen(false);
-        resetForm();
-        fetchData();
-      }
+        .update({
+          teacher_short: 'FREI',
+          subject_id: null,
+          course_id: null,
+          room: null,
+        })
+        .eq('id', existing.id);
     } else {
-      // Check if entry already exists for this slot
-      const existingEntry = entries.find(e => 
-        e.day_of_week === dayNum && 
-        e.period === periodNum && 
-        (e.week_type === weekType || e.week_type === 'both' || weekType === 'both')
-      );
-
-      if (existingEntry) {
-        // Update existing entry
-        const { error } = await supabase
-          .from('timetable_entries')
-          .update({ ...baseData, period: periodNum })
-          .eq('id', existingEntry.id);
-
-        if (error) {
-          toast.error('Fehler beim Speichern');
-          return;
-        }
-      } else {
-        // Insert new entry
-        const { error } = await supabase
-          .from('timetable_entries')
-          .insert({ ...baseData, period: periodNum });
-
-        if (error) {
-          toast.error('Fehler beim Speichern');
-          return;
-        }
-      }
-
-      // Handle double lesson
-      if (isDoubleLesson && periodNum + 1 !== 7 && periodNum < 9) {
-        const nextPeriod = periodNum + 1;
-        const existingNext = entries.find(e => 
-          e.day_of_week === dayNum && 
-          e.period === nextPeriod && 
-          (e.week_type === weekType || e.week_type === 'both' || weekType === 'both')
-        );
-
-        if (existingNext) {
-          await supabase
-            .from('timetable_entries')
-            .update({ ...baseData, period: nextPeriod })
-            .eq('id', existingNext.id);
-        } else {
-          await supabase
-            .from('timetable_entries')
-            .insert({ ...baseData, period: nextPeriod });
-        }
-      }
-
-      toast.success('Hinzugefügt');
-      setDialogOpen(false);
-      resetForm();
-      fetchData();
+      // Insert free period
+      await supabase.from('timetable_entries').insert({
+        user_id: user.id,
+        day_of_week: dayNum,
+        period: periodNum,
+        teacher_short: 'FREI',
+        week_type: fpWeekType,
+      });
     }
+
+    // Handle double period
+    if (fpIsDouble && periodNum < 9 && periodNum !== 6) {
+      const nextPeriod = periodNum === 6 ? 8 : periodNum + 1;
+      
+      const { data: existingNext } = await supabase
+        .from('timetable_entries')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('day_of_week', dayNum)
+        .eq('period', nextPeriod)
+        .eq('week_type', fpWeekType)
+        .maybeSingle();
+
+      if (existingNext) {
+        await supabase
+          .from('timetable_entries')
+          .update({
+            teacher_short: 'FREI',
+            subject_id: null,
+            course_id: null,
+            room: null,
+          })
+          .eq('id', existingNext.id);
+      } else {
+        await supabase.from('timetable_entries').insert({
+          user_id: user.id,
+          day_of_week: dayNum,
+          period: nextPeriod,
+          teacher_short: 'FREI',
+          week_type: fpWeekType,
+        });
+      }
+    }
+
+    toast.success('Freistunde hinzugefuegt');
+    setFreePeriodDialogOpen(false);
+    setFpDayOfWeek('1');
+    setFpPeriod('1');
+    setFpIsDouble(false);
+    setFpWeekType('both');
+    fetchData();
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDeleteEntry = async (id: string) => {
     const { error } = await supabase.from('timetable_entries').delete().eq('id', id);
     if (!error) {
-      toast.success('Gelöscht');
+      toast.success('Geloescht');
       fetchData();
     }
-  };
-
-  const getEntryForSlot = (day: number, periodNum: number) => {
-    return entries.find(e => {
-      if (e.day_of_week !== day || e.period !== periodNum) return false;
-      if (e.week_type === 'both') return true;
-      if (e.week_type === 'odd' && isOddWeek) return true;
-      if (e.week_type === 'even' && !isOddWeek) return true;
-      return false;
-    });
   };
 
   const getHolidayForDate = (date: Date): string | null => {
@@ -397,12 +327,7 @@ export function UnifiedTimetableSection({ onBack }: UnifiedTimetableSectionProps
   const currentDate = weekDates[currentDay];
   const holidayName = getHolidayForDate(currentDate);
 
-  const allFinalGrades = Object.values(subjectGrades).filter(g => g.finalGrade !== null).map(g => g.finalGrade!);
-  const averageGrade = allFinalGrades.length > 0 
-    ? Math.round((allFinalGrades.reduce((a, b) => a + b, 0) / allFinalGrades.length) * 10) / 10 
-    : null;
-
-  // Get all entries for the current day (including free periods)
+  // Get all entries for the current day
   const todayEntries = entries.filter(e => {
     if (e.day_of_week !== currentDay + 1) return false;
     if (e.week_type === 'both') return true;
@@ -412,7 +337,17 @@ export function UnifiedTimetableSection({ onBack }: UnifiedTimetableSectionProps
   }).sort((a, b) => a.period - b.period);
 
   // Lessons for stats (excluding free periods)
-  const todayLessons = todayEntries.filter(e => !(e.teacher_short === 'FREI' && !e.subject_id));
+  const todayLessons = todayEntries.filter(e => !(e.teacher_short === 'FREI' && !e.course_id));
+
+  // Count unique courses
+  const uniqueCourseIds = new Set(entries.filter(e => e.course_id).map(e => e.course_id));
+  const courseCount = uniqueCourseIds.size;
+
+  // Calculate average grade from courses
+  const allFinalGrades = Object.values(courseGrades).filter(g => g.finalGrade !== null).map(g => g.finalGrade!);
+  const averageGrade = allFinalGrades.length > 0 
+    ? Math.round((allFinalGrades.reduce((a, b) => a + b, 0) / allFinalGrades.length) * 10) / 10 
+    : null;
 
   const getGradeColor = (grade: number | null) => {
     if (grade === null) return 'bg-muted text-muted-foreground';
@@ -463,121 +398,13 @@ export function UnifiedTimetableSection({ onBack }: UnifiedTimetableSectionProps
             <h2 className="text-lg font-bold">Stundenplan</h2>
           </div>
         </div>
-        <div className="flex gap-1.5">
-          <SubjectsOverviewDialog 
-            subjects={subjects} 
-            onSubjectEdit={setEditingSubject}
-            onSubjectsChanged={fetchData}
-          />
-          <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="h-8 px-2.5">
-                <Plus className="w-4 h-4" />
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-sm">
-              <DialogHeader>
-                <DialogTitle>{editingEntry ? 'Bearbeiten' : 'Stunde hinzufügen'}</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-3 pt-2">
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <Label className="text-xs">Tag</Label>
-                    <Select value={dayOfWeek} onValueChange={setDayOfWeek}>
-                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {DAYS_FULL.map((day, i) => (
-                          <SelectItem key={i + 1} value={(i + 1).toString()}>{day}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label className="text-xs">Stunde</Label>
-                    <Select value={period} onValueChange={setPeriod}>
-                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {PERIODS.map(p => (
-                          <SelectItem key={p} value={p.toString()}>{p}.</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                {!editingEntry && (
-                  <div className="flex items-center gap-2">
-                    <Checkbox id="double" checked={isDoubleLesson} onCheckedChange={(c) => setIsDoubleLesson(!!c)} />
-                    <label htmlFor="double" className="text-sm">Doppelstunde</label>
-                  </div>
-                )}
-
-                <div>
-                  <Label className="text-xs">Wochenrhythmus</Label>
-                  <Select value={weekType} onValueChange={setWeekType}>
-                    <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="both">Jede Woche</SelectItem>
-                      <SelectItem value="odd">A-Woche</SelectItem>
-                      <SelectItem value="even">B-Woche</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label className="text-xs">Fach</Label>
-                  <Select 
-                    value={subjectId} 
-                    onValueChange={(value) => {
-                      setSubjectId(value);
-                      const s = subjects.find(x => x.id === value);
-                      if (s) {
-                        if (!teacherShort && s.teacher_short) setTeacherShort(s.teacher_short);
-                        if (!room && s.room) setRoom(s.room);
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="h-9"><SelectValue placeholder="Auswählen..." /></SelectTrigger>
-                    <SelectContent>
-                      {subjects.map(s => (
-                        <SelectItem key={s.id} value={s.id}>
-                          {s.name}{s.short_name ? ` (${s.short_name})` : ''}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <Label className="text-xs">Lehrer *</Label>
-                    <Input value={teacherShort} onChange={(e) => setTeacherShort(e.target.value)} className="h-9" placeholder="Kürzel" />
-                  </div>
-                  <div>
-                    <Label className="text-xs">Raum</Label>
-                    <Input value={room} onChange={(e) => setRoom(e.target.value)} className="h-9" placeholder="A101" />
-                  </div>
-                </div>
-                
-                <div className="flex gap-2 pt-2">
-                  <Button onClick={handleSubmit} className="flex-1 h-10">Speichern</Button>
-                  {editingEntry && (
-                    <Button variant="destructive" size="icon" className="h-10 w-10" onClick={() => { handleDelete(editingEntry.id); setDialogOpen(false); }}>
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
       </div>
 
       {/* Quick Stats */}
       <div className="grid grid-cols-3 gap-2">
         <div className="p-3 rounded-xl bg-secondary/40 text-center">
-          <p className="text-xl font-bold">{subjects.length}</p>
-          <p className="text-[10px] text-muted-foreground">Fächer</p>
+          <p className="text-xl font-bold">{courseCount}</p>
+          <p className="text-[10px] text-muted-foreground">Kurse</p>
         </div>
         <div className="p-3 rounded-xl bg-secondary/40 text-center">
           <p className="text-xl font-bold">{todayLessons.length}</p>
@@ -650,11 +477,12 @@ export function UnifiedTimetableSection({ onBack }: UnifiedTimetableSectionProps
           <div className="text-center py-8 text-muted-foreground">
             <Calendar className="w-8 h-8 mx-auto mb-2 opacity-30" />
             <p className="text-sm">Keine Stunden eingetragen</p>
+            <p className="text-[10px] text-muted-foreground/60">Tritt einem Kurs bei, um Stunden zu sehen</p>
           </div>
         ) : (
           todayEntries.map((entry) => {
-            const isFree = entry.teacher_short === 'FREI' && !entry.subject_id;
-            const grade = entry.subject_id ? subjectGrades[entry.subject_id]?.finalGrade : null;
+            const isFree = entry.teacher_short === 'FREI' && !entry.course_id;
+            const grade = entry.course_id ? courseGrades[entry.course_id]?.finalGrade : null;
             const dateStr = format(currentDate, 'yyyy-MM-dd');
             const evaAbsence = absences.find(a => a.timetable_entry_id === entry.id && a.date === dateStr && a.reason === 'efa');
             const isEVA = !!evaAbsence;
@@ -682,7 +510,7 @@ export function UnifiedTimetableSection({ onBack }: UnifiedTimetableSectionProps
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className={`font-medium text-sm truncate ${isEVA ? 'line-through text-purple-400' : isFree ? 'text-muted-foreground' : ''}`}>
-                      {isFree ? 'Freistunde' : (entry.subjects?.short_name || entry.subjects?.name || entry.teacher_short)}
+                      {isFree ? 'Freistunde' : (entry.course?.short_name || entry.course?.name || entry.teacher_short)}
                     </span>
                     {isEVA && (
                       <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-500 text-white font-medium">
@@ -698,7 +526,7 @@ export function UnifiedTimetableSection({ onBack }: UnifiedTimetableSectionProps
                   {!isFree && (
                     <div className={`flex items-center gap-2 text-[10px] ${isEVA ? 'text-purple-400/70' : 'text-muted-foreground'}`}>
                       {entry.room && <span>{entry.room}</span>}
-                      <span>{entry.teacher_short}</span>
+                      <span>{entry.course?.teacher_name || entry.teacher_short}</span>
                     </div>
                   )}
                 </div>
@@ -713,21 +541,82 @@ export function UnifiedTimetableSection({ onBack }: UnifiedTimetableSectionProps
         )}
       </div>
 
-      {/* Bottom Actions */}
+      {/* Bottom Actions - Only Free Period and Holiday */}
       <div className="flex gap-2 pt-2">
-        <AddSubjectDialog onSubjectAdded={fetchData} />
-        <DefaultFreePeriodDialog onFreePeriodAdded={fetchData} />
-        <AddHolidayDialog onHolidayAdded={fetchHolidays} />
-        <Dialog open={gradeSettingsOpen} onOpenChange={setGradeSettingsOpen}>
+        {/* Free Period Dialog */}
+        <Dialog open={freePeriodDialogOpen} onOpenChange={setFreePeriodDialogOpen}>
           <DialogTrigger asChild>
-            <Button variant="outline" size="sm" className="h-9 gap-1">
-              <Settings className="w-4 h-4" />
-              Notenfarben
+            <Button variant="outline" size="sm" className="h-9 gap-1.5 flex-1">
+              <Coffee className="w-4 h-4" strokeWidth={1.5} />
+              Freistunde
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-xs">
             <DialogHeader>
-              <DialogTitle>Notenfarben einstellen</DialogTitle>
+              <DialogTitle>Freistunde hinzufuegen</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3 pt-2">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-xs">Tag</Label>
+                  <Select value={fpDayOfWeek} onValueChange={setFpDayOfWeek}>
+                    <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {DAYS_FULL.map((day, i) => (
+                        <SelectItem key={i + 1} value={(i + 1).toString()}>{day}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">Stunde</Label>
+                  <Select value={fpPeriod} onValueChange={setFpPeriod}>
+                    <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {PERIODS.map(p => (
+                        <SelectItem key={p} value={p.toString()}>{p}.</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Checkbox id="fpDouble" checked={fpIsDouble} onCheckedChange={(c) => setFpIsDouble(!!c)} />
+                <label htmlFor="fpDouble" className="text-sm">Doppelstunde</label>
+              </div>
+              
+              <div>
+                <Label className="text-xs">Wochenrhythmus</Label>
+                <Select value={fpWeekType} onValueChange={setFpWeekType}>
+                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="both">Jede Woche</SelectItem>
+                    <SelectItem value="odd">A-Woche</SelectItem>
+                    <SelectItem value="even">B-Woche</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <Button onClick={handleAddFreePeriod} className="w-full">
+                Hinzufuegen
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+        
+        <AddHolidayDialog onHolidayAdded={fetchHolidays} />
+        
+        {/* Grade Color Settings */}
+        <Dialog open={gradeSettingsOpen} onOpenChange={setGradeSettingsOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="sm" className="h-9 px-2.5">
+              <Settings className="w-4 h-4" strokeWidth={1.5} />
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-xs">
+            <DialogHeader>
+              <DialogTitle>Notenfarben</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-2">
               <div className="flex items-center gap-3">
@@ -777,47 +666,17 @@ export function UnifiedTimetableSection({ onBack }: UnifiedTimetableSectionProps
         </Dialog>
       </div>
 
-      {/* Subject Sheet */}
-      <Sheet open={subjectSheetOpen} onOpenChange={setSubjectSheetOpen}>
-        <SheetContent side="bottom" className="h-[80vh] overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>{selectedSubject?.name}</SheetTitle>
-          </SheetHeader>
-          {selectedSubject && (
-            <SubjectCard 
-              subject={selectedSubject}
-              onDeleted={() => {
-                setSubjectSheetOpen(false);
-                fetchData();
-              }}
-              onDataChanged={fetchData}
-            />
-          )}
-        </SheetContent>
-      </Sheet>
-
-      {/* Edit Subject Dialog */}
-      {editingSubject && (
-        <EditSubjectDialog 
-          subject={editingSubject}
-          open={!!editingSubject}
-          onOpenChange={(open) => !open && setEditingSubject(null)}
-          onSubjectUpdated={() => {
-            setEditingSubject(null);
-            fetchData();
-          }}
-        />
-      )}
-
-      {/* Subject Action Sheet */}
+      {/* Subject Action Sheet for local adjustments */}
       <SubjectActionSheet
         open={actionSheetOpen}
         onOpenChange={setActionSheetOpen}
-        entry={selectedEntry}
+        entry={selectedEntry as any}
         onDataChanged={fetchData}
         onEditEntry={() => {
+          // Local edit - just delete option for now
           if (selectedEntry) {
-            openEdit(selectedEntry);
+            handleDeleteEntry(selectedEntry.id);
+            setActionSheetOpen(false);
           }
         }}
         currentDate={currentDate}
