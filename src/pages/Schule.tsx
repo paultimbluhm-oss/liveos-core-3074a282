@@ -3,16 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { GraduationCap, FolderKanban, CalendarX, ClipboardList, BookOpen, Award, Settings, Users } from 'lucide-react';
+import { GraduationCap, Settings, Users, Plus, Clock, UserPlus, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ProjectsSection } from '@/components/schule/ProjectsSection';
-import { SchoolTasksSection } from '@/components/schule/SchoolTasksSection';
-import { AbsencesSection } from '@/components/schule/AbsencesSection';
-import { UnifiedTimetableSection } from '@/components/schule/UnifiedTimetableSection';
-import { HomeworkSection } from '@/components/schule/HomeworkSection';
-import { GradesSection } from '@/components/schule/GradesSection';
-import { CoursesList } from '@/components/schule/schools/CoursesList';
+import { Card, CardContent } from '@/components/ui/card';
 import { SchoolSettingsDialog } from '@/components/schule/schools/SchoolSettingsDialog';
+import { CreateCourseDialog } from '@/components/schule/schools/CreateCourseDialog';
+import { SchoolTabsDrawer } from '@/components/schule/SchoolTabsDrawer';
+import { Course } from '@/components/schule/schools/types';
+import { toast } from 'sonner';
 
 interface SchoolInfo {
   id: string;
@@ -31,24 +29,24 @@ interface ClassInfo {
   name: string;
 }
 
-const sections = [
-  { id: 'stundenplan', icon: GraduationCap, label: 'Stundenplan', color: 'border-blue-500 text-blue-500' },
-  { id: 'hausaufgaben', icon: BookOpen, label: 'Hausaufgaben', color: 'border-green-500 text-green-500' },
-  { id: 'noten', icon: Award, label: 'Noten', color: 'border-amber-500 text-amber-500' },
-  { id: 'projekte', icon: FolderKanban, label: 'Projekte', color: 'border-purple-500 text-purple-500' },
-  { id: 'fehltage', icon: CalendarX, label: 'Fehltage', color: 'border-rose-500 text-rose-500' },
-  { id: 'aufgaben', icon: ClipboardList, label: 'Aufgaben', color: 'border-orange-500 text-orange-500' },
-];
-
 export default function Schule() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const [activeSection, setActiveSection] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectedSchool, setSelectedSchool] = useState<SchoolInfo | null>(null);
   const [selectedYear, setSelectedYear] = useState<YearInfo | null>(null);
   const [selectedClass, setSelectedClass] = useState<ClassInfo | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
+  
+  // Courses
+  const [courses, setCourses] = useState<(Course & { is_member?: boolean; member_count?: number; slot_count?: number })[]>([]);
+  const [joiningCourseId, setJoiningCourseId] = useState<string | null>(null);
+  
+  // Tabs Drawer
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerContext, setDrawerContext] = useState<'timetable' | 'course'>('timetable');
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -100,77 +98,160 @@ export default function Schule() {
     setDataLoading(false);
   };
 
+  const fetchCourses = async () => {
+    if (!user || !selectedYear) return;
+    
+    let query = supabase
+      .from('courses')
+      .select('*')
+      .eq('school_year_id', selectedYear.id)
+      .order('name');
+    
+    if (selectedClass) {
+      query = query.or(`class_id.eq.${selectedClass.id},class_id.is.null`);
+    }
+    
+    const { data: coursesData } = await query;
+    
+    if (coursesData) {
+      const enrichedCourses = await Promise.all(coursesData.map(async (course) => {
+        const [memberCountRes, membershipRes, slotsRes] = await Promise.all([
+          supabase
+            .from('course_members')
+            .select('*', { count: 'exact', head: true })
+            .eq('course_id', course.id),
+          supabase
+            .from('course_members')
+            .select('id')
+            .eq('course_id', course.id)
+            .eq('user_id', user.id)
+            .maybeSingle(),
+          supabase
+            .from('course_timetable_slots')
+            .select('*', { count: 'exact', head: true })
+            .eq('course_id', course.id),
+        ]);
+        
+        return {
+          ...course,
+          member_count: memberCountRes.count || 0,
+          is_member: !!membershipRes.data,
+          slot_count: slotsRes.count || 0,
+        };
+      }));
+      
+      setCourses(enrichedCourses);
+    }
+  };
+
   useEffect(() => {
     fetchUserSchool();
   }, [user]);
 
+  useEffect(() => {
+    if (selectedYear) {
+      fetchCourses();
+    }
+  }, [selectedYear, selectedClass, user]);
+
+  const applyCourseSlotsToTimetable = async (courseId: string, userId: string) => {
+    const { data: courseData } = await supabase
+      .from('courses')
+      .select('name, teacher_name, room')
+      .eq('id', courseId)
+      .single();
+    
+    if (!courseData) return;
+    
+    const { data: courseSlots } = await supabase
+      .from('course_timetable_slots')
+      .select('*')
+      .eq('course_id', courseId);
+    
+    if (!courseSlots || courseSlots.length === 0) return;
+    
+    for (const slot of courseSlots) {
+      const { data: existing } = await supabase
+        .from('timetable_entries')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('day_of_week', slot.day_of_week)
+        .eq('period', slot.period)
+        .eq('week_type', slot.week_type || 'both')
+        .maybeSingle();
+      
+      if (existing) {
+        await supabase
+          .from('timetable_entries')
+          .update({
+            course_id: courseId,
+            teacher_short: courseData.teacher_name || '',
+            room: slot.room || courseData.room || null,
+          })
+          .eq('id', existing.id);
+      } else {
+        await supabase.from('timetable_entries').insert({
+          user_id: userId,
+          day_of_week: slot.day_of_week,
+          period: slot.period,
+          course_id: courseId,
+          teacher_short: courseData.teacher_name || '',
+          room: slot.room || courseData.room || null,
+          week_type: slot.week_type || 'both',
+        });
+      }
+    }
+  };
+
+  const joinCourse = async (courseId: string) => {
+    if (!user) return;
+    
+    setJoiningCourseId(courseId);
+    
+    const { error } = await supabase.from('course_members').insert({
+      course_id: courseId,
+      user_id: user.id,
+      role: 'member',
+    });
+    
+    if (error) {
+      if (error.code === '23505') {
+        toast.error('Bereits beigetreten');
+      } else {
+        toast.error('Fehler beim Beitreten');
+      }
+      setJoiningCourseId(null);
+      return;
+    }
+    
+    await applyCourseSlotsToTimetable(courseId, user.id);
+    
+    toast.success('Kurs beigetreten');
+    setJoiningCourseId(null);
+    fetchCourses();
+  };
+
+  const openTimetable = () => {
+    setDrawerContext('timetable');
+    setSelectedCourse(null);
+    setDrawerOpen(true);
+  };
+
+  const openCourse = (course: Course) => {
+    setDrawerContext('course');
+    setSelectedCourse(course);
+    setDrawerOpen(true);
+  };
+
   if (loading || !user) return null;
 
-  // Render active sections
-  if (activeSection === 'stundenplan') {
-    return (
-      <AppLayout>
-        <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
-          <UnifiedTimetableSection onBack={() => setActiveSection(null)} />
-        </div>
-      </AppLayout>
-    );
-  }
-
-  if (activeSection === 'hausaufgaben') {
-    return (
-      <AppLayout>
-        <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
-          <HomeworkSection onBack={() => setActiveSection(null)} />
-        </div>
-      </AppLayout>
-    );
-  }
-
-  if (activeSection === 'noten') {
-    return (
-      <AppLayout>
-        <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
-          <GradesSection onBack={() => setActiveSection(null)} />
-        </div>
-      </AppLayout>
-    );
-  }
-
-  if (activeSection === 'projekte') {
-    return (
-      <AppLayout>
-        <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
-          <ProjectsSection onBack={() => setActiveSection(null)} />
-        </div>
-      </AppLayout>
-    );
-  }
-
-  if (activeSection === 'fehltage') {
-    return (
-      <AppLayout>
-        <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
-          <AbsencesSection onBack={() => setActiveSection(null)} />
-        </div>
-      </AppLayout>
-    );
-  }
-
-  if (activeSection === 'aufgaben') {
-    return (
-      <AppLayout>
-        <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
-          <SchoolTasksSection onBack={() => setActiveSection(null)} />
-        </div>
-      </AppLayout>
-    );
-  }
+  const myCourses = courses.filter(c => c.is_member);
+  const availableCourses = courses.filter(c => !c.is_member);
 
   return (
     <AppLayout>
       <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
-        {/* Header with Settings */}
+        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             {selectedSchool ? (
@@ -195,51 +276,140 @@ export default function Schule() {
           </Button>
         </div>
         
-        {/* Section Cards Grid */}
-        <div className="grid grid-cols-3 gap-2">
-          {sections.map((s, i) => (
-            <div
-              key={s.id}
-              onClick={() => setActiveSection(s.id)}
-              className="group relative overflow-hidden rounded-xl bg-card/80 backdrop-blur-sm border border-border/50 p-3 hover:border-primary/50 transition-all duration-300 cursor-pointer"
-            >
-              <div className="relative z-10 flex flex-col items-center gap-1.5 text-center">
-                <div className={`p-2 rounded-lg border-2 ${s.color} bg-transparent`}>
-                  <s.icon className="w-4 h-4" strokeWidth={1.5} />
-                </div>
-                <h3 className="font-medium text-[10px] group-hover:text-primary transition-colors">{s.label}</h3>
-              </div>
-            </div>
-          ))}
-        </div>
-        
-        {/* Courses Section */}
         {dataLoading ? (
-          <div className="flex items-center justify-center py-8">
+          <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
           </div>
         ) : selectedSchool && selectedYear ? (
-          <div className="pt-2">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="p-1.5 rounded-lg border-2 border-violet-500 bg-transparent">
-                <Users className="w-4 h-4 text-violet-500" strokeWidth={1.5} />
+          <>
+            {/* Stundenplan Card */}
+            <Card 
+              className="cursor-pointer hover:border-primary/50 transition-colors"
+              onClick={openTimetable}
+            >
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl border-2 border-blue-500 bg-transparent">
+                      <GraduationCap className="w-5 h-5 text-blue-500" strokeWidth={1.5} />
+                    </div>
+                    <div>
+                      <h2 className="font-semibold">Stundenplan</h2>
+                      <p className="text-xs text-muted-foreground">Deine Woche im Ueberblick</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground" strokeWidth={1.5} />
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* Courses Section */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg border-2 border-violet-500 bg-transparent">
+                    <Users className="w-4 h-4 text-violet-500" strokeWidth={1.5} />
+                  </div>
+                  <h2 className="font-semibold">Meine Kurse</h2>
+                </div>
+                <Button size="sm" className="h-8 gap-1" onClick={() => setCreateDialogOpen(true)}>
+                  <Plus className="w-4 h-4" strokeWidth={1.5} />
+                  Kurs
+                </Button>
               </div>
-              <h2 className="font-semibold">Kurse</h2>
-              {selectedClass && (
-                <span className="text-xs text-muted-foreground">({selectedClass.name})</span>
+              
+              {/* My Courses */}
+              {myCourses.length > 0 ? (
+                <div className="space-y-2">
+                  {myCourses.map(course => (
+                    <Card 
+                      key={course.id} 
+                      className="cursor-pointer hover:border-primary/50 transition-colors"
+                      onClick={() => openCourse(course)}
+                    >
+                      <CardContent className="p-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3 flex-1">
+                            <div className="w-9 h-9 rounded-lg border-2 border-emerald-500 flex items-center justify-center">
+                              <span className="text-xs font-bold text-emerald-500">
+                                {(course.short_name || course.name).slice(0, 2).toUpperCase()}
+                              </span>
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium text-sm truncate">{course.name}</p>
+                              <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                                {course.teacher_name && <span>{course.teacher_name}</span>}
+                                <span className="flex items-center gap-0.5">
+                                  <Users className="w-3 h-3" strokeWidth={1.5} />
+                                  {course.member_count}
+                                </span>
+                                {(course.slot_count || 0) > 0 && (
+                                  <span className="flex items-center gap-0.5">
+                                    <Clock className="w-3 h-3" strokeWidth={1.5} />
+                                    {course.slot_count}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-6 text-center">
+                  <Users className="w-8 h-8 mx-auto text-muted-foreground/30 mb-2" strokeWidth={1.5} />
+                  <p className="text-sm text-muted-foreground">Noch keine Kurse beigetreten</p>
+                </div>
+              )}
+              
+              {/* Available Courses */}
+              {availableCourses.length > 0 && (
+                <div className="space-y-2 pt-2">
+                  <p className="text-xs font-medium text-muted-foreground">Verfuegbare Kurse</p>
+                  {availableCourses.map(course => (
+                    <Card key={course.id}>
+                      <CardContent className="p-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3 flex-1">
+                            <div className="w-9 h-9 rounded-lg border-2 border-muted-foreground/30 flex items-center justify-center">
+                              <span className="text-xs font-bold text-muted-foreground">
+                                {(course.short_name || course.name).slice(0, 2).toUpperCase()}
+                              </span>
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium text-sm truncate">{course.name}</p>
+                              <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                                {course.teacher_name && <span>{course.teacher_name}</span>}
+                                <span className="flex items-center gap-0.5">
+                                  <Users className="w-3 h-3" strokeWidth={1.5} />
+                                  {course.member_count}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="h-7 text-[10px] gap-1"
+                            onClick={(e) => { e.stopPropagation(); joinCourse(course.id); }}
+                            disabled={joiningCourseId === course.id}
+                          >
+                            <UserPlus className="w-3 h-3" strokeWidth={1.5} />
+                            {joiningCourseId === course.id ? 'Wird...' : 'Beitreten'}
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               )}
             </div>
-            <CoursesList 
-              schoolYearId={selectedYear.id}
-              schoolId={selectedSchool.id}
-              schoolName={selectedSchool.name}
-              yearName={selectedYear.name}
-              classId={selectedClass?.id}
-              className={selectedClass?.name}
-            />
-          </div>
+          </>
         ) : (
-          <div className="py-8 text-center">
+          <div className="py-12 text-center">
             <div className="p-3 rounded-xl border-2 border-muted-foreground/30 bg-transparent w-fit mx-auto mb-3">
               <GraduationCap className="w-8 h-8 text-muted-foreground/50" strokeWidth={1.5} />
             </div>
@@ -258,11 +428,30 @@ export default function Schule() {
           </div>
         )}
         
-        {/* Settings Dialog */}
+        {/* Dialogs */}
         <SchoolSettingsDialog 
           open={settingsOpen}
           onOpenChange={setSettingsOpen}
           onSchoolChanged={fetchUserSchool}
+        />
+        
+        {selectedYear && (
+          <CreateCourseDialog
+            open={createDialogOpen}
+            onOpenChange={setCreateDialogOpen}
+            schoolYearId={selectedYear.id}
+            schoolId={selectedSchool?.id || ''}
+            classId={selectedClass?.id}
+            onCourseCreated={fetchCourses}
+          />
+        )}
+        
+        {/* Tabs Drawer */}
+        <SchoolTabsDrawer 
+          open={drawerOpen}
+          onOpenChange={setDrawerOpen}
+          context={drawerContext}
+          course={selectedCourse}
         />
       </div>
     </AppLayout>
