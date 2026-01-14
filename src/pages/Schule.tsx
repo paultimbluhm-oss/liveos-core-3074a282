@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { GraduationCap, Settings, Users, Plus, Clock, UserPlus, ChevronRight } from 'lucide-react';
+import { GraduationCap, Settings, Users, Plus, Clock, UserPlus, CalendarX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { SchoolSettingsDialog } from '@/components/schule/schools/SchoolSettingsDialog';
@@ -11,6 +11,21 @@ import { CreateCourseDialog } from '@/components/schule/schools/CreateCourseDial
 import { SchoolTabsDrawer } from '@/components/schule/SchoolTabsDrawer';
 import { Course } from '@/components/schule/schools/types';
 import { toast } from 'sonner';
+
+interface TimetableEntry {
+  id: string;
+  day_of_week: number;
+  period: number;
+  course_id: string | null;
+  teacher_short: string | null;
+  room: string | null;
+  week_type: string;
+}
+
+interface CourseGradeAvg {
+  course_id: string;
+  avg: number;
+}
 
 interface SchoolInfo {
   id: string;
@@ -29,6 +44,9 @@ interface ClassInfo {
   name: string;
 }
 
+const DAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr'];
+const PERIODS = [1, 2, 3, 4, 5, 6, 8, 9];
+
 export default function Schule() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
@@ -38,6 +56,10 @@ export default function Schule() {
   const [selectedYear, setSelectedYear] = useState<YearInfo | null>(null);
   const [selectedClass, setSelectedClass] = useState<ClassInfo | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
+  
+  // Timetable
+  const [timetableEntries, setTimetableEntries] = useState<TimetableEntry[]>([]);
+  const [courseGrades, setCourseGrades] = useState<CourseGradeAvg[]>([]);
   
   // Courses
   const [courses, setCourses] = useState<(Course & { is_member?: boolean; member_count?: number; slot_count?: number })[]>([]);
@@ -98,6 +120,46 @@ export default function Schule() {
     setDataLoading(false);
   };
 
+  const fetchTimetable = async () => {
+    if (!user) return;
+    
+    const { data: entries } = await supabase
+      .from('timetable_entries')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('day_of_week')
+      .order('period');
+    
+    if (entries) setTimetableEntries(entries);
+    
+    // Fetch grades per course
+    const { data: grades } = await supabase
+      .from('grades')
+      .select('course_id, points')
+      .eq('user_id', user.id)
+      .not('course_id', 'is', null);
+    
+    if (grades) {
+      // Calculate average per course
+      const courseMap = new Map<string, number[]>();
+      grades.forEach(g => {
+        if (g.course_id) {
+          if (!courseMap.has(g.course_id)) {
+            courseMap.set(g.course_id, []);
+          }
+          courseMap.get(g.course_id)!.push(g.points);
+        }
+      });
+      
+      const avgs: CourseGradeAvg[] = [];
+      courseMap.forEach((points, courseId) => {
+        const avg = points.reduce((a, b) => a + b, 0) / points.length;
+        avgs.push({ course_id: courseId, avg: Math.round(avg * 10) / 10 });
+      });
+      setCourseGrades(avgs);
+    }
+  };
+
   const fetchCourses = async () => {
     if (!user || !selectedYear) return;
     
@@ -146,6 +208,12 @@ export default function Schule() {
 
   useEffect(() => {
     fetchUserSchool();
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchTimetable();
+    }
   }, [user]);
 
   useEffect(() => {
@@ -229,12 +297,7 @@ export default function Schule() {
     toast.success('Kurs beigetreten');
     setJoiningCourseId(null);
     fetchCourses();
-  };
-
-  const openTimetable = () => {
-    setDrawerContext('timetable');
-    setSelectedCourse(null);
-    setDrawerOpen(true);
+    fetchTimetable();
   };
 
   const openCourse = (course: Course) => {
@@ -243,14 +306,39 @@ export default function Schule() {
     setDrawerOpen(true);
   };
 
+  const openCourseById = (courseId: string) => {
+    const course = courses.find(c => c.id === courseId);
+    if (course) {
+      openCourse(course);
+    }
+  };
+
+  const getGradeColor = (grade: number) => {
+    if (grade >= 13) return 'bg-emerald-500';
+    if (grade >= 10) return 'bg-amber-500';
+    if (grade >= 5) return 'bg-orange-500';
+    return 'bg-rose-500';
+  };
+
+  const getCourseGrade = (courseId: string | null) => {
+    if (!courseId) return null;
+    const found = courseGrades.find(g => g.course_id === courseId);
+    return found?.avg ?? null;
+  };
+
   if (loading || !user) return null;
 
   const myCourses = courses.filter(c => c.is_member);
   const availableCourses = courses.filter(c => !c.is_member);
 
+  // Build timetable grid
+  const getEntry = (day: number, period: number) => {
+    return timetableEntries.find(e => e.day_of_week === day && e.period === period);
+  };
+
   return (
     <AppLayout>
-      <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+      <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -282,128 +370,153 @@ export default function Schule() {
           </div>
         ) : selectedSchool && selectedYear ? (
           <>
-            {/* Stundenplan Card */}
-            <Card 
-              className="cursor-pointer hover:border-primary/50 transition-colors"
-              onClick={openTimetable}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2.5 rounded-xl border-2 border-blue-500 bg-transparent">
-                      <GraduationCap className="w-5 h-5 text-blue-500" strokeWidth={1.5} />
-                    </div>
-                    <div>
-                      <h2 className="font-semibold">Stundenplan</h2>
-                      <p className="text-xs text-muted-foreground">Deine Woche im Ueberblick</p>
-                    </div>
+            {/* Timetable Grid - Always visible */}
+            <div className="overflow-x-auto">
+              <div className="grid grid-cols-6 gap-0.5 min-w-[320px]">
+                {/* Header row */}
+                <div className="h-6" />
+                {DAYS.map(day => (
+                  <div key={day} className="h-6 flex items-center justify-center text-[10px] font-medium text-muted-foreground">
+                    {day}
                   </div>
-                  <ChevronRight className="w-5 h-5 text-muted-foreground" strokeWidth={1.5} />
-                </div>
-              </CardContent>
-            </Card>
+                ))}
+                
+                {/* Period rows */}
+                {PERIODS.map(period => (
+                  <>
+                    <div key={`p-${period}`} className="h-12 flex items-center justify-center text-[10px] text-muted-foreground font-medium">
+                      {period}
+                    </div>
+                    {DAYS.map((_, dayIndex) => {
+                      const entry = getEntry(dayIndex, period);
+                      const courseId = entry?.course_id;
+                      const grade = getCourseGrade(courseId);
+                      const course = courseId ? courses.find(c => c.id === courseId) : null;
+                      const hasContent = !!entry?.course_id || !!entry?.teacher_short;
+                      
+                      return (
+                        <div
+                          key={`${dayIndex}-${period}`}
+                          onClick={() => courseId && openCourseById(courseId)}
+                          className={`h-12 rounded-lg flex flex-col items-center justify-center text-[9px] font-medium relative transition-all ${
+                            hasContent 
+                              ? 'bg-primary/10 border border-primary/30 cursor-pointer hover:bg-primary/20' 
+                              : 'bg-muted/30'
+                          }`}
+                        >
+                          {hasContent && (
+                            <>
+                              <span className="text-primary font-bold">
+                                {course?.short_name?.slice(0, 3) || entry?.teacher_short?.slice(0, 3) || ''}
+                              </span>
+                              {entry?.room && (
+                                <span className="text-[8px] text-muted-foreground">{entry.room}</span>
+                              )}
+                              {grade !== null && (
+                                <div className={`absolute -top-1 -right-1 w-4 h-4 rounded-full ${getGradeColor(grade)} flex items-center justify-center`}>
+                                  <span className="text-[7px] text-white font-bold">{Math.round(grade)}</span>
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </>
+                ))}
+              </div>
+            </div>
             
             {/* Courses Section */}
-            <div className="space-y-3">
+            <div className="space-y-3 pt-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="p-1.5 rounded-lg border-2 border-violet-500 bg-transparent">
                     <Users className="w-4 h-4 text-violet-500" strokeWidth={1.5} />
                   </div>
-                  <h2 className="font-semibold">Meine Kurse</h2>
+                  <h2 className="font-semibold text-sm">Meine Kurse</h2>
                 </div>
-                <Button size="sm" className="h-8 gap-1" onClick={() => setCreateDialogOpen(true)}>
-                  <Plus className="w-4 h-4" strokeWidth={1.5} />
+                <Button size="sm" className="h-7 gap-1 text-xs" onClick={() => setCreateDialogOpen(true)}>
+                  <Plus className="w-3 h-3" strokeWidth={1.5} />
                   Kurs
                 </Button>
               </div>
               
-              {/* My Courses */}
+              {/* My Courses - Compact horizontal list */}
               {myCourses.length > 0 ? (
-                <div className="space-y-2">
-                  {myCourses.map(course => (
-                    <Card 
-                      key={course.id} 
-                      className="cursor-pointer hover:border-primary/50 transition-colors"
-                      onClick={() => openCourse(course)}
-                    >
-                      <CardContent className="p-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3 flex-1">
-                            <div className="w-9 h-9 rounded-lg border-2 border-emerald-500 flex items-center justify-center">
-                              <span className="text-xs font-bold text-emerald-500">
-                                {(course.short_name || course.name).slice(0, 2).toUpperCase()}
-                              </span>
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="font-medium text-sm truncate">{course.name}</p>
-                              <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                                {course.teacher_name && <span>{course.teacher_name}</span>}
-                                <span className="flex items-center gap-0.5">
-                                  <Users className="w-3 h-3" strokeWidth={1.5} />
-                                  {course.member_count}
-                                </span>
-                                {(course.slot_count || 0) > 0 && (
-                                  <span className="flex items-center gap-0.5">
-                                    <Clock className="w-3 h-3" strokeWidth={1.5} />
-                                    {course.slot_count}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                          <ChevronRight className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+                <div className="flex gap-2 overflow-x-auto pb-2">
+                  {myCourses.map(course => {
+                    const grade = getCourseGrade(course.id);
+                    return (
+                      <div
+                        key={course.id}
+                        onClick={() => openCourse(course)}
+                        className="flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-lg bg-card border border-border/50 cursor-pointer hover:border-primary/50 transition-colors"
+                      >
+                        <div 
+                          className="w-7 h-7 rounded-md border-2 flex items-center justify-center"
+                          style={{ borderColor: course.color || 'hsl(var(--primary))' }}
+                        >
+                          <span 
+                            className="text-[9px] font-bold"
+                            style={{ color: course.color || 'hsl(var(--primary))' }}
+                          >
+                            {(course.short_name || course.name).slice(0, 2).toUpperCase()}
+                          </span>
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        <div className="min-w-0">
+                          <p className="text-xs font-medium truncate max-w-[80px]">{course.short_name || course.name}</p>
+                          {grade !== null && (
+                            <div className="flex items-center gap-1">
+                              <div className={`w-2 h-2 rounded-full ${getGradeColor(grade)}`} />
+                              <span className="text-[10px] text-muted-foreground">{grade}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
-                <div className="py-6 text-center">
-                  <Users className="w-8 h-8 mx-auto text-muted-foreground/30 mb-2" strokeWidth={1.5} />
-                  <p className="text-sm text-muted-foreground">Noch keine Kurse beigetreten</p>
+                <div className="py-4 text-center">
+                  <p className="text-xs text-muted-foreground">Noch keine Kurse beigetreten</p>
                 </div>
               )}
               
               {/* Available Courses */}
               {availableCourses.length > 0 && (
-                <div className="space-y-2 pt-2">
-                  <p className="text-xs font-medium text-muted-foreground">Verfuegbare Kurse</p>
-                  {availableCourses.map(course => (
-                    <Card key={course.id}>
-                      <CardContent className="p-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3 flex-1">
-                            <div className="w-9 h-9 rounded-lg border-2 border-muted-foreground/30 flex items-center justify-center">
-                              <span className="text-xs font-bold text-muted-foreground">
-                                {(course.short_name || course.name).slice(0, 2).toUpperCase()}
-                              </span>
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="font-medium text-sm truncate">{course.name}</p>
-                              <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                                {course.teacher_name && <span>{course.teacher_name}</span>}
-                                <span className="flex items-center gap-0.5">
-                                  <Users className="w-3 h-3" strokeWidth={1.5} />
-                                  {course.member_count}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="h-7 text-[10px] gap-1"
-                            onClick={(e) => { e.stopPropagation(); joinCourse(course.id); }}
-                            disabled={joiningCourseId === course.id}
-                          >
-                            <UserPlus className="w-3 h-3" strokeWidth={1.5} />
-                            {joiningCourseId === course.id ? 'Wird...' : 'Beitreten'}
-                          </Button>
+                <div className="space-y-2">
+                  <p className="text-[10px] font-medium text-muted-foreground">Verfuegbar</p>
+                  <div className="flex gap-2 overflow-x-auto pb-2">
+                    {availableCourses.map(course => (
+                      <div
+                        key={course.id}
+                        className="flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-lg bg-card border border-border/50"
+                      >
+                        <div className="w-7 h-7 rounded-md border-2 border-muted-foreground/30 flex items-center justify-center">
+                          <span className="text-[9px] font-bold text-muted-foreground">
+                            {(course.short_name || course.name).slice(0, 2).toUpperCase()}
+                          </span>
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        <div className="min-w-0">
+                          <p className="text-xs font-medium truncate max-w-[60px]">{course.short_name || course.name}</p>
+                          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                            <Users className="w-2.5 h-2.5" strokeWidth={1.5} />
+                            {course.member_count}
+                          </div>
+                        </div>
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          className="h-6 w-6 p-0"
+                          onClick={(e) => { e.stopPropagation(); joinCourse(course.id); }}
+                          disabled={joiningCourseId === course.id}
+                        >
+                          <UserPlus className="w-3 h-3" strokeWidth={1.5} />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -442,14 +555,19 @@ export default function Schule() {
             schoolYearId={selectedYear.id}
             schoolId={selectedSchool?.id || ''}
             classId={selectedClass?.id}
-            onCourseCreated={fetchCourses}
+            onCourseCreated={() => { fetchCourses(); fetchTimetable(); }}
           />
         )}
         
         {/* Tabs Drawer */}
         <SchoolTabsDrawer 
           open={drawerOpen}
-          onOpenChange={setDrawerOpen}
+          onOpenChange={(open) => {
+            setDrawerOpen(open);
+            if (!open) {
+              fetchTimetable();
+            }
+          }}
           context={drawerContext}
           course={selectedCourse}
         />
