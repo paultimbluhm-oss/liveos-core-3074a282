@@ -554,7 +554,7 @@ export default function Schule() {
             onOpenChange={setCreateDialogOpen}
             schoolYearId={selectedYear.id}
             schoolId={selectedSchool?.id || ''}
-            classId={selectedClass?.id}
+            userClassId={selectedClass?.id}
             onCourseCreated={() => { fetchCourses(); fetchTimetable(); }}
           />
         )}

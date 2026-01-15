@@ -53,12 +53,17 @@ interface TimetableSlot {
   weekType: 'both' | 'odd' | 'even';
 }
 
+interface ClassOption {
+  id: string;
+  name: string;
+}
+
 interface CreateCourseDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   schoolYearId: string;
   schoolId: string;
-  classId?: string;
+  userClassId?: string;
   onCourseCreated: () => void;
 }
 
@@ -67,12 +72,17 @@ export function CreateCourseDialog({
   onOpenChange, 
   schoolYearId, 
   schoolId,
-  classId,
+  userClassId,
   onCourseCreated 
 }: CreateCourseDialogProps) {
   const { user } = useAuth();
   const [schoolSubjects, setSchoolSubjects] = useState<SchoolSubject[]>([]);
+  const [availableClasses, setAvailableClasses] = useState<ClassOption[]>([]);
   const [loading, setLoading] = useState(false);
+  
+  // Visibility
+  const [visibilityType, setVisibilityType] = useState<'year' | 'class'>('year');
+  const [selectedClassId, setSelectedClassId] = useState<string>('');
   
   // Basic info
   const [selectedSubject, setSelectedSubject] = useState('');
@@ -98,8 +108,31 @@ export function CreateCourseDialog({
   useEffect(() => {
     if (open && schoolId) {
       fetchSchoolSubjects();
+      fetchClasses();
+      // Default: if user has a class, pre-select class visibility
+      if (userClassId) {
+        setVisibilityType('class');
+        setSelectedClassId(userClassId);
+      } else {
+        setVisibilityType('year');
+        setSelectedClassId('');
+      }
     }
-  }, [open, schoolId]);
+  }, [open, schoolId, userClassId]);
+
+  const fetchClasses = async () => {
+    if (!schoolYearId) return;
+    
+    const { data } = await supabase
+      .from('classes')
+      .select('id, name')
+      .eq('school_year_id', schoolYearId)
+      .order('name');
+    
+    if (data) {
+      setAvailableClasses(data);
+    }
+  };
 
   const fetchSchoolSubjects = async () => {
     const { data } = await supabase
@@ -178,12 +211,13 @@ export function CreateCourseDialog({
       return;
     }
     
-    setLoading(true);
+    // Determine class_id based on visibility
+    const courseClassId = visibilityType === 'class' ? selectedClassId : null;
     
     // Create course
     const { data: courseData, error } = await supabase.from('courses').insert({
       school_year_id: schoolYearId,
-      class_id: classId || null,
+      class_id: courseClassId || null,
       name: name,
       short_name: shortName || null,
       teacher_name: teacherName.trim() || null,
@@ -303,6 +337,8 @@ export function CreateCourseDialog({
     setOralWeight('50');
     setSlots([]);
     setShowSlotForm(false);
+    setVisibilityType(userClassId ? 'class' : 'year');
+    setSelectedClassId(userClassId || '');
   };
 
   const subjectOptions = schoolSubjects.length > 0 
@@ -326,6 +362,53 @@ export function CreateCourseDialog({
         </DialogHeader>
         
         <div className="space-y-4 pt-2">
+          {/* Visibility Selection - REQUIRED */}
+          <div className="p-3 rounded-lg border border-border/50 space-y-3">
+            <Label className="text-xs font-medium">Sichtbarkeit</Label>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant={visibilityType === 'year' ? 'default' : 'outline'}
+                size="sm"
+                className="flex-1 h-8 text-xs"
+                onClick={() => {
+                  setVisibilityType('year');
+                  setSelectedClassId('');
+                }}
+              >
+                Gesamter Jahrgang
+              </Button>
+              <Button
+                type="button"
+                variant={visibilityType === 'class' ? 'default' : 'outline'}
+                size="sm"
+                className="flex-1 h-8 text-xs"
+                onClick={() => {
+                  setVisibilityType('class');
+                  setSelectedClassId(userClassId || '');
+                }}
+              >
+                Nur Klasse
+              </Button>
+            </div>
+            
+            {visibilityType === 'class' && (
+              <div>
+                <Label className="text-[10px] text-muted-foreground">Klasse waehlen</Label>
+                <Select value={selectedClassId} onValueChange={setSelectedClassId}>
+                  <SelectTrigger className="h-8 mt-1">
+                    <SelectValue placeholder="Klasse waehlen..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableClasses.map(cls => (
+                      <SelectItem key={cls.id} value={cls.id}>{cls.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+          
           {/* Subject Selection */}
           <div>
             <Label className="text-xs">Fach</Label>
@@ -573,7 +656,11 @@ export function CreateCourseDialog({
           <Button 
             onClick={handleCreate} 
             className="w-full"
-            disabled={loading || (!selectedSubject && !customName.trim())}
+            disabled={
+              loading || 
+              (!selectedSubject && !customName.trim()) ||
+              (visibilityType === 'class' && !selectedClassId)
+            }
           >
             <Plus className="w-4 h-4 mr-1" strokeWidth={1.5} />
             {loading ? 'Wird erstellt...' : 'Kurs erstellen'}
