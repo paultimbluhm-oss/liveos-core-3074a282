@@ -16,6 +16,7 @@ import { format, isPast, isToday, isTomorrow, addDays } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { useGamification } from '@/contexts/GamificationContext';
 import { Course } from './schools/types';
+import { DeleteCourseDialog } from './schools/DeleteCourseDialog';
 
 interface SchoolTabsDrawerProps {
   open: boolean;
@@ -99,6 +100,7 @@ export function SchoolTabsDrawer({ open, onOpenChange, context, course }: School
   const [homeworkDialogOpen, setHomeworkDialogOpen] = useState(false);
   const [eventDialogOpen, setEventDialogOpen] = useState(false);
   const [gradeDialogOpen, setGradeDialogOpen] = useState(false);
+  const [deleteCourseDialogOpen, setDeleteCourseDialogOpen] = useState(false);
   
   // Form states
   const [hwTitle, setHwTitle] = useState('');
@@ -188,76 +190,136 @@ export function SchoolTabsDrawer({ open, onOpenChange, context, course }: School
   };
 
   // Homework handlers
+  const [savingHomework, setSavingHomework] = useState(false);
   const handleShareHomework = async () => {
-    if (!user || !course || !hwTitle.trim() || !hwDueDate) {
-      toast.error('Titel und Datum erforderlich');
+    if (!user || !course) {
+      toast.error('Nicht angemeldet oder kein Kurs');
+      return;
+    }
+    if (!hwTitle.trim()) {
+      toast.error('Titel erforderlich');
+      return;
+    }
+    if (!hwDueDate) {
+      toast.error('Datum erforderlich');
       return;
     }
     
-    const { error } = await supabase.from('shared_homework').insert({
-      course_id: course.id,
-      title: hwTitle.trim(),
-      description: hwDescription.trim() || null,
-      due_date: hwDueDate,
-      priority: hwPriority,
-      shared_by: user.id,
-    });
-    
-    if (!error) {
-      toast.success('Hausaufgabe geteilt');
-      setHwTitle('');
-      setHwDescription('');
-      setHwDueDate('');
-      setHomeworkDialogOpen(false);
-      fetchData();
+    setSavingHomework(true);
+    try {
+      const { data, error } = await supabase.from('shared_homework').insert({
+        course_id: course.id,
+        title: hwTitle.trim(),
+        description: hwDescription.trim() || null,
+        due_date: hwDueDate,
+        priority: hwPriority,
+        shared_by: user.id,
+      }).select().single();
+      
+      if (error) {
+        console.error('Homework save error:', error);
+        toast.error(`Fehler: ${error.message}`);
+        return;
+      }
+      
+      if (data) {
+        toast.success('Aufgabe gespeichert');
+        setHwTitle('');
+        setHwDescription('');
+        setHwDueDate('');
+        setHomeworkDialogOpen(false);
+        // Optimistic update
+        setHomework(prev => [...prev, data as SharedHomework].sort((a, b) => 
+          new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
+        ));
+      }
+    } catch (err) {
+      console.error('Homework save exception:', err);
+      toast.error('Unerwarteter Fehler beim Speichern');
+    } finally {
+      setSavingHomework(false);
     }
   };
 
   const deleteHomework = async (id: string) => {
     const { error } = await supabase.from('shared_homework').delete().eq('id', id);
-    if (!error) {
-      toast.success('Geloescht');
-      fetchData();
+    if (error) {
+      toast.error(`Fehler: ${error.message}`);
+      return;
     }
+    toast.success('Geloescht');
+    setHomework(prev => prev.filter(h => h.id !== id));
   };
 
   // Event handlers
+  const [savingEvent, setSavingEvent] = useState(false);
   const handleShareEvent = async () => {
-    if (!user || !course || !evTitle.trim() || !evDate) {
-      toast.error('Titel und Datum erforderlich');
+    if (!user || !course) {
+      toast.error('Nicht angemeldet oder kein Kurs');
+      return;
+    }
+    if (!evTitle.trim()) {
+      toast.error('Titel erforderlich');
+      return;
+    }
+    if (!evDate) {
+      toast.error('Datum erforderlich');
       return;
     }
     
-    const { error } = await supabase.from('shared_events').insert({
-      course_id: course.id,
-      title: evTitle.trim(),
-      description: evDescription.trim() || null,
-      event_date: evDate,
-      event_type: evType,
-      shared_by: user.id,
-    });
-    
-    if (!error) {
-      toast.success('Termin geteilt');
-      setEvTitle('');
-      setEvDescription('');
-      setEvDate('');
-      setEventDialogOpen(false);
-      fetchData();
+    setSavingEvent(true);
+    try {
+      const { data, error } = await supabase.from('shared_events').insert({
+        course_id: course.id,
+        title: evTitle.trim(),
+        description: evDescription.trim() || null,
+        event_date: evDate,
+        event_type: evType,
+        shared_by: user.id,
+      }).select().single();
+      
+      if (error) {
+        console.error('Event save error:', error);
+        toast.error(`Fehler: ${error.message}`);
+        return;
+      }
+      
+      if (data) {
+        toast.success('Termin gespeichert');
+        setEvTitle('');
+        setEvDescription('');
+        setEvDate('');
+        setEventDialogOpen(false);
+        setEvents(prev => [...prev, data as SharedEvent].sort((a, b) => 
+          new Date(a.event_date).getTime() - new Date(b.event_date).getTime()
+        ));
+      }
+    } catch (err) {
+      console.error('Event save exception:', err);
+      toast.error('Unerwarteter Fehler beim Speichern');
+    } finally {
+      setSavingEvent(false);
     }
   };
 
   const deleteEvent = async (id: string) => {
     const { error } = await supabase.from('shared_events').delete().eq('id', id);
-    if (!error) {
-      toast.success('Geloescht');
-      fetchData();
+    if (error) {
+      toast.error(`Fehler: ${error.message}`);
+      return;
     }
+    toast.success('Geloescht');
+    setEvents(prev => prev.filter(e => e.id !== id));
   };
 
   // Grade handlers
+  const [savingGrade, setSavingGrade] = useState(false);
   const handleAddGrade = async () => {
-    if (!user || !course || !gradePoints) {
+    if (!user || !course) {
+      toast.error('Nicht angemeldet oder kein Kurs');
+      return;
+    }
+    if (!gradePoints) {
       toast.error('Punkte erforderlich');
       return;
     }
@@ -268,31 +330,50 @@ export function SchoolTabsDrawer({ open, onOpenChange, context, course }: School
       return;
     }
     
-    const { error } = await supabase.from('grades').insert({
-      user_id: user.id,
-      subject_id: course.id,
-      course_id: course.id,
-      grade_type: gradeType,
-      points: pointsNum,
-      description: gradeDescription.trim() || (gradeType === 'oral' ? 'Muendlich' : 'Klausur'),
-    });
-    
-    if (!error) {
-      toast.success('Note hinzugefuegt');
-      addXP(5);
-      setGradePoints('');
-      setGradeDescription('');
-      setGradeDialogOpen(false);
-      fetchData();
+    setSavingGrade(true);
+    try {
+      const gradeData = {
+        user_id: user.id,
+        subject_id: course.id,
+        course_id: course.id,
+        grade_type: gradeType,
+        points: pointsNum,
+        description: gradeDescription.trim() || (gradeType === 'oral' ? 'Muendlich' : 'Klausur'),
+        date: new Date().toISOString().split('T')[0],
+      };
+      
+      const { data, error } = await supabase.from('grades').insert(gradeData).select().single();
+      
+      if (error) {
+        console.error('Grade save error:', error);
+        toast.error(`Fehler: ${error.message}`);
+        return;
+      }
+      
+      if (data) {
+        toast.success('Note gespeichert');
+        addXP(5);
+        setGradePoints('');
+        setGradeDescription('');
+        setGradeDialogOpen(false);
+        setGrades(prev => [data as Grade, ...prev]);
+      }
+    } catch (err) {
+      console.error('Grade save exception:', err);
+      toast.error('Unerwarteter Fehler beim Speichern');
+    } finally {
+      setSavingGrade(false);
     }
   };
 
   const deleteGrade = async (id: string) => {
     const { error } = await supabase.from('grades').delete().eq('id', id);
-    if (!error) {
-      toast.success('Geloescht');
-      fetchData();
+    if (error) {
+      toast.error(`Fehler: ${error.message}`);
+      return;
     }
+    toast.success('Geloescht');
+    setGrades(prev => prev.filter(g => g.id !== id));
   };
 
   // Helper functions
@@ -665,31 +746,50 @@ export function SchoolTabsDrawer({ open, onOpenChange, context, course }: School
               </TabsContent>
               
               {/* Team Tab */}
-              <TabsContent value="team" className="mt-3 space-y-2">
+              <TabsContent value="team" className="mt-3 space-y-3">
                 {context === 'course' && members.length > 0 ? (
-                  members.map(member => (
-                    <Card key={member.id}>
-                      <CardContent className="p-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                              <span className="text-xs font-medium text-primary">
-                                {(member.profile?.display_name || member.profile?.username || '?').slice(0, 2).toUpperCase()}
-                              </span>
+                  <>
+                    <div className="space-y-2">
+                      {members.map(member => (
+                        <Card key={member.id}>
+                          <CardContent className="p-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                                  <span className="text-xs font-medium text-primary">
+                                    {(member.profile?.display_name || member.profile?.username || '?').slice(0, 2).toUpperCase()}
+                                  </span>
+                                </div>
+                                <span className="text-sm font-medium">
+                                  {member.profile?.display_name || member.profile?.username || 'Unbekannt'}
+                                </span>
+                              </div>
+                              {member.role === 'admin' && (
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/20 text-primary">
+                                  Admin
+                                </span>
+                              )}
                             </div>
-                            <span className="text-sm font-medium">
-                              {member.profile?.display_name || member.profile?.username || 'Unbekannt'}
-                            </span>
-                          </div>
-                          {member.role === 'admin' && (
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/20 text-primary">
-                              Admin
-                            </span>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                    
+                    {/* Admin Delete Button */}
+                    {isAdmin && course && (
+                      <div className="pt-4 border-t border-border/50">
+                        <Button 
+                          variant="destructive" 
+                          size="sm" 
+                          className="w-full h-8 text-xs"
+                          onClick={() => setDeleteCourseDialogOpen(true)}
+                        >
+                          <Trash2 className="w-3 h-3 mr-1" strokeWidth={1.5} />
+                          Kurs loeschen
+                        </Button>
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <div className="py-8 text-center">
                     <Users className="w-8 h-8 mx-auto text-muted-foreground/30 mb-2" strokeWidth={1.5} />
@@ -843,10 +943,25 @@ export function SchoolTabsDrawer({ open, onOpenChange, context, course }: School
                   className="h-9"
                 />
               </div>
-              <Button className="w-full" onClick={handleAddGrade}>Speichern</Button>
+              <Button className="w-full" onClick={handleAddGrade} disabled={savingGrade}>
+                {savingGrade ? 'Speichern...' : 'Speichern'}
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
+        
+        {/* Delete Course Dialog */}
+        {course && (
+          <DeleteCourseDialog
+            open={deleteCourseDialogOpen}
+            onOpenChange={setDeleteCourseDialogOpen}
+            courseId={course.id}
+            courseName={course.name}
+            onDeleted={() => {
+              onOpenChange(false);
+            }}
+          />
+        )}
       </SheetContent>
     </Sheet>
   );
