@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { GamificationProvider } from "@/contexts/GamificationContext";
+import { AdminDeleteProvider } from "@/contexts/AdminDeleteContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Schule from "./pages/Schule";
@@ -21,23 +22,25 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <GamificationProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/kalender" element={<Kalender />} />
-              <Route path="/schule" element={<Schule />} />
-              <Route path="/privat" element={<Privat />} />
-              <Route path="/business" element={<Business />} />
-              <Route path="/freunde" element={<Freunde />} />
-              <Route path="/profil" element={<Profile />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
+        <AdminDeleteProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/kalender" element={<Kalender />} />
+                <Route path="/schule" element={<Schule />} />
+                <Route path="/privat" element={<Privat />} />
+                <Route path="/business" element={<Business />} />
+                <Route path="/freunde" element={<Freunde />} />
+                <Route path="/profil" element={<Profile />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </AdminDeleteProvider>
       </GamificationProvider>
     </AuthProvider>
   </QueryClientProvider>

@@ -7,11 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Settings, Plus, Building2, GraduationCap, Users, Check, UserPlus } from 'lucide-react';
+import { Settings, Plus, Building2, GraduationCap, Users, Check, UserPlus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { School, SchoolYear, Class } from './types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
+import { DeleteSchoolDialog } from './DeleteSchoolDialog';
 
 interface SchoolSettingsDialogProps {
   open: boolean;
@@ -44,6 +45,10 @@ export function SchoolSettingsDialog({ open, onOpenChange, onSchoolChanged }: Sc
   // New class form
   const [newClassName, setNewClassName] = useState('');
   const [creatingClass, setCreatingClass] = useState(false);
+  
+  // Delete dialog
+  const [deleteSchoolOpen, setDeleteSchoolOpen] = useState(false);
+  const [schoolToDelete, setSchoolToDelete] = useState<{ id: string; name: string } | null>(null);
 
   const fetchData = async () => {
     if (!user) return;
@@ -550,8 +555,54 @@ export function SchoolSettingsDialog({ open, onOpenChange, onSchoolChanged }: Sc
                 </Button>
               </div>
             )}
+            
+            {/* Delete School Section */}
+            {selectedSchoolId && (
+              <div className="p-3 rounded-lg border border-destructive/30 bg-destructive/5 space-y-2">
+                <div className="flex items-center gap-2 text-sm font-medium text-destructive">
+                  <Trash2 className="w-4 h-4" strokeWidth={1.5} />
+                  Schule loeschen
+                </div>
+                <p className="text-[10px] text-destructive/80">
+                  Loescht die Schule und alle zugehoerigen Daten unwiderruflich.
+                </p>
+                <Button 
+                  variant="destructive" 
+                  size="sm"
+                  className="w-full h-8 text-xs"
+                  onClick={() => {
+                    const school = schools.find(s => s.id === selectedSchoolId);
+                    if (school) {
+                      setSchoolToDelete({ id: school.id, name: school.name });
+                      setDeleteSchoolOpen(true);
+                    }
+                  }}
+                >
+                  <Trash2 className="w-3 h-3 mr-1" strokeWidth={1.5} />
+                  Schule loeschen
+                </Button>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
+        
+        {/* Delete School Dialog */}
+        {schoolToDelete && (
+          <DeleteSchoolDialog
+            open={deleteSchoolOpen}
+            onOpenChange={setDeleteSchoolOpen}
+            schoolId={schoolToDelete.id}
+            schoolName={schoolToDelete.name}
+            onDeleted={() => {
+              setSelectedSchoolId('');
+              setSelectedYearId('');
+              setSelectedClassId('');
+              setSchoolToDelete(null);
+              fetchData();
+              onSchoolChanged();
+            }}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );
