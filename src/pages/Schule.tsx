@@ -338,26 +338,31 @@ export default function Schule() {
 
   return (
     <AppLayout>
-      <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto space-y-4">
+      <div className="p-4 pb-24 max-w-lg mx-auto space-y-5">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div>
-            {selectedSchool ? (
-              <>
-                <h1 className="text-lg font-bold">{selectedSchool.short_name || selectedSchool.name}</h1>
-                <p className="text-xs text-muted-foreground">
-                  {selectedYear?.name}
-                  {selectedClass && ` - ${selectedClass.name}`}
-                </p>
-              </>
-            ) : (
-              <h1 className="text-lg font-bold">Schule</h1>
-            )}
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-primary/10 border border-primary/30">
+              <GraduationCap className="w-5 h-5 text-primary" strokeWidth={1.5} />
+            </div>
+            <div>
+              {selectedSchool ? (
+                <>
+                  <h1 className="text-base font-bold leading-tight">{selectedSchool.short_name || selectedSchool.name}</h1>
+                  <p className="text-[11px] text-muted-foreground">
+                    {selectedYear?.name}
+                    {selectedClass && ` · ${selectedClass.name}`}
+                  </p>
+                </>
+              ) : (
+                <h1 className="text-base font-bold">Schule</h1>
+              )}
+            </div>
           </div>
           <Button 
             variant="ghost" 
             size="icon" 
-            className="h-8 w-8"
+            className="h-9 w-9 rounded-xl"
             onClick={() => setSettingsOpen(true)}
           >
             <Settings className="w-4 h-4" strokeWidth={1.5} />
@@ -365,111 +370,133 @@ export default function Schule() {
         </div>
         
         {dataLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
+          <div className="flex items-center justify-center py-16">
+            <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent" />
           </div>
         ) : selectedSchool && selectedYear ? (
           <>
-            {/* Timetable Grid - Always visible */}
-            <div className="overflow-x-auto">
-              <div className="grid grid-cols-6 gap-0.5 min-w-[320px]">
-                {/* Header row */}
-                <div className="h-6" />
-                {DAYS.map(day => (
-                  <div key={day} className="h-6 flex items-center justify-center text-[10px] font-medium text-muted-foreground">
-                    {day}
-                  </div>
-                ))}
-                
-                {/* Period rows */}
-                {PERIODS.map(period => (
-                  <>
-                    <div key={`p-${period}`} className="h-12 flex items-center justify-center text-[10px] text-muted-foreground font-medium">
-                      {period}
+            {/* Timetable Grid - Mobile optimized */}
+            <Card className="overflow-hidden">
+              <CardContent className="p-3">
+                <div className="grid grid-cols-6 gap-1">
+                  {/* Header row */}
+                  <div className="h-7" />
+                  {DAYS.map(day => (
+                    <div key={day} className="h-7 flex items-center justify-center">
+                      <span className="text-[10px] font-semibold text-muted-foreground">{day}</span>
                     </div>
-                    {DAYS.map((_, dayIndex) => {
-                      const entry = getEntry(dayIndex, period);
-                      const courseId = entry?.course_id;
-                      const grade = getCourseGrade(courseId);
-                      const course = courseId ? courses.find(c => c.id === courseId) : null;
-                      const hasContent = !!entry?.course_id || !!entry?.teacher_short;
-                      
-                      return (
-                        <div
-                          key={`${dayIndex}-${period}`}
-                          onClick={() => courseId && openCourseById(courseId)}
-                          className={`h-12 rounded-lg flex flex-col items-center justify-center text-[9px] font-medium relative transition-all ${
-                            hasContent 
-                              ? 'bg-primary/10 border border-primary/30 cursor-pointer hover:bg-primary/20' 
-                              : 'bg-muted/30'
-                          }`}
-                        >
-                          {hasContent && (
-                            <>
-                              <span className="text-primary font-bold">
-                                {course?.short_name?.slice(0, 3) || entry?.teacher_short?.slice(0, 3) || ''}
-                              </span>
-                              {entry?.room && (
-                                <span className="text-[8px] text-muted-foreground">{entry.room}</span>
-                              )}
-                              {grade !== null && (
-                                <div className={`absolute -top-1 -right-1 w-4 h-4 rounded-full ${getGradeColor(grade)} flex items-center justify-center`}>
-                                  <span className="text-[7px] text-white font-bold">{Math.round(grade)}</span>
-                                </div>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </>
-                ))}
-              </div>
-            </div>
+                  ))}
+                  
+                  {/* Period rows */}
+                  {PERIODS.map(period => (
+                    <div key={`row-${period}`} className="contents">
+                      <div className="h-11 flex items-center justify-center">
+                        <span className="text-[10px] font-medium text-muted-foreground/70">{period}</span>
+                      </div>
+                      {DAYS.map((_, dayIndex) => {
+                        const entry = getEntry(dayIndex, period);
+                        const courseId = entry?.course_id;
+                        const grade = getCourseGrade(courseId);
+                        const course = courseId ? courses.find(c => c.id === courseId) : null;
+                        const hasContent = !!entry?.course_id || !!entry?.teacher_short;
+                        const courseColor = course?.color || 'hsl(var(--primary))';
+                        
+                        return (
+                          <div
+                            key={`${dayIndex}-${period}`}
+                            onClick={() => courseId && openCourseById(courseId)}
+                            className={`h-11 rounded-lg flex flex-col items-center justify-center relative transition-all active:scale-95 ${
+                              hasContent 
+                                ? 'cursor-pointer' 
+                                : 'bg-muted/20'
+                            }`}
+                            style={hasContent ? {
+                              backgroundColor: `color-mix(in srgb, ${courseColor} 15%, transparent)`,
+                              borderWidth: 1,
+                              borderColor: `color-mix(in srgb, ${courseColor} 40%, transparent)`,
+                            } : undefined}
+                          >
+                            {hasContent && (
+                              <>
+                                <span 
+                                  className="text-[10px] font-bold leading-none"
+                                  style={{ color: courseColor }}
+                                >
+                                  {course?.short_name?.slice(0, 3).toUpperCase() || entry?.teacher_short?.slice(0, 3) || ''}
+                                </span>
+                                {entry?.room && (
+                                  <span className="text-[8px] text-muted-foreground/70 leading-none mt-0.5">{entry.room}</span>
+                                )}
+                                {grade !== null && (
+                                  <div className={`absolute -top-1.5 -right-1.5 min-w-4 h-4 px-0.5 rounded-full ${getGradeColor(grade)} flex items-center justify-center shadow-sm`}>
+                                    <span className="text-[8px] text-white font-bold">{Math.round(grade)}</span>
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
             
             {/* Courses Section */}
-            <div className="space-y-3 pt-2">
+            <div className="space-y-4">
+              {/* Section Header */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="p-1.5 rounded-lg border-2 border-violet-500 bg-transparent">
+                  <div className="p-1.5 rounded-lg bg-violet-500/10 border border-violet-500/30">
                     <Users className="w-4 h-4 text-violet-500" strokeWidth={1.5} />
                   </div>
-                  <h2 className="font-semibold text-sm">Meine Kurse</h2>
+                  <span className="font-semibold text-sm">Meine Kurse</span>
                 </div>
-                <Button size="sm" className="h-7 gap-1 text-xs" onClick={() => setCreateDialogOpen(true)}>
-                  <Plus className="w-3 h-3" strokeWidth={1.5} />
+                <Button 
+                  size="sm" 
+                  className="h-8 gap-1.5 text-xs rounded-lg" 
+                  onClick={() => setCreateDialogOpen(true)}
+                >
+                  <Plus className="w-3.5 h-3.5" strokeWidth={1.5} />
                   Kurs
                 </Button>
               </div>
               
-              {/* My Courses - Compact horizontal list */}
+              {/* My Courses - Horizontal scrollable list */}
               {myCourses.length > 0 ? (
-                <div className="flex gap-2 overflow-x-auto pb-2">
+                <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide">
                   {myCourses.map(course => {
                     const grade = getCourseGrade(course.id);
+                    const courseColor = course.color || 'hsl(var(--primary))';
                     return (
                       <div
                         key={course.id}
                         onClick={() => openCourse(course)}
-                        className="flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-lg bg-card border border-border/50 cursor-pointer hover:border-primary/50 transition-colors"
+                        className="flex-shrink-0 flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-card border border-border/50 cursor-pointer active:scale-98 transition-transform"
+                        style={{ minWidth: 130 }}
                       >
                         <div 
-                          className="w-7 h-7 rounded-md border-2 flex items-center justify-center"
-                          style={{ borderColor: course.color || 'hsl(var(--primary))' }}
+                          className="w-8 h-8 rounded-lg flex items-center justify-center"
+                          style={{ 
+                            backgroundColor: `color-mix(in srgb, ${courseColor} 15%, transparent)`,
+                            borderWidth: 2,
+                            borderColor: courseColor,
+                          }}
                         >
                           <span 
-                            className="text-[9px] font-bold"
-                            style={{ color: course.color || 'hsl(var(--primary))' }}
+                            className="text-[10px] font-bold"
+                            style={{ color: courseColor }}
                           >
                             {(course.short_name || course.name).slice(0, 2).toUpperCase()}
                           </span>
                         </div>
-                        <div className="min-w-0">
-                          <p className="text-xs font-medium truncate max-w-[80px]">{course.short_name || course.name}</p>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-medium truncate">{course.short_name || course.name}</p>
                           {grade !== null && (
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-1 mt-0.5">
                               <div className={`w-2 h-2 rounded-full ${getGradeColor(grade)}`} />
-                              <span className="text-[10px] text-muted-foreground">{grade}</span>
+                              <span className="text-[10px] text-muted-foreground font-medium">{grade} Punkte</span>
                             </div>
                           )}
                         </div>
@@ -478,41 +505,47 @@ export default function Schule() {
                   })}
                 </div>
               ) : (
-                <div className="py-4 text-center">
-                  <p className="text-xs text-muted-foreground">Noch keine Kurse beigetreten</p>
+                <div className="py-6 text-center rounded-xl border border-dashed border-border/50">
+                  <p className="text-xs text-muted-foreground">Noch keinem Kurs beigetreten</p>
+                  <p className="text-[10px] text-muted-foreground/70 mt-0.5">Tritt einem Kurs bei oder erstelle einen neuen</p>
                 </div>
               )}
               
               {/* Available Courses */}
               {availableCourses.length > 0 && (
                 <div className="space-y-2">
-                  <p className="text-[10px] font-medium text-muted-foreground">Verfuegbar</p>
-                  <div className="flex gap-2 overflow-x-auto pb-2">
+                  <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Verfuegbare Kurse</p>
+                  <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide">
                     {availableCourses.map(course => (
                       <div
                         key={course.id}
-                        className="flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-lg bg-card border border-border/50"
+                        className="flex-shrink-0 flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-card/50 border border-border/30"
+                        style={{ minWidth: 150 }}
                       >
-                        <div className="w-7 h-7 rounded-md border-2 border-muted-foreground/30 flex items-center justify-center">
-                          <span className="text-[9px] font-bold text-muted-foreground">
+                        <div className="w-8 h-8 rounded-lg border-2 border-muted-foreground/20 flex items-center justify-center bg-muted/30">
+                          <span className="text-[10px] font-bold text-muted-foreground">
                             {(course.short_name || course.name).slice(0, 2).toUpperCase()}
                           </span>
                         </div>
-                        <div className="min-w-0">
-                          <p className="text-xs font-medium truncate max-w-[60px]">{course.short_name || course.name}</p>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-medium truncate">{course.short_name || course.name}</p>
                           <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                             <Users className="w-2.5 h-2.5" strokeWidth={1.5} />
-                            {course.member_count}
+                            <span>{course.member_count} Mitglieder</span>
                           </div>
                         </div>
                         <Button 
-                          size="sm" 
+                          size="icon" 
                           variant="ghost" 
-                          className="h-6 w-6 p-0"
+                          className="h-7 w-7 rounded-lg hover:bg-primary/10"
                           onClick={(e) => { e.stopPropagation(); joinCourse(course.id); }}
                           disabled={joiningCourseId === course.id}
                         >
-                          <UserPlus className="w-3 h-3" strokeWidth={1.5} />
+                          {joiningCourseId === course.id ? (
+                            <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <UserPlus className="w-3.5 h-3.5 text-primary" strokeWidth={1.5} />
+                          )}
                         </Button>
                       </div>
                     ))}

@@ -1,10 +1,10 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode, useCallback } from 'react';
+import { toast } from 'sonner';
 
 interface AdminDeleteContextType {
-  deleteCode: string;
   verifyCode: (code: string) => boolean;
-  showCode: () => void;
-  codeShown: boolean;
+  requestCode: () => void;
+  hasRequestedCode: boolean;
 }
 
 const AdminDeleteContext = createContext<AdminDeleteContextType | null>(null);
@@ -21,26 +21,39 @@ const generateCode = () => {
 
 export function AdminDeleteProvider({ children }: { children: ReactNode }) {
   const [deleteCode] = useState(() => generateCode());
-  const [codeShown, setCodeShown] = useState(false);
+  const [hasRequestedCode, setHasRequestedCode] = useState(false);
+  const [codeDisplayed, setCodeDisplayed] = useState(false);
 
-  useEffect(() => {
-    // Log the code once on mount for security
-    console.log('%c[ADMIN] Loesch-Code fuer diese Session:', 'color: #f59e0b; font-weight: bold; font-size: 14px;');
-    console.log('%c' + deleteCode, 'color: #ef4444; font-weight: bold; font-size: 18px; background: #fef2f2; padding: 8px 16px; border-radius: 4px;');
-    console.log('%cDieser Code wird benoetigt, um Schulen oder Kurse zu loeschen.', 'color: #6b7280; font-size: 12px;');
+  const verifyCode = useCallback((code: string): boolean => {
+    return code.toUpperCase() === deleteCode;
   }, [deleteCode]);
 
-  const verifyCode = (code: string): boolean => {
-    return code.toUpperCase() === deleteCode;
-  };
-
-  const showCode = () => {
-    setCodeShown(true);
-    alert(`Loesch-Code: ${deleteCode}\n\nDieser Code wird benoetigt, um Schulen oder Kurse unwiderruflich zu loeschen.`);
-  };
+  const requestCode = useCallback(() => {
+    if (codeDisplayed) {
+      toast.info('Der Loesch-Code wurde bereits einmalig angezeigt und kann nicht erneut abgerufen werden.');
+      return;
+    }
+    
+    setHasRequestedCode(true);
+    setCodeDisplayed(true);
+    
+    // Show the code only once via toast - it will never be shown again
+    toast.success(
+      `Dein Admin-Loesch-Code: ${deleteCode}`,
+      {
+        duration: 30000, // 30 seconds to memorize
+        description: 'Notiere dir diesen Code! Er wird nur einmal angezeigt und ist fuer diese Session gueltig.',
+        style: {
+          background: 'hsl(var(--card))',
+          border: '2px solid hsl(var(--primary))',
+          color: 'hsl(var(--foreground))',
+        },
+      }
+    );
+  }, [deleteCode, codeDisplayed]);
 
   return (
-    <AdminDeleteContext.Provider value={{ deleteCode, verifyCode, showCode, codeShown }}>
+    <AdminDeleteContext.Provider value={{ verifyCode, requestCode, hasRequestedCode }}>
       {children}
     </AdminDeleteContext.Provider>
   );
