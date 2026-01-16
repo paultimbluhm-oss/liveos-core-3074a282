@@ -25,7 +25,7 @@ export function DeleteCourseDialog({
   onDeleted 
 }: DeleteCourseDialogProps) {
   const { user } = useAuth();
-  const { verifyCode, showCode } = useAdminDelete();
+  const { verifyCode, requestCode, hasRequestedCode } = useAdminDelete();
   const [inputCode, setInputCode] = useState('');
   const [confirmText, setConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
@@ -97,7 +97,9 @@ export function DeleteCourseDialog({
           <div className="space-y-4">
             <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30">
               <p className="text-xs text-destructive">
-                Gib den Loesch-Code ein, der beim App-Start in der Konsole angezeigt wurde.
+                {hasRequestedCode 
+                  ? 'Gib den Loesch-Code ein, den du zuvor angefordert hast.'
+                  : 'Fordere zuerst den Loesch-Code an. Er wird nur einmal angezeigt!'}
               </p>
             </div>
             
@@ -117,10 +119,11 @@ export function DeleteCourseDialog({
                 variant="outline" 
                 size="sm" 
                 className="flex-1 text-xs"
-                onClick={showCode}
+                onClick={requestCode}
+                disabled={hasRequestedCode}
               >
                 <Key className="w-3 h-3 mr-1" strokeWidth={1.5} />
-                Code anzeigen
+                {hasRequestedCode ? 'Code angefordert' : 'Code anfordern'}
               </Button>
               <Button 
                 variant="destructive" 

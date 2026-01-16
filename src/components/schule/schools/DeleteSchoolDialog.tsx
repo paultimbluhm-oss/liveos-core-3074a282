@@ -25,7 +25,7 @@ export function DeleteSchoolDialog({
   onDeleted 
 }: DeleteSchoolDialogProps) {
   const { user } = useAuth();
-  const { verifyCode, showCode } = useAdminDelete();
+  const { verifyCode, requestCode, hasRequestedCode } = useAdminDelete();
   const [inputCode, setInputCode] = useState('');
   const [confirmText, setConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
@@ -170,7 +170,9 @@ export function DeleteSchoolDialog({
                 Warnung: Komplettloeschung
               </p>
               <p className="text-[10px] text-destructive/80">
-                Dies loescht die Schule und alle zugehoerigen Daten: Jahrgaenge, Klassen, Kurse, Aufgaben, Termine, Noten und Mitgliedschaften.
+                {hasRequestedCode 
+                  ? 'Gib den Loesch-Code ein, den du zuvor angefordert hast.'
+                  : 'Dies loescht die Schule und alle zugehoerigen Daten. Fordere zuerst den Code an!'}
               </p>
             </div>
             
@@ -190,10 +192,11 @@ export function DeleteSchoolDialog({
                 variant="outline" 
                 size="sm" 
                 className="flex-1 text-xs"
-                onClick={showCode}
+                onClick={requestCode}
+                disabled={hasRequestedCode}
               >
                 <Key className="w-3 h-3 mr-1" strokeWidth={1.5} />
-                Code anzeigen
+                {hasRequestedCode ? 'Code angefordert' : 'Code anfordern'}
               </Button>
               <Button 
                 variant="destructive" 
