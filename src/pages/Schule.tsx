@@ -394,7 +394,7 @@ export default function Schule() {
                         <span className="text-[10px] font-medium text-muted-foreground/70">{period}</span>
                       </div>
                       {DAYS.map((_, dayIndex) => {
-                        const entry = getEntry(dayIndex, period);
+                        const entry = getEntry(dayIndex + 1, period);
                         const courseId = entry?.course_id;
                         const grade = getCourseGrade(courseId);
                         const course = courseId ? courses.find(c => c.id === courseId) : null;

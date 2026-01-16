@@ -334,7 +334,7 @@ export function SchoolTabsDrawer({ open, onOpenChange, context, course }: School
     try {
       const gradeData = {
         user_id: user.id,
-        subject_id: course.id,
+        subject_id: null,
         course_id: course.id,
         grade_type: gradeType,
         points: pointsNum,
@@ -441,7 +441,7 @@ export function SchoolTabsDrawer({ open, onOpenChange, context, course }: School
               {period}
             </div>
             {DAYS.map((_, dayIndex) => {
-              const entry = timetableEntries.find(e => e.day_of_week === dayIndex && e.period === period);
+              const entry = timetableEntries.find(e => e.day_of_week === dayIndex + 1 && e.period === period);
               return (
                 <div
                   key={`${dayIndex}-${period}`}

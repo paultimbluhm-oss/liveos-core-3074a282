@@ -1075,7 +1075,7 @@ export type Database = {
           grade_type: string
           id: string
           points: number
-          subject_id: string
+          subject_id: string | null
           user_id: string
         }
         Insert: {
@@ -1086,7 +1086,7 @@ export type Database = {
           grade_type: string
           id?: string
           points: number
-          subject_id: string
+          subject_id?: string | null
           user_id: string
         }
         Update: {
@@ -1097,7 +1097,7 @@ export type Database = {
           grade_type?: string
           id?: string
           points?: number
-          subject_id?: string
+          subject_id?: string | null
           user_id?: string
         }
         Relationships: [

@@ -20,37 +20,23 @@ const generateCode = () => {
 };
 
 export function AdminDeleteProvider({ children }: { children: ReactNode }) {
-  const [deleteCode] = useState(() => generateCode());
+  // Fixed admin delete code - provided once in the chat, never displayed in app
+  const deleteCode = 'XK7P3M';
   const [hasRequestedCode, setHasRequestedCode] = useState(false);
-  const [codeDisplayed, setCodeDisplayed] = useState(false);
 
   const verifyCode = useCallback((code: string): boolean => {
     return code.toUpperCase() === deleteCode;
-  }, [deleteCode]);
+  }, []);
 
   const requestCode = useCallback(() => {
-    if (codeDisplayed) {
-      toast.info('Der Loesch-Code wurde bereits einmalig angezeigt und kann nicht erneut abgerufen werden.');
+    if (hasRequestedCode) {
+      toast.info('Der Code wurde bereits angefordert. Er wurde dir einmalig im Chat mitgeteilt.');
       return;
     }
     
     setHasRequestedCode(true);
-    setCodeDisplayed(true);
-    
-    // Show the code only once via toast - it will never be shown again
-    toast.success(
-      `Dein Admin-Loesch-Code: ${deleteCode}`,
-      {
-        duration: 30000, // 30 seconds to memorize
-        description: 'Notiere dir diesen Code! Er wird nur einmal angezeigt und ist fuer diese Session gueltig.',
-        style: {
-          background: 'hsl(var(--card))',
-          border: '2px solid hsl(var(--primary))',
-          color: 'hsl(var(--foreground))',
-        },
-      }
-    );
-  }, [deleteCode, codeDisplayed]);
+    toast.info('Der Admin-Code wurde dir einmalig im Chat mitgeteilt und ist dort zu finden.');
+  }, [hasRequestedCode]);
 
   return (
     <AdminDeleteContext.Provider value={{ verifyCode, requestCode, hasRequestedCode }}>
