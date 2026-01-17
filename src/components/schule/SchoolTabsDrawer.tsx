@@ -10,13 +10,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Clock, BookOpen, Calendar, Award, Users, Plus, Trash2, CalendarX, Check } from 'lucide-react';
+import { Clock, BookOpen, Calendar, Award, Users, Plus, Trash2, CalendarX, Check, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, isPast, isToday, isTomorrow, addDays } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { useGamification } from '@/contexts/GamificationContext';
 import { Course } from './schools/types';
 import { DeleteCourseDialog } from './schools/DeleteCourseDialog';
+import { EditCourseDialog } from './schools/EditCourseDialog';
 
 interface SchoolTabsDrawerProps {
   open: boolean;
@@ -101,7 +102,7 @@ export function SchoolTabsDrawer({ open, onOpenChange, context, course }: School
   const [eventDialogOpen, setEventDialogOpen] = useState(false);
   const [gradeDialogOpen, setGradeDialogOpen] = useState(false);
   const [deleteCourseDialogOpen, setDeleteCourseDialogOpen] = useState(false);
-  
+  const [editCourseDialogOpen, setEditCourseDialogOpen] = useState(false);
   // Form states
   const [hwTitle, setHwTitle] = useState('');
   const [hwDescription, setHwDescription] = useState('');
@@ -775,17 +776,17 @@ export function SchoolTabsDrawer({ open, onOpenChange, context, course }: School
                       ))}
                     </div>
                     
-                    {/* Admin Delete Button */}
-                    {isAdmin && course && (
-                      <div className="pt-4 border-t border-border/50">
+                    {/* Admin Buttons */}
+                    {course && (
+                      <div className="pt-4 border-t border-border/50 space-y-2">
                         <Button 
-                          variant="destructive" 
+                          variant="outline" 
                           size="sm" 
-                          className="w-full h-8 text-xs"
-                          onClick={() => setDeleteCourseDialogOpen(true)}
+                          className="w-full h-8 text-xs gap-1.5"
+                          onClick={() => setEditCourseDialogOpen(true)}
                         >
-                          <Trash2 className="w-3 h-3 mr-1" strokeWidth={1.5} />
-                          Kurs loeschen
+                          <Settings className="w-3 h-3" strokeWidth={1.5} />
+                          Kurs bearbeiten
                         </Button>
                       </div>
                     )}
@@ -958,6 +959,19 @@ export function SchoolTabsDrawer({ open, onOpenChange, context, course }: School
             courseId={course.id}
             courseName={course.name}
             onDeleted={() => {
+              onOpenChange(false);
+            }}
+          />
+        )}
+        
+        {/* Edit Course Dialog */}
+        {course && (
+          <EditCourseDialog
+            open={editCourseDialogOpen}
+            onOpenChange={setEditCourseDialogOpen}
+            course={course}
+            onCourseUpdated={() => {
+              fetchData();
               onOpenChange(false);
             }}
           />
