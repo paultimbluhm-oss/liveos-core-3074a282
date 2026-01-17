@@ -61,6 +61,9 @@ export default function Schule() {
   const [timetableEntries, setTimetableEntries] = useState<TimetableEntry[]>([]);
   const [courseGrades, setCourseGrades] = useState<CourseGradeAvg[]>([]);
   
+  // Grade color settings
+  const [gradeColorSettings, setGradeColorSettings] = useState<{ green_min: number; yellow_min: number }>({ green_min: 13, yellow_min: 10 });
+  
   // Courses
   const [courses, setCourses] = useState<(Course & { is_member?: boolean; member_count?: number; slot_count?: number })[]>([]);
   const [joiningCourseId, setJoiningCourseId] = useState<string | null>(null);
@@ -123,26 +126,35 @@ export default function Schule() {
   const fetchTimetable = async () => {
     if (!user) return;
     
-    const { data: entries } = await supabase
-      .from('timetable_entries')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('day_of_week')
-      .order('period');
+    const [entriesRes, gradesRes, colorSettingsRes] = await Promise.all([
+      supabase
+        .from('timetable_entries')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('day_of_week')
+        .order('period'),
+      supabase
+        .from('grades')
+        .select('course_id, points')
+        .eq('user_id', user.id)
+        .not('course_id', 'is', null),
+      supabase
+        .from('grade_color_settings')
+        .select('green_min, yellow_min')
+        .eq('user_id', user.id)
+        .maybeSingle(),
+    ]);
     
-    if (entries) setTimetableEntries(entries);
+    if (entriesRes.data) setTimetableEntries(entriesRes.data);
     
-    // Fetch grades per course
-    const { data: grades } = await supabase
-      .from('grades')
-      .select('course_id, points')
-      .eq('user_id', user.id)
-      .not('course_id', 'is', null);
+    if (colorSettingsRes.data) {
+      setGradeColorSettings(colorSettingsRes.data);
+    }
     
-    if (grades) {
+    if (gradesRes.data) {
       // Calculate average per course
       const courseMap = new Map<string, number[]>();
-      grades.forEach(g => {
+      gradesRes.data.forEach(g => {
         if (g.course_id) {
           if (!courseMap.has(g.course_id)) {
             courseMap.set(g.course_id, []);
@@ -206,13 +218,59 @@ export default function Schule() {
     }
   };
 
+  // Clean up duplicate timetable entries
+  const cleanupDuplicateEntries = async () => {
+    if (!user) return;
+    
+    // Get all entries for this user
+    const { data: entries } = await supabase
+      .from('timetable_entries')
+      .select('id, day_of_week, period, course_id, created_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+    
+    if (!entries) return;
+    
+    // Find duplicates (same day + period)
+    const seen = new Map<string, string>();
+    const toDelete: string[] = [];
+    
+    for (const entry of entries) {
+      const key = `${entry.day_of_week}-${entry.period}`;
+      if (seen.has(key)) {
+        // Keep the one with course_id if possible, otherwise keep the newest
+        const existingId = seen.get(key)!;
+        const existingEntry = entries.find(e => e.id === existingId);
+        
+        if (entry.course_id && !existingEntry?.course_id) {
+          // Current entry has course, existing doesn't - delete existing
+          toDelete.push(existingId);
+          seen.set(key, entry.id);
+        } else {
+          // Delete current (older or no course)
+          toDelete.push(entry.id);
+        }
+      } else {
+        seen.set(key, entry.id);
+      }
+    }
+    
+    // Delete duplicates
+    if (toDelete.length > 0) {
+      for (const id of toDelete) {
+        await supabase.from('timetable_entries').delete().eq('id', id);
+      }
+    }
+  };
+
   useEffect(() => {
     fetchUserSchool();
   }, [user]);
 
   useEffect(() => {
     if (user) {
-      fetchTimetable();
+      // First cleanup, then fetch
+      cleanupDuplicateEntries().then(() => fetchTimetable());
     }
   }, [user]);
 
@@ -239,35 +297,41 @@ export default function Schule() {
     if (!courseSlots || courseSlots.length === 0) return;
     
     for (const slot of courseSlots) {
-      const { data: existing } = await supabase
+      // First, check for ANY existing entry at this day/period (regardless of week_type)
+      // to prevent duplicates
+      const { data: existingEntries } = await supabase
         .from('timetable_entries')
-        .select('id')
+        .select('id, week_type, course_id')
         .eq('user_id', userId)
         .eq('day_of_week', slot.day_of_week)
-        .eq('period', slot.period)
-        .eq('week_type', slot.week_type || 'both')
-        .maybeSingle();
+        .eq('period', slot.period);
       
-      if (existing) {
-        await supabase
-          .from('timetable_entries')
-          .update({
-            course_id: courseId,
-            teacher_short: courseData.teacher_name || '',
-            room: slot.room || courseData.room || null,
-          })
-          .eq('id', existing.id);
-      } else {
-        await supabase.from('timetable_entries').insert({
-          user_id: userId,
-          day_of_week: slot.day_of_week,
-          period: slot.period,
-          course_id: courseId,
-          teacher_short: courseData.teacher_name || '',
-          room: slot.room || courseData.room || null,
-          week_type: slot.week_type || 'both',
-        });
+      const slotWeekType = slot.week_type || 'both';
+      
+      if (existingEntries && existingEntries.length > 0) {
+        // Delete all existing entries at this slot to avoid duplicates
+        for (const entry of existingEntries) {
+          // Only update/delete if it's not already assigned to another course
+          // or if it has no course
+          if (!entry.course_id || entry.course_id === courseId) {
+            await supabase
+              .from('timetable_entries')
+              .delete()
+              .eq('id', entry.id);
+          }
+        }
       }
+      
+      // Insert fresh entry
+      await supabase.from('timetable_entries').insert({
+        user_id: userId,
+        day_of_week: slot.day_of_week,
+        period: slot.period,
+        course_id: courseId,
+        teacher_short: courseData.teacher_name || '',
+        room: slot.room || courseData.room || null,
+        week_type: slotWeekType,
+      });
     }
   };
 
@@ -314,8 +378,8 @@ export default function Schule() {
   };
 
   const getGradeColor = (grade: number) => {
-    if (grade >= 13) return 'bg-emerald-500';
-    if (grade >= 10) return 'bg-amber-500';
+    if (grade >= gradeColorSettings.green_min) return 'bg-emerald-500';
+    if (grade >= gradeColorSettings.yellow_min) return 'bg-amber-500';
     if (grade >= 5) return 'bg-orange-500';
     return 'bg-rose-500';
   };
