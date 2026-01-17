@@ -5,5 +5,8 @@ export * from './CoursesSection';
 export * from './CourseDetailSection';
 export * from './SchoolSettingsDialog';
 export * from './CreateCourseDialog';
+export * from './EditCourseDialog';
 export * from './CoursesList';
 export * from './CourseDetailView';
+export * from './DeleteCourseDialog';
+export * from './DeleteSchoolDialog';
