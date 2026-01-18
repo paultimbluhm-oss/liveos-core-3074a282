@@ -201,13 +201,33 @@ export function CreateCourseDialog({
   };
 
   const handleCreate = async () => {
-    if (!user || !schoolYearId) return;
+    if (!user || !schoolYearId || loading) return;
+    
+    setLoading(true);
     
     const name = isCustom ? customName.trim() : customName;
     const shortName = isCustom ? customShortName.trim() : customShortName;
     
     if (!name) {
       toast.error('Fach erforderlich');
+      setLoading(false);
+      return;
+    }
+    
+    // Check if user already has a course with the same name in this school year
+    const { data: existingMemberships } = await supabase
+      .from('course_members')
+      .select('course_id, courses!inner(name, school_year_id)')
+      .eq('user_id', user.id);
+    
+    const alreadyHasSameCourse = existingMemberships?.some((m: any) => 
+      m.courses?.name?.toLowerCase() === name.toLowerCase() && 
+      m.courses?.school_year_id === schoolYearId
+    );
+    
+    if (alreadyHasSameCourse) {
+      toast.error('Du bist bereits in einem Kurs mit diesem Namen');
+      setLoading(false);
       return;
     }
     

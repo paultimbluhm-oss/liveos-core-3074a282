@@ -225,18 +225,18 @@ export default function Schule() {
     // Get all entries for this user
     const { data: entries } = await supabase
       .from('timetable_entries')
-      .select('id, day_of_week, period, course_id, created_at')
+      .select('id, day_of_week, period, course_id, week_type, created_at')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
     
     if (!entries) return;
     
-    // Find duplicates (same day + period)
+    // Find duplicates (same day + period + week_type)
     const seen = new Map<string, string>();
     const toDelete: string[] = [];
     
     for (const entry of entries) {
-      const key = `${entry.day_of_week}-${entry.period}`;
+      const key = `${entry.day_of_week}-${entry.period}-${entry.week_type || 'both'}`;
       if (seen.has(key)) {
         // Keep the one with course_id if possible, otherwise keep the newest
         const existingId = seen.get(key)!;
@@ -262,6 +262,59 @@ export default function Schule() {
       }
     }
   };
+  
+  // Clean up duplicate courses (same name in same school year for this user)
+  const cleanupDuplicateCourses = async () => {
+    if (!user || !selectedYear) return;
+    
+    // Get all courses the user is a member of in this school year
+    const { data: memberCourses } = await supabase
+      .from('course_members')
+      .select('course_id, courses(id, name, school_year_id, created_at)')
+      .eq('user_id', user.id);
+    
+    if (!memberCourses) return;
+    
+    // Group by course name
+    const coursesByName = new Map<string, { id: string; created_at: string }[]>();
+    
+    for (const mc of memberCourses) {
+      const course = mc.courses as any;
+      if (!course || course.school_year_id !== selectedYear.id) continue;
+      
+      const key = course.name.toLowerCase();
+      if (!coursesByName.has(key)) {
+        coursesByName.set(key, []);
+      }
+      coursesByName.get(key)!.push({ id: course.id, created_at: course.created_at });
+    }
+    
+    // For each name with duplicates, keep oldest and remove user from newer ones
+    for (const [, coursesWithSameName] of coursesByName) {
+      if (coursesWithSameName.length > 1) {
+        // Sort by created_at ascending (oldest first)
+        coursesWithSameName.sort((a, b) => 
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        );
+        
+        // Remove membership from all but the oldest
+        for (let i = 1; i < coursesWithSameName.length; i++) {
+          await supabase
+            .from('course_members')
+            .delete()
+            .eq('course_id', coursesWithSameName[i].id)
+            .eq('user_id', user.id);
+            
+          // Also remove timetable entries for this course
+          await supabase
+            .from('timetable_entries')
+            .delete()
+            .eq('course_id', coursesWithSameName[i].id)
+            .eq('user_id', user.id);
+        }
+      }
+    }
+  };
 
   useEffect(() => {
     fetchUserSchool();
@@ -275,8 +328,9 @@ export default function Schule() {
   }, [user]);
 
   useEffect(() => {
-    if (selectedYear) {
-      fetchCourses();
+    if (selectedYear && user) {
+      // First cleanup duplicate courses, then fetch
+      cleanupDuplicateCourses().then(() => fetchCourses());
     }
   }, [selectedYear, selectedClass, user]);
 
