@@ -3,11 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { GraduationCap, Settings, Users, Plus, Clock, UserPlus, CalendarX } from 'lucide-react';
+import { GraduationCap, Settings, Users, Plus, Clock, UserPlus, CalendarX, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { SchoolSettingsDialog } from '@/components/schule/schools/SchoolSettingsDialog';
 import { CreateCourseDialog } from '@/components/schule/schools/CreateCourseDialog';
+import { EditCourseDialog } from '@/components/schule/schools/EditCourseDialog';
 import { SchoolTabsDrawer } from '@/components/schule/SchoolTabsDrawer';
 import { Course } from '@/components/schule/schools/types';
 import { toast } from 'sonner';
@@ -72,6 +73,10 @@ export default function Schule() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerContext, setDrawerContext] = useState<'timetable' | 'course'>('timetable');
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  
+  // Edit Course Dialog
+  const [editCourseDialogOpen, setEditCourseDialogOpen] = useState(false);
+  const [courseToEdit, setCourseToEdit] = useState<Course | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -516,22 +521,29 @@ export default function Schule() {
                         const courseId = entry?.course_id;
                         const grade = getCourseGrade(courseId);
                         const course = courseId ? courses.find(c => c.id === courseId) : null;
+                        const isFreeperiod = entry?.teacher_short === 'FREI' && !entry?.course_id;
                         const hasContent = !!entry?.course_id || !!entry?.teacher_short;
-                        const courseColor = course?.color || 'hsl(var(--primary))';
+                        const courseColor = isFreeperiod ? 'hsl(142, 76%, 36%)' : (course?.color || 'hsl(var(--primary))');
                         
                         return (
                           <div
                             key={`${dayIndex}-${period}`}
                             onClick={() => courseId && openCourseById(courseId)}
                             className={`h-11 rounded-lg flex flex-col items-center justify-center relative transition-all active:scale-95 ${
-                              hasContent 
+                              hasContent && !isFreeperiod
                                 ? 'cursor-pointer' 
+                                : hasContent && isFreeperiod
+                                ? ''
                                 : 'bg-muted/20'
                             }`}
                             style={hasContent ? {
-                              backgroundColor: `color-mix(in srgb, ${courseColor} 15%, transparent)`,
+                              backgroundColor: isFreeperiod 
+                                ? 'hsl(142, 76%, 36%, 0.15)' 
+                                : `color-mix(in srgb, ${courseColor} 15%, transparent)`,
                               borderWidth: 1,
-                              borderColor: `color-mix(in srgb, ${courseColor} 40%, transparent)`,
+                              borderColor: isFreeperiod 
+                                ? 'hsl(142, 76%, 36%, 0.4)' 
+                                : `color-mix(in srgb, ${courseColor} 40%, transparent)`,
                             } : undefined}
                           >
                             {hasContent && (
@@ -540,9 +552,9 @@ export default function Schule() {
                                   className="text-[10px] font-bold leading-none"
                                   style={{ color: courseColor }}
                                 >
-                                  {course?.short_name?.slice(0, 3).toUpperCase() || entry?.teacher_short?.slice(0, 3) || ''}
+                                  {isFreeperiod ? 'Frei' : (course?.short_name?.slice(0, 3).toUpperCase() || entry?.teacher_short?.slice(0, 3) || '')}
                                 </span>
-                                {entry?.room && (
+                                {entry?.room && !isFreeperiod && (
                                   <span className="text-[8px] text-muted-foreground/70 leading-none mt-0.5">{entry.room}</span>
                                 )}
                                 {grade !== null && (
@@ -590,9 +602,8 @@ export default function Schule() {
                     return (
                       <div
                         key={course.id}
-                        onClick={() => openCourse(course)}
                         className="flex-shrink-0 flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-card border border-border/50 cursor-pointer active:scale-98 transition-transform"
-                        style={{ minWidth: 130 }}
+                        style={{ minWidth: 140 }}
                       >
                         <div 
                           className="w-8 h-8 rounded-lg flex items-center justify-center"
@@ -601,6 +612,7 @@ export default function Schule() {
                             borderWidth: 2,
                             borderColor: courseColor,
                           }}
+                          onClick={() => openCourse(course)}
                         >
                           <span 
                             className="text-[10px] font-bold"
@@ -609,7 +621,7 @@ export default function Schule() {
                             {(course.short_name || course.name).slice(0, 2).toUpperCase()}
                           </span>
                         </div>
-                        <div className="min-w-0 flex-1">
+                        <div className="min-w-0 flex-1" onClick={() => openCourse(course)}>
                           <p className="text-xs font-medium truncate">{course.short_name || course.name}</p>
                           {grade !== null && (
                             <div className="flex items-center gap-1 mt-0.5">
@@ -618,6 +630,18 @@ export default function Schule() {
                             </div>
                           )}
                         </div>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 rounded-lg flex-shrink-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCourseToEdit(course);
+                            setEditCourseDialogOpen(true);
+                          }}
+                        >
+                          <Settings className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
+                        </Button>
                       </div>
                     );
                   })}
@@ -722,6 +746,22 @@ export default function Schule() {
           context={drawerContext}
           course={selectedCourse}
         />
+        
+        {/* Edit Course Dialog */}
+        {courseToEdit && (
+          <EditCourseDialog
+            open={editCourseDialogOpen}
+            onOpenChange={(open) => {
+              setEditCourseDialogOpen(open);
+              if (!open) setCourseToEdit(null);
+            }}
+            course={courseToEdit}
+            onCourseUpdated={() => {
+              fetchCourses();
+              fetchTimetable();
+            }}
+          />
+        )}
       </div>
     </AppLayout>
   );
