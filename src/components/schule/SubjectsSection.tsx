@@ -159,9 +159,9 @@ export function SubjectsSection({ onBack }: SubjectsSectionProps) {
 
   const getGradeColor = (grade: number | null) => {
     if (grade === null) return 'text-muted-foreground';
-    if (grade >= 13) return 'text-green-400';
-    if (grade >= 10) return 'text-yellow-400';
-    return 'text-red-400';
+    if (grade >= 13) return 'text-emerald-500';
+    if (grade >= 10) return 'text-amber-500';
+    return 'text-rose-500';
   };
 
   if (selectedSubject) {

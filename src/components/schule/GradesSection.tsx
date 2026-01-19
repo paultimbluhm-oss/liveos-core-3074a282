@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useGradeColors } from '@/hooks/useGradeColors';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Award, Plus, Trash2, TrendingUp, TrendingDown } from 'lucide-react';
+import { ArrowLeft, Award, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -39,6 +40,7 @@ interface GradesSectionProps {
 
 export function GradesSection({ onBack }: GradesSectionProps) {
   const { user } = useAuth();
+  const { getGradeColor, getGradeTextColor } = useGradeColors();
   const [grades, setGrades] = useState<Grade[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
@@ -79,9 +81,9 @@ export function GradesSection({ onBack }: GradesSectionProps) {
   const handleDelete = async (id: string) => {
     const { error } = await supabase.from('grades').delete().eq('id', id);
     if (error) {
-      toast.error('Fehler beim Löschen');
+      toast.error('Fehler beim Entfernen');
     } else {
-      toast.success('Gelöscht');
+      toast.success('Entfernt');
       fetchData();
     }
   };
@@ -92,7 +94,7 @@ export function GradesSection({ onBack }: GradesSectionProps) {
 
     const pointsNum = parseInt(points);
     if (isNaN(pointsNum) || pointsNum < 0 || pointsNum > 15) {
-      toast.error('Punkte müssen zwischen 0 und 15 liegen');
+      toast.error('Punkte muessen zwischen 0 und 15 liegen');
       return;
     }
 
@@ -102,11 +104,11 @@ export function GradesSection({ onBack }: GradesSectionProps) {
       subject_id: subjectId,
       grade_type: gradeType,
       points: pointsNum,
-      description: description.trim() || (gradeType === 'oral' ? 'Mündliche Note' : 'Klausur'),
+      description: description.trim() || (gradeType === 'oral' ? 'Muendliche Note' : 'Klausur'),
     });
 
     if (error) {
-      toast.error('Fehler beim Hinzufügen');
+      toast.error('Fehler beim Eintragen');
     } else {
       toast.success('Note hinzugefügt');
       setSubjectId('');
@@ -149,18 +151,7 @@ export function GradesSection({ onBack }: GradesSectionProps) {
     ? Math.round((subjectAverages.reduce((a, b) => a + (b.finalGrade || 0), 0) / subjectAverages.length) * 10) / 10
     : null;
 
-  const getGradeColor = (grade: number | null) => {
-    if (grade === null) return 'bg-muted text-muted-foreground';
-    if (grade >= 13) return 'bg-emerald-500 text-white';
-    if (grade >= 10) return 'bg-amber-500 text-white';
-    return 'bg-rose-500 text-white';
-  };
-
-  const getGradeTextColor = (grade: number) => {
-    if (grade >= 13) return 'text-emerald-500';
-    if (grade >= 10) return 'text-amber-500';
-    return 'text-rose-500';
-  };
+  // getGradeColor and getGradeTextColor now come from useGradeColors hook
 
   if (loading) {
     return (
@@ -193,14 +184,14 @@ export function GradesSection({ onBack }: GradesSectionProps) {
           </DialogTrigger>
           <DialogContent className="max-w-sm">
             <DialogHeader>
-              <DialogTitle>Note hinzufügen</DialogTitle>
+              <DialogTitle>Note eintragen</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-3 pt-2">
               <div>
                 <Label className="text-xs">Fach</Label>
                 <Select value={subjectId} onValueChange={setSubjectId}>
                   <SelectTrigger className="h-9">
-                    <SelectValue placeholder="Fach wählen" />
+                    <SelectValue placeholder="Fach waehlen" />
                   </SelectTrigger>
                   <SelectContent>
                     {subjects.map(s => (
@@ -216,7 +207,7 @@ export function GradesSection({ onBack }: GradesSectionProps) {
                 <Select value={gradeType} onValueChange={(v) => setGradeType(v as 'oral' | 'written')}>
                   <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="oral">Mündlich</SelectItem>
+                    <SelectItem value="oral">Muendlich</SelectItem>
                     <SelectItem value="written">Schriftlich</SelectItem>
                   </SelectContent>
                 </Select>
@@ -244,7 +235,7 @@ export function GradesSection({ onBack }: GradesSectionProps) {
                 />
               </div>
               <Button type="submit" className="w-full" disabled={formLoading || !subjectId}>
-                {formLoading ? 'Wird hinzugefügt...' : 'Hinzufügen'}
+                {formLoading ? 'Wird gespeichert...' : 'Eintragen'}
               </Button>
             </form>
           </DialogContent>

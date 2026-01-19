@@ -36,7 +36,7 @@ export function AddGradeDialog({ subjectId, subjectName, onGradeAdded }: AddGrad
 
     const pointsNum = parseInt(points);
     if (isNaN(pointsNum) || pointsNum < 0 || pointsNum > 15) {
-      toast.error('Punkte müssen zwischen 0 und 15 liegen');
+      toast.error('Punkte muessen zwischen 0 und 15 liegen');
       return;
     }
 
@@ -45,7 +45,7 @@ export function AddGradeDialog({ subjectId, subjectName, onGradeAdded }: AddGrad
     if (gradeType === 'written' && hasTwoExams) {
       const points2Num = parseInt(points2);
       if (isNaN(points2Num) || points2Num < 0 || points2Num > 15) {
-        toast.error('Punkte müssen zwischen 0 und 15 liegen');
+        toast.error('Punkte muessen zwischen 0 und 15 liegen');
         setLoading(false);
         return;
       }
@@ -67,9 +67,9 @@ export function AddGradeDialog({ subjectId, subjectName, onGradeAdded }: AddGrad
       });
 
       if (error1 || error2) {
-        toast.error('Fehler beim Hinzufügen der Noten');
+        toast.error('Fehler beim Eintragen');
       } else {
-        toast.success('Klausuren hinzugefügt');
+        toast.success('Klausuren eingetragen');
         resetForm();
         onGradeAdded();
       }
@@ -79,13 +79,13 @@ export function AddGradeDialog({ subjectId, subjectName, onGradeAdded }: AddGrad
         subject_id: subjectId,
         grade_type: gradeType,
         points: pointsNum,
-        description: description || (gradeType === 'oral' ? 'Mündliche Note' : 'Klausur'),
+        description: description || (gradeType === 'oral' ? 'Muendliche Note' : 'Klausur'),
       });
 
       if (error) {
-        toast.error('Fehler beim Hinzufügen der Note');
+        toast.error('Fehler beim Eintragen');
       } else {
-        toast.success('Note hinzugefügt');
+        toast.success('Note eingetragen');
         resetForm();
         onGradeAdded();
       }
@@ -111,7 +111,7 @@ export function AddGradeDialog({ subjectId, subjectName, onGradeAdded }: AddGrad
       </DialogTrigger>
       <DialogContent className="glass-card border-border/50">
         <DialogHeader>
-          <DialogTitle>Note für {subjectName} hinzufügen</DialogTitle>
+          <DialogTitle>Note eintragen</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -121,7 +121,7 @@ export function AddGradeDialog({ subjectId, subjectName, onGradeAdded }: AddGrad
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="oral">Mündlich</SelectItem>
+                <SelectItem value="oral">Muendlich</SelectItem>
                 <SelectItem value="written">Schriftlich</SelectItem>
               </SelectContent>
             </Select>
@@ -181,7 +181,7 @@ export function AddGradeDialog({ subjectId, subjectName, onGradeAdded }: AddGrad
           </div>
 
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Wird hinzugefügt...' : 'Note hinzufügen'}
+            {loading ? 'Wird gespeichert...' : 'Note eintragen'}
           </Button>
         </form>
       </DialogContent>

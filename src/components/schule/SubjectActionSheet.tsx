@@ -84,7 +84,7 @@ export function SubjectActionSheet({
 
     const pointsNum = parseInt(points);
     if (isNaN(pointsNum) || pointsNum < 0 || pointsNum > 15) {
-      toast.error('Punkte müssen zwischen 0 und 15 liegen');
+      toast.error('Punkte muessen zwischen 0 und 15 liegen');
       return;
     }
 
@@ -94,13 +94,13 @@ export function SubjectActionSheet({
       subject_id: entry.subject_id,
       grade_type: gradeType,
       points: pointsNum,
-      description: gradeDescription.trim() || (gradeType === 'oral' ? 'Mündliche Note' : 'Klausur'),
+      description: gradeDescription.trim() || (gradeType === 'oral' ? 'Muendliche Note' : 'Klausur'),
     });
 
     if (error) {
-      toast.error('Fehler beim Hinzufügen');
+      toast.error('Fehler beim Eintragen');
     } else {
-      toast.success('Note hinzugefügt');
+      toast.success('Note eingetragen');
       setPoints('');
       setGradeDescription('');
       setGradeDialogOpen(false);
@@ -263,7 +263,7 @@ export function SubjectActionSheet({
       <Dialog open={gradeDialogOpen} onOpenChange={setGradeDialogOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Note für {subject?.short_name || subject?.name}</DialogTitle>
+            <DialogTitle>Note eintragen</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleAddGrade} className="space-y-3 pt-2">
             <div>
@@ -271,7 +271,7 @@ export function SubjectActionSheet({
               <Select value={gradeType} onValueChange={(v) => setGradeType(v as 'oral' | 'written')}>
                 <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="oral">Mündlich</SelectItem>
+                  <SelectItem value="oral">Muendlich</SelectItem>
                   <SelectItem value="written">Schriftlich</SelectItem>
                 </SelectContent>
               </Select>
@@ -299,7 +299,7 @@ export function SubjectActionSheet({
               />
             </div>
             <Button type="submit" className="w-full" disabled={gradeLoading}>
-              {gradeLoading ? 'Wird hinzugefügt...' : 'Note hinzufügen'}
+              {gradeLoading ? 'Wird gespeichert...' : 'Eintragen'}
             </Button>
           </form>
         </DialogContent>
