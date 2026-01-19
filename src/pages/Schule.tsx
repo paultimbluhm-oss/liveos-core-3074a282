@@ -458,6 +458,32 @@ export default function Schule() {
     return timetableEntries.find(e => e.day_of_week === day && e.period === period);
   };
 
+  // Check if this period is the start of a double lesson (same course on consecutive periods)
+  const isDoubleLessonStart = (day: number, period: number) => {
+    const entry = getEntry(day, period);
+    if (!entry?.course_id) return false;
+    
+    const nextPeriods: { [key: number]: number } = { 1: 2, 3: 4, 5: 6, 8: 9 };
+    const nextPeriod = nextPeriods[period];
+    if (!nextPeriod) return false;
+    
+    const nextEntry = getEntry(day, nextPeriod);
+    return nextEntry?.course_id === entry.course_id;
+  };
+
+  // Check if this period is the second part of a double lesson
+  const isDoubleLessonSecond = (day: number, period: number) => {
+    const entry = getEntry(day, period);
+    if (!entry?.course_id) return false;
+    
+    const prevPeriods: { [key: number]: number } = { 2: 1, 4: 3, 6: 5, 9: 8 };
+    const prevPeriod = prevPeriods[period];
+    if (!prevPeriod) return false;
+    
+    const prevEntry = getEntry(day, prevPeriod);
+    return prevEntry?.course_id === entry.course_id;
+  };
+
   return (
     <AppLayout>
       <div className="p-4 pb-24 max-w-lg mx-auto space-y-5">
@@ -510,64 +536,87 @@ export default function Schule() {
                   ))}
                   
                   {/* Period rows */}
-                  {PERIODS.map(period => (
-                    <div key={`row-${period}`} className="contents">
-                      <div className="h-11 flex items-center justify-center">
-                        <span className="text-[10px] font-medium text-muted-foreground/70">{period}</span>
+                  {PERIODS.map(period => {
+                    // Skip rendering if this is the second part of a double lesson
+                    // (it will be merged with the first part)
+                    return (
+                      <div key={`row-${period}`} className="contents">
+                        <div className="h-11 flex items-center justify-center">
+                          <span className="text-[10px] font-medium text-muted-foreground/70">{period}</span>
+                        </div>
+                        {DAYS.map((_, dayIndex) => {
+                          const day = dayIndex + 1;
+                          const entry = getEntry(day, period);
+                          const courseId = entry?.course_id;
+                          const grade = getCourseGrade(courseId);
+                          const course = courseId ? courses.find(c => c.id === courseId) : null;
+                          const isFreeperiod = entry?.teacher_short === 'FREI' && !entry?.course_id;
+                          const hasContent = !!entry?.course_id || !!entry?.teacher_short;
+                          const courseColor = isFreeperiod ? 'hsl(142, 76%, 36%)' : (course?.color || 'hsl(var(--primary))');
+                          
+                          // Check for double lesson
+                          const isDoubleStart = isDoubleLessonStart(day, period);
+                          const isDoubleSecond = isDoubleLessonSecond(day, period);
+                          
+                          // If this is the second part of a double lesson, render an invisible cell
+                          if (isDoubleSecond) {
+                            return (
+                              <div
+                                key={`${dayIndex}-${period}`}
+                                className="h-11"
+                              />
+                            );
+                          }
+                          
+                          // Calculate height for double lessons
+                          const cellHeight = isDoubleStart ? 'h-[92px]' : 'h-11';
+                          const cellRowSpan = isDoubleStart ? 'row-span-2 -mb-[44px] z-10' : '';
+                          
+                          return (
+                            <div
+                              key={`${dayIndex}-${period}`}
+                              onClick={() => courseId && openCourseById(courseId)}
+                              className={`${cellHeight} ${cellRowSpan} rounded-lg flex flex-col items-center justify-center relative transition-all active:scale-95 ${
+                                hasContent && !isFreeperiod
+                                  ? 'cursor-pointer' 
+                                  : hasContent && isFreeperiod
+                                  ? ''
+                                  : 'bg-muted/20'
+                              }`}
+                              style={hasContent ? {
+                                backgroundColor: isFreeperiod 
+                                  ? 'hsl(142, 76%, 36%, 0.15)' 
+                                  : `color-mix(in srgb, ${courseColor} 15%, transparent)`,
+                                borderWidth: 1,
+                                borderColor: isFreeperiod 
+                                  ? 'hsl(142, 76%, 36%, 0.4)' 
+                                  : `color-mix(in srgb, ${courseColor} 40%, transparent)`,
+                              } : undefined}
+                            >
+                              {hasContent && (
+                                <>
+                                  <span 
+                                    className="text-[10px] font-bold leading-none"
+                                    style={{ color: courseColor }}
+                                  >
+                                    {isFreeperiod ? 'Frei' : (course?.short_name?.slice(0, 3).toUpperCase() || entry?.teacher_short?.slice(0, 3) || '')}
+                                  </span>
+                                  {entry?.room && !isFreeperiod && (
+                                    <span className="text-[8px] text-muted-foreground/70 leading-none mt-0.5">{entry.room}</span>
+                                  )}
+                                  {grade !== null && (
+                                    <div className={`absolute -top-1.5 -right-1.5 min-w-4 h-4 px-0.5 rounded-full ${getGradeColor(grade)} flex items-center justify-center shadow-sm`}>
+                                      <span className="text-[8px] text-white font-bold">{Math.round(grade)}</span>
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
-                      {DAYS.map((_, dayIndex) => {
-                        const entry = getEntry(dayIndex + 1, period);
-                        const courseId = entry?.course_id;
-                        const grade = getCourseGrade(courseId);
-                        const course = courseId ? courses.find(c => c.id === courseId) : null;
-                        const isFreeperiod = entry?.teacher_short === 'FREI' && !entry?.course_id;
-                        const hasContent = !!entry?.course_id || !!entry?.teacher_short;
-                        const courseColor = isFreeperiod ? 'hsl(142, 76%, 36%)' : (course?.color || 'hsl(var(--primary))');
-                        
-                        return (
-                          <div
-                            key={`${dayIndex}-${period}`}
-                            onClick={() => courseId && openCourseById(courseId)}
-                            className={`h-11 rounded-lg flex flex-col items-center justify-center relative transition-all active:scale-95 ${
-                              hasContent && !isFreeperiod
-                                ? 'cursor-pointer' 
-                                : hasContent && isFreeperiod
-                                ? ''
-                                : 'bg-muted/20'
-                            }`}
-                            style={hasContent ? {
-                              backgroundColor: isFreeperiod 
-                                ? 'hsl(142, 76%, 36%, 0.15)' 
-                                : `color-mix(in srgb, ${courseColor} 15%, transparent)`,
-                              borderWidth: 1,
-                              borderColor: isFreeperiod 
-                                ? 'hsl(142, 76%, 36%, 0.4)' 
-                                : `color-mix(in srgb, ${courseColor} 40%, transparent)`,
-                            } : undefined}
-                          >
-                            {hasContent && (
-                              <>
-                                <span 
-                                  className="text-[10px] font-bold leading-none"
-                                  style={{ color: courseColor }}
-                                >
-                                  {isFreeperiod ? 'Frei' : (course?.short_name?.slice(0, 3).toUpperCase() || entry?.teacher_short?.slice(0, 3) || '')}
-                                </span>
-                                {entry?.room && !isFreeperiod && (
-                                  <span className="text-[8px] text-muted-foreground/70 leading-none mt-0.5">{entry.room}</span>
-                                )}
-                                {grade !== null && (
-                                  <div className={`absolute -top-1.5 -right-1.5 min-w-4 h-4 px-0.5 rounded-full ${getGradeColor(grade)} flex items-center justify-center shadow-sm`}>
-                                    <span className="text-[8px] text-white font-bold">{Math.round(grade)}</span>
-                                  </div>
-                                )}
-                              </>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
