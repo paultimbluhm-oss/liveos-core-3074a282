@@ -420,7 +420,6 @@ export function SchoolSettingsDialog({ open, onOpenChange, onSchoolChanged }: Sc
   const getGradePreviewColor = (points: number) => {
     if (points >= greenMin) return 'bg-emerald-500';
     if (points >= yellowMin) return 'bg-amber-500';
-    if (points >= 5) return 'bg-orange-500';
     return 'bg-rose-500';
   };
 

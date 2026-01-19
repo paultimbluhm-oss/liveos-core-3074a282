@@ -439,7 +439,6 @@ export default function Schule() {
   const getGradeColor = (grade: number) => {
     if (grade >= gradeColorSettings.green_min) return 'bg-emerald-500';
     if (grade >= gradeColorSettings.yellow_min) return 'bg-amber-500';
-    if (grade >= 5) return 'bg-orange-500';
     return 'bg-rose-500';
   };
 

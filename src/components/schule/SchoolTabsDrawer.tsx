@@ -86,6 +86,9 @@ export function SchoolTabsDrawer({ open, onOpenChange, context, course }: School
   const [loading, setLoading] = useState(true);
   const [showAbsences, setShowAbsences] = useState(false);
   
+  // Grade color settings
+  const [gradeColorSettings, setGradeColorSettings] = useState<{ green_min: number; yellow_min: number }>({ green_min: 13, yellow_min: 10 });
+  
   // Personal timetable data
   const [timetableEntries, setTimetableEntries] = useState<TimetableEntry[]>([]);
   const [absences, setAbsences] = useState<LessonAbsence[]>([]);
@@ -129,6 +132,17 @@ export function SchoolTabsDrawer({ open, onOpenChange, context, course }: School
   const fetchData = async () => {
     if (!user) return;
     setLoading(true);
+    
+    // Always fetch grade color settings
+    const { data: colorSettings } = await supabase
+      .from('grade_color_settings')
+      .select('green_min, yellow_min')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    
+    if (colorSettings) {
+      setGradeColorSettings(colorSettings);
+    }
     
     if (context === 'timetable') {
       // Fetch personal timetable
@@ -399,8 +413,8 @@ export function SchoolTabsDrawer({ open, onOpenChange, context, course }: School
 
   const getGradeColor = (grade: number | null) => {
     if (grade === null) return 'bg-muted text-muted-foreground';
-    if (grade >= 13) return 'bg-emerald-500 text-white';
-    if (grade >= 10) return 'bg-amber-500 text-white';
+    if (grade >= gradeColorSettings.green_min) return 'bg-emerald-500 text-white';
+    if (grade >= gradeColorSettings.yellow_min) return 'bg-amber-500 text-white';
     return 'bg-rose-500 text-white';
   };
 
