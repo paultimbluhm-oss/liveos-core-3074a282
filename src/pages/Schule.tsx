@@ -458,10 +458,20 @@ export default function Schule() {
     return timetableEntries.find(e => e.day_of_week === day && e.period === period);
   };
 
-  // Check if this period is the START of a double lesson
+  // Helper to check if entry is a free period
+  const isFreeEntry = (entry: TimetableEntry | undefined): boolean => {
+    return entry?.teacher_short === 'FREI' && !entry?.course_id;
+  };
+
+  // Check if this period is the START of a double lesson (works for courses AND free periods)
   const isDoubleStart = (day: number, period: number): boolean => {
     const entry = getEntry(day, period);
-    if (!entry?.course_id) return false;
+    if (!entry) return false;
+    
+    const isFree = isFreeEntry(entry);
+    const hasCourse = !!entry.course_id;
+    
+    if (!isFree && !hasCourse) return false;
     
     // Find next period in sequence
     const periodIndex = PERIODS.indexOf(period);
@@ -470,13 +480,24 @@ export default function Schule() {
     const nextPeriod = PERIODS[periodIndex + 1];
     const nextEntry = getEntry(day, nextPeriod);
     
-    return nextEntry?.course_id === entry.course_id;
+    if (!nextEntry) return false;
+    
+    // Match: both are free periods OR both have the same course_id
+    if (isFree && isFreeEntry(nextEntry)) return true;
+    if (hasCourse && nextEntry.course_id === entry.course_id) return true;
+    
+    return false;
   };
 
   // Check if this period is the SECOND part of a double lesson (should be hidden)
   const isDoubleContinuation = (day: number, period: number): boolean => {
     const entry = getEntry(day, period);
-    if (!entry?.course_id) return false;
+    if (!entry) return false;
+    
+    const isFree = isFreeEntry(entry);
+    const hasCourse = !!entry.course_id;
+    
+    if (!isFree && !hasCourse) return false;
     
     // Find previous period in sequence
     const periodIndex = PERIODS.indexOf(period);
@@ -485,7 +506,40 @@ export default function Schule() {
     const prevPeriod = PERIODS[periodIndex - 1];
     const prevEntry = getEntry(day, prevPeriod);
     
-    return prevEntry?.course_id === entry.course_id;
+    if (!prevEntry) return false;
+    
+    // Match: both are free periods OR both have the same course_id
+    if (isFree && isFreeEntry(prevEntry)) return true;
+    if (hasCourse && prevEntry.course_id === entry.course_id) return true;
+    
+    return false;
+  };
+
+  // Delete free period(s)
+  const deleteFreeperiod = async (day: number, period: number) => {
+    if (!user) return;
+    
+    const entry = getEntry(day, period);
+    if (!entry || !isFreeEntry(entry)) return;
+    
+    // Check if this is a double free period - delete both
+    const isDouble = isDoubleStart(day, period);
+    const periodIndex = PERIODS.indexOf(period);
+    const nextPeriod = isDouble && periodIndex < PERIODS.length - 1 ? PERIODS[periodIndex + 1] : null;
+    
+    // Delete main entry
+    await supabase.from('timetable_entries').delete().eq('id', entry.id);
+    
+    // Delete second entry if double
+    if (nextPeriod) {
+      const nextEntry = getEntry(day, nextPeriod);
+      if (nextEntry && isFreeEntry(nextEntry)) {
+        await supabase.from('timetable_entries').delete().eq('id', nextEntry.id);
+      }
+    }
+    
+    toast.success('Freistunde entfernt');
+    fetchTimetable();
   };
 
   return (
@@ -574,13 +628,15 @@ export default function Schule() {
                       return (
                         <div
                           key={`${dayIndex}-${period}`}
-                          onClick={() => courseId && openCourseById(courseId)}
+                          onClick={() => {
+                            if (courseId) {
+                              openCourseById(courseId);
+                            } else if (isFreeperiod) {
+                              deleteFreeperiod(day, period);
+                            }
+                          }}
                           className={`rounded-lg flex flex-col items-center justify-center relative transition-all active:scale-95 ${
-                            hasContent && !isFreeperiod
-                              ? 'cursor-pointer' 
-                              : hasContent && isFreeperiod
-                              ? ''
-                              : 'bg-muted/20'
+                            hasContent ? 'cursor-pointer' : 'bg-muted/20'
                           }`}
                           style={{
                             gridColumn: dayIndex + 2,
