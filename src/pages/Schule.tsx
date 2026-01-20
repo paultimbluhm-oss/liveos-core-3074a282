@@ -453,9 +453,39 @@ export default function Schule() {
   const myCourses = courses.filter(c => c.is_member);
   const availableCourses = courses.filter(c => !c.is_member);
 
-  // Build timetable grid
+  // Build timetable grid with double lesson detection
   const getEntry = (day: number, period: number) => {
     return timetableEntries.find(e => e.day_of_week === day && e.period === period);
+  };
+
+  // Check if this period is the START of a double lesson
+  const isDoubleStart = (day: number, period: number): boolean => {
+    const entry = getEntry(day, period);
+    if (!entry?.course_id) return false;
+    
+    // Find next period in sequence
+    const periodIndex = PERIODS.indexOf(period);
+    if (periodIndex < 0 || periodIndex >= PERIODS.length - 1) return false;
+    
+    const nextPeriod = PERIODS[periodIndex + 1];
+    const nextEntry = getEntry(day, nextPeriod);
+    
+    return nextEntry?.course_id === entry.course_id;
+  };
+
+  // Check if this period is the SECOND part of a double lesson (should be hidden)
+  const isDoubleContinuation = (day: number, period: number): boolean => {
+    const entry = getEntry(day, period);
+    if (!entry?.course_id) return false;
+    
+    // Find previous period in sequence
+    const periodIndex = PERIODS.indexOf(period);
+    if (periodIndex <= 0) return false;
+    
+    const prevPeriod = PERIODS[periodIndex - 1];
+    const prevEntry = getEntry(day, prevPeriod);
+    
+    return prevEntry?.course_id === entry.course_id;
   };
 
   return (
@@ -497,10 +527,10 @@ export default function Schule() {
           </div>
         ) : selectedSchool && selectedYear ? (
           <>
-            {/* Timetable Grid - Mobile optimized */}
+            {/* Timetable Grid - Mobile optimized with double lesson support */}
             <Card className="overflow-hidden">
               <CardContent className="p-3">
-                <div className="grid grid-cols-6 gap-1">
+                <div className="grid gap-1" style={{ gridTemplateColumns: 'auto repeat(5, 1fr)', gridTemplateRows: `auto repeat(${PERIODS.length}, 44px)` }}>
                   {/* Header row */}
                   <div className="h-7" />
                   {DAYS.map(day => (
@@ -509,33 +539,53 @@ export default function Schule() {
                     </div>
                   ))}
                   
-                  {/* Period rows */}
-                  {PERIODS.map(period => (
-                    <div key={`row-${period}`} className="contents">
-                      <div className="h-11 flex items-center justify-center">
+                  {/* Generate all cells */}
+                  {PERIODS.map((period, periodIdx) => {
+                    // Period label
+                    const periodLabel = (
+                      <div 
+                        key={`period-${period}`} 
+                        className="h-11 flex items-center justify-center"
+                        style={{ gridColumn: 1, gridRow: periodIdx + 2 }}
+                      >
                         <span className="text-[10px] font-medium text-muted-foreground/70">{period}</span>
                       </div>
-                      {DAYS.map((_, dayIndex) => {
-                        const entry = getEntry(dayIndex + 1, period);
-                        const courseId = entry?.course_id;
-                        const grade = getCourseGrade(courseId);
-                        const course = courseId ? courses.find(c => c.id === courseId) : null;
-                        const isFreeperiod = entry?.teacher_short === 'FREI' && !entry?.course_id;
-                        const hasContent = !!entry?.course_id || !!entry?.teacher_short;
-                        const courseColor = isFreeperiod ? 'hsl(142, 76%, 36%)' : (course?.color || 'hsl(var(--primary))');
-                        
-                        return (
-                          <div
-                            key={`${dayIndex}-${period}`}
-                            onClick={() => courseId && openCourseById(courseId)}
-                            className={`h-11 rounded-lg flex flex-col items-center justify-center relative transition-all active:scale-95 ${
-                              hasContent && !isFreeperiod
-                                ? 'cursor-pointer' 
-                                : hasContent && isFreeperiod
-                                ? ''
-                                : 'bg-muted/20'
-                            }`}
-                            style={hasContent ? {
+                    );
+                    
+                    // Day cells
+                    const dayCells = DAYS.map((_, dayIndex) => {
+                      const day = dayIndex + 1;
+                      const entry = getEntry(day, period);
+                      const courseId = entry?.course_id;
+                      const grade = getCourseGrade(courseId);
+                      const course = courseId ? courses.find(c => c.id === courseId) : null;
+                      const isFreeperiod = entry?.teacher_short === 'FREI' && !entry?.course_id;
+                      const hasContent = !!entry?.course_id || !!entry?.teacher_short;
+                      const courseColor = isFreeperiod ? 'hsl(142, 76%, 36%)' : (course?.color || 'hsl(var(--primary))');
+                      
+                      const isDouble = isDoubleStart(day, period);
+                      const isContinuation = isDoubleContinuation(day, period);
+                      
+                      // Skip if this is continuation of a double lesson
+                      if (isContinuation) {
+                        return null;
+                      }
+                      
+                      return (
+                        <div
+                          key={`${dayIndex}-${period}`}
+                          onClick={() => courseId && openCourseById(courseId)}
+                          className={`rounded-lg flex flex-col items-center justify-center relative transition-all active:scale-95 ${
+                            hasContent && !isFreeperiod
+                              ? 'cursor-pointer' 
+                              : hasContent && isFreeperiod
+                              ? ''
+                              : 'bg-muted/20'
+                          }`}
+                          style={{
+                            gridColumn: dayIndex + 2,
+                            gridRow: isDouble ? `${periodIdx + 2} / span 2` : periodIdx + 2,
+                            ...(hasContent ? {
                               backgroundColor: isFreeperiod 
                                 ? 'hsl(142, 76%, 36%, 0.15)' 
                                 : `color-mix(in srgb, ${courseColor} 15%, transparent)`,
@@ -543,31 +593,33 @@ export default function Schule() {
                               borderColor: isFreeperiod 
                                 ? 'hsl(142, 76%, 36%, 0.4)' 
                                 : `color-mix(in srgb, ${courseColor} 40%, transparent)`,
-                            } : undefined}
-                          >
-                            {hasContent && (
-                              <>
-                                <span 
-                                  className="text-[10px] font-bold leading-none"
-                                  style={{ color: courseColor }}
-                                >
-                                  {isFreeperiod ? 'Frei' : (course?.short_name?.slice(0, 3).toUpperCase() || entry?.teacher_short?.slice(0, 3) || '')}
-                                </span>
-                                {entry?.room && !isFreeperiod && (
-                                  <span className="text-[8px] text-muted-foreground/70 leading-none mt-0.5">{entry.room}</span>
-                                )}
-                                {grade !== null && (
-                                  <div className={`absolute -top-1.5 -right-1.5 min-w-4 h-4 px-0.5 rounded-full ${getGradeColor(grade)} flex items-center justify-center shadow-sm`}>
-                                    <span className="text-[8px] text-white font-bold">{Math.round(grade)}</span>
-                                  </div>
-                                )}
-                              </>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ))}
+                            } : {}),
+                          }}
+                        >
+                          {hasContent && (
+                            <>
+                              <span 
+                                className="text-[10px] font-bold leading-none"
+                                style={{ color: courseColor }}
+                              >
+                                {isFreeperiod ? 'Frei' : (course?.short_name?.slice(0, 3).toUpperCase() || entry?.teacher_short?.slice(0, 3) || '')}
+                              </span>
+                              {entry?.room && !isFreeperiod && (
+                                <span className="text-[8px] text-muted-foreground/70 leading-none mt-0.5">{entry.room}</span>
+                              )}
+                              {grade !== null && (
+                                <div className={`absolute -top-1.5 -right-1.5 min-w-4 h-4 px-0.5 rounded-full ${getGradeColor(grade)} flex items-center justify-center shadow-sm`}>
+                                  <span className="text-[8px] text-white font-bold">{Math.round(grade)}</span>
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      );
+                    });
+                    
+                    return [periodLabel, ...dayCells.filter(Boolean)];
+                  })}
                 </div>
               </CardContent>
             </Card>
