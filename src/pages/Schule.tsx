@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { GraduationCap, Settings, Users, Plus, Clock, UserPlus, CalendarX, MoreVertical } from 'lucide-react';
+import { GraduationCap, Settings, Users, Plus, UserPlus, ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { SchoolSettingsDialog } from '@/components/schule/schools/SchoolSettingsDialog';
@@ -12,6 +12,8 @@ import { EditCourseDialog } from '@/components/schule/schools/EditCourseDialog';
 import { SchoolTabsDrawer } from '@/components/schule/SchoolTabsDrawer';
 import { Course } from '@/components/schule/schools/types';
 import { toast } from 'sonner';
+import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, getWeek, eachDayOfInterval, isToday } from 'date-fns';
+import { de } from 'date-fns/locale';
 
 interface TimetableEntry {
   id: string;
@@ -21,6 +23,16 @@ interface TimetableEntry {
   teacher_short: string | null;
   room: string | null;
   week_type: string;
+}
+
+interface TimetableOverride {
+  id: string;
+  date: string;
+  period: number;
+  override_type: string;
+  label: string | null;
+  color: string | null;
+  original_course_id: string | null;
 }
 
 interface CourseGradeAvg {
@@ -58,8 +70,14 @@ export default function Schule() {
   const [selectedClass, setSelectedClass] = useState<ClassInfo | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
   
+  // Week navigation
+  const [currentWeekStart, setCurrentWeekStart] = useState(() => 
+    startOfWeek(new Date(), { weekStartsOn: 1 })
+  );
+  
   // Timetable
   const [timetableEntries, setTimetableEntries] = useState<TimetableEntry[]>([]);
+  const [timetableOverrides, setTimetableOverrides] = useState<TimetableOverride[]>([]);
   const [courseGrades, setCourseGrades] = useState<CourseGradeAvg[]>([]);
   
   // Grade color settings
@@ -77,6 +95,12 @@ export default function Schule() {
   // Edit Course Dialog
   const [editCourseDialogOpen, setEditCourseDialogOpen] = useState(false);
   const [courseToEdit, setCourseToEdit] = useState<Course | null>(null);
+  
+  // Week calculations
+  const weekEnd = endOfWeek(currentWeekStart, { weekStartsOn: 1 });
+  const weekNumber = getWeek(currentWeekStart, { weekStartsOn: 1 });
+  const weekType: 'A' | 'B' = weekNumber % 2 === 0 ? 'B' : 'A';
+  const weekDays = eachDayOfInterval({ start: currentWeekStart, end: weekEnd }).slice(0, 5); // Mo-Fr
 
   useEffect(() => {
     if (!loading && !user) {
@@ -175,6 +199,56 @@ export default function Schule() {
       });
       setCourseGrades(avgs);
     }
+  };
+
+  // Fetch week-specific overrides
+  const fetchOverrides = async () => {
+    if (!user) return;
+    
+    const weekStart = format(currentWeekStart, 'yyyy-MM-dd');
+    const weekEnd = format(endOfWeek(currentWeekStart, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+    
+    const { data } = await supabase
+      .from('timetable_overrides')
+      .select('*')
+      .eq('user_id', user.id)
+      .gte('date', weekStart)
+      .lte('date', weekEnd);
+    
+    if (data) setTimetableOverrides(data);
+  };
+
+  // Toggle EVA for a specific slot
+  const toggleEva = async (date: Date, period: number, courseId: string | null) => {
+    if (!user) return;
+    
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const existing = timetableOverrides.find(o => o.date === dateStr && o.period === period);
+    
+    if (existing) {
+      // Remove EVA
+      await supabase.from('timetable_overrides').delete().eq('id', existing.id);
+      toast.success('EVA entfernt');
+    } else {
+      // Add EVA
+      await supabase.from('timetable_overrides').insert({
+        user_id: user.id,
+        date: dateStr,
+        period,
+        override_type: 'eva',
+        label: 'EVA',
+        original_course_id: courseId,
+      });
+      toast.success('EVA eingetragen');
+    }
+    
+    fetchOverrides();
+  };
+
+  // Get override for a specific date and period
+  const getOverride = (date: Date, period: number): TimetableOverride | undefined => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    return timetableOverrides.find(o => o.date === dateStr && o.period === period);
   };
 
   const fetchCourses = async () => {
@@ -332,12 +406,26 @@ export default function Schule() {
     }
   }, [user]);
 
+  // Fetch overrides when week changes
+  useEffect(() => {
+    if (user) {
+      fetchOverrides();
+    }
+  }, [user, currentWeekStart]);
+
   useEffect(() => {
     if (selectedYear && user) {
       // First cleanup duplicate courses, then fetch
       cleanupDuplicateCourses().then(() => fetchCourses());
     }
   }, [selectedYear, selectedClass, user]);
+
+  // Week navigation
+  const goToPrevWeek = () => setCurrentWeekStart(subWeeks(currentWeekStart, 1));
+  const goToNextWeek = () => setCurrentWeekStart(addWeeks(currentWeekStart, 1));
+  const goToCurrentWeek = () => setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }));
+  
+  const isCurrentWeek = format(currentWeekStart, 'yyyy-MM-dd') === format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
 
   const applyCourseSlotsToTimetable = async (courseId: string, userId: string) => {
     const { data: courseData } = await supabase
@@ -581,15 +669,53 @@ export default function Schule() {
           </div>
         ) : selectedSchool && selectedYear ? (
           <>
-            {/* Timetable Grid - Mobile optimized with double lesson support */}
+            {/* Week Navigation */}
+            <div className="flex items-center justify-between bg-card rounded-xl border border-border/50 p-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-lg"
+                onClick={goToPrevWeek}
+              >
+                <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />
+              </Button>
+              
+              <div className="flex flex-col items-center">
+                <button
+                  onClick={goToCurrentWeek}
+                  className={`text-sm font-semibold ${isCurrentWeek ? 'text-primary' : 'text-foreground'}`}
+                >
+                  KW {weekNumber} · {weekType}-Woche
+                </button>
+                <span className="text-[10px] text-muted-foreground">
+                  {format(currentWeekStart, 'd. MMM', { locale: de })} - {format(weekEnd, 'd. MMM yyyy', { locale: de })}
+                </span>
+              </div>
+              
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-lg"
+                onClick={goToNextWeek}
+              >
+                <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
+              </Button>
+            </div>
+
+            {/* Timetable Grid - Mobile optimized with double lesson and override support */}
             <Card className="overflow-hidden">
               <CardContent className="p-3">
                 <div className="grid gap-1" style={{ gridTemplateColumns: 'auto repeat(5, 1fr)', gridTemplateRows: `auto repeat(${PERIODS.length}, 44px)` }}>
-                  {/* Header row */}
+                  {/* Header row with dates */}
                   <div className="h-7" />
-                  {DAYS.map(day => (
-                    <div key={day} className="h-7 flex items-center justify-center">
-                      <span className="text-[10px] font-semibold text-muted-foreground">{day}</span>
+                  {weekDays.map((date, dayIndex) => (
+                    <div key={dayIndex} className="h-7 flex flex-col items-center justify-center">
+                      <span className={`text-[10px] font-semibold ${isToday(date) ? 'text-primary' : 'text-muted-foreground'}`}>
+                        {DAYS[dayIndex]}
+                      </span>
+                      <span className={`text-[8px] ${isToday(date) ? 'text-primary font-semibold' : 'text-muted-foreground/60'}`}>
+                        {format(date, 'd.')}
+                      </span>
                     </div>
                   ))}
                   
@@ -606,16 +732,32 @@ export default function Schule() {
                       </div>
                     );
                     
-                    // Day cells
-                    const dayCells = DAYS.map((_, dayIndex) => {
+                    // Day cells - now date-aware
+                    const dayCells = weekDays.map((date, dayIndex) => {
                       const day = dayIndex + 1;
                       const entry = getEntry(day, period);
+                      const override = getOverride(date, period);
                       const courseId = entry?.course_id;
                       const grade = getCourseGrade(courseId);
                       const course = courseId ? courses.find(c => c.id === courseId) : null;
                       const isFreeperiod = entry?.teacher_short === 'FREI' && !entry?.course_id;
                       const hasContent = !!entry?.course_id || !!entry?.teacher_short;
-                      const courseColor = isFreeperiod ? 'hsl(142, 76%, 36%)' : (course?.color || 'hsl(var(--primary))');
+                      
+                      // Check if EVA or other override
+                      const isEva = override?.override_type === 'eva';
+                      const isVacation = override?.override_type === 'vacation';
+                      
+                      // Determine display color
+                      let displayColor = 'hsl(var(--primary))';
+                      if (isEva) {
+                        displayColor = 'hsl(45, 93%, 47%)'; // Amber for EVA
+                      } else if (isVacation) {
+                        displayColor = 'hsl(280, 60%, 50%)'; // Purple for vacation
+                      } else if (isFreeperiod) {
+                        displayColor = 'hsl(142, 76%, 36%)'; // Green for free
+                      } else if (course?.color) {
+                        displayColor = course.color;
+                      }
                       
                       const isDouble = isDoubleStart(day, period);
                       const isContinuation = isDoubleContinuation(day, period);
@@ -624,6 +766,13 @@ export default function Schule() {
                       if (isContinuation) {
                         return null;
                       }
+                      
+                      // Handle long press for EVA toggle
+                      const handleLongPress = () => {
+                        if (courseId) {
+                          toggleEva(date, period, courseId);
+                        }
+                      };
                       
                       return (
                         <div
@@ -635,37 +784,42 @@ export default function Schule() {
                               deleteFreeperiod(day, period);
                             }
                           }}
+                          onContextMenu={(e) => {
+                            e.preventDefault();
+                            handleLongPress();
+                          }}
                           className={`rounded-lg flex flex-col items-center justify-center relative transition-all active:scale-95 ${
-                            hasContent ? 'cursor-pointer' : 'bg-muted/20'
+                            hasContent || isEva || isVacation ? 'cursor-pointer' : 'bg-muted/20'
                           }`}
                           style={{
                             gridColumn: dayIndex + 2,
                             gridRow: isDouble ? `${periodIdx + 2} / span 2` : periodIdx + 2,
-                            ...(hasContent ? {
-                              backgroundColor: isFreeperiod 
-                                ? 'hsl(142, 76%, 36%, 0.15)' 
-                                : `color-mix(in srgb, ${courseColor} 15%, transparent)`,
+                            ...((hasContent || isEva || isVacation) ? {
+                              backgroundColor: `color-mix(in srgb, ${displayColor} 15%, transparent)`,
                               borderWidth: 1,
-                              borderColor: isFreeperiod 
-                                ? 'hsl(142, 76%, 36%, 0.4)' 
-                                : `color-mix(in srgb, ${courseColor} 40%, transparent)`,
+                              borderColor: `color-mix(in srgb, ${displayColor} 40%, transparent)`,
                             } : {}),
                           }}
                         >
-                          {hasContent && (
+                          {(hasContent || isEva || isVacation) && (
                             <>
                               <span 
                                 className="text-[10px] font-bold leading-none"
-                                style={{ color: courseColor }}
+                                style={{ color: displayColor }}
                               >
-                                {isFreeperiod ? 'Frei' : (course?.short_name?.slice(0, 3).toUpperCase() || entry?.teacher_short?.slice(0, 3) || '')}
+                                {isEva ? 'EVA' : isVacation ? (override?.label || 'Ferien') : isFreeperiod ? 'Frei' : (course?.short_name?.slice(0, 3).toUpperCase() || entry?.teacher_short?.slice(0, 3) || '')}
                               </span>
-                              {entry?.room && !isFreeperiod && (
+                              {entry?.room && !isFreeperiod && !isEva && !isVacation && (
                                 <span className="text-[8px] text-muted-foreground/70 leading-none mt-0.5">{entry.room}</span>
                               )}
-                              {grade !== null && (
+                              {grade !== null && !isEva && !isVacation && (
                                 <div className={`absolute -top-1.5 -right-1.5 min-w-4 h-4 px-0.5 rounded-full ${getGradeColor(grade)} flex items-center justify-center shadow-sm`}>
                                   <span className="text-[8px] text-white font-bold">{Math.round(grade)}</span>
+                                </div>
+                              )}
+                              {isEva && (
+                                <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-amber-500 flex items-center justify-center">
+                                  <BookOpen className="w-2 h-2 text-white" strokeWidth={2} />
                                 </div>
                               )}
                             </>
