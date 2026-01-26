@@ -2833,6 +2833,53 @@ export type Database = {
           },
         ]
       }
+      timetable_overrides: {
+        Row: {
+          color: string | null
+          created_at: string
+          date: string
+          id: string
+          label: string | null
+          notes: string | null
+          original_course_id: string | null
+          override_type: string
+          period: number
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          date: string
+          id?: string
+          label?: string | null
+          notes?: string | null
+          original_course_id?: string | null
+          override_type: string
+          period: number
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          date?: string
+          id?: string
+          label?: string | null
+          notes?: string | null
+          original_course_id?: string | null
+          override_type?: string
+          period?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timetable_overrides_original_course_id_fkey"
+            columns: ["original_course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           account_id: string
