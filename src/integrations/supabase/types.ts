@@ -851,6 +851,33 @@ export type Database = {
         }
         Relationships: []
       }
+      dashboard_config: {
+        Row: {
+          created_at: string
+          hidden_widgets: string[]
+          id: string
+          updated_at: string
+          user_id: string
+          widget_order: string[]
+        }
+        Insert: {
+          created_at?: string
+          hidden_widgets?: string[]
+          id?: string
+          updated_at?: string
+          user_id: string
+          widget_order?: string[]
+        }
+        Update: {
+          created_at?: string
+          hidden_widgets?: string[]
+          id?: string
+          updated_at?: string
+          user_id?: string
+          widget_order?: string[]
+        }
+        Relationships: []
+      }
       friend_privacy_settings: {
         Row: {
           created_at: string
