@@ -1,18 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { GraduationCap, Settings, Users, Plus, UserPlus, ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
+import { GraduationCap, Settings, Users, Plus, UserPlus, ChevronLeft, ChevronRight, BookOpen, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { SchoolSettingsDialog } from '@/components/schule/schools/SchoolSettingsDialog';
 import { CreateCourseDialog } from '@/components/schule/schools/CreateCourseDialog';
 import { EditCourseDialog } from '@/components/schule/schools/EditCourseDialog';
 import { SchoolTabsDrawer } from '@/components/schule/SchoolTabsDrawer';
-import { Course } from '@/components/schule/schools/types';
+import { Course, CourseTimetableSlot } from '@/components/schule/schools/types';
+import { LESSON_TIMES } from '@/components/calendar/types';
 import { toast } from 'sonner';
-import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, getWeek, eachDayOfInterval, isToday } from 'date-fns';
+import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, getWeek, eachDayOfInterval, isToday, isBefore, startOfDay, addDays } from 'date-fns';
 import { de } from 'date-fns/locale';
 
 interface TimetableEntry {
@@ -79,6 +81,7 @@ export default function Schule() {
   const [timetableEntries, setTimetableEntries] = useState<TimetableEntry[]>([]);
   const [timetableOverrides, setTimetableOverrides] = useState<TimetableOverride[]>([]);
   const [courseGrades, setCourseGrades] = useState<CourseGradeAvg[]>([]);
+  const [courseTimetableSlots, setCourseTimetableSlots] = useState<CourseTimetableSlot[]>([]);
   
   // Grade color settings
   const [gradeColorSettings, setGradeColorSettings] = useState<{ green_min: number; yellow_min: number }>({ green_min: 13, yellow_min: 10 });
@@ -294,6 +297,19 @@ export default function Schule() {
       }));
       
       setCourses(enrichedCourses);
+      
+      // Fetch all course timetable slots for the user's courses
+      const memberCourseIds = enrichedCourses.filter(c => c.is_member).map(c => c.id);
+      if (memberCourseIds.length > 0) {
+        const { data: slotsData } = await supabase
+          .from('course_timetable_slots')
+          .select('*')
+          .in('course_id', memberCourseIds);
+        
+        if (slotsData) {
+          setCourseTimetableSlots(slotsData);
+        }
+      }
     }
   };
 
@@ -536,10 +552,121 @@ export default function Schule() {
     return found?.avg ?? null;
   };
 
+  // Helper to check if a period on a specific date has passed
+  const isPeriodPassed = (date: Date, period: number): boolean => {
+    const now = new Date();
+    // If date is before today, it's passed
+    if (isBefore(date, startOfDay(now)) && !isToday(date)) return true;
+    // If date is after today, it's not passed
+    if (!isToday(date)) return false;
+    
+    const times = LESSON_TIMES[period];
+    if (!times) return false;
+    
+    const [endH, endM] = times.end.split(':').map(Number);
+    const periodEnd = new Date(date);
+    periodEnd.setHours(endH, endM, 0, 0);
+    
+    return now > periodEnd;
+  };
+
+  // Helper to get the next slot info for a course
+  const getNextSlotInfo = (courseId: string): { label: string; minutesUntil: number } | null => {
+    const now = new Date();
+    const currentDay = now.getDay(); // 0=Sunday, 1=Monday, ...
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    
+    // Get all slots for this course
+    const slots = courseTimetableSlots.filter(s => s.course_id === courseId);
+    if (slots.length === 0) return null;
+    
+    // Also check timetable entries as fallback
+    const entries = timetableEntries.filter(e => e.course_id === courseId);
+    const allSlots = slots.length > 0 ? slots : entries.map(e => ({
+      day_of_week: e.day_of_week,
+      period: e.period,
+      week_type: e.week_type,
+    }));
+    
+    if (allSlots.length === 0) return null;
+    
+    let bestSlot: { dayOffset: number; period: number; dayOfWeek: number } | null = null;
+    let minMinutesUntil = Infinity;
+    
+    for (const slot of allSlots) {
+      // Check week type compatibility
+      if (slot.week_type !== 'both' && slot.week_type !== weekType) continue;
+      
+      const slotDay = slot.day_of_week; // 1=Monday, ..., 5=Friday
+      const times = LESSON_TIMES[slot.period];
+      if (!times) continue;
+      
+      const [startH, startM] = times.start.split(':').map(Number);
+      const slotStartMinutes = startH * 60 + startM;
+      
+      // Calculate days until this slot
+      let dayOffset = slotDay - currentDay;
+      
+      // If it's today but the slot hasn't started yet
+      if (dayOffset === 0 && slotStartMinutes > currentMinutes) {
+        const minutesUntil = slotStartMinutes - currentMinutes;
+        if (minutesUntil < minMinutesUntil) {
+          minMinutesUntil = minutesUntil;
+          bestSlot = { dayOffset: 0, period: slot.period, dayOfWeek: slotDay };
+        }
+      }
+      // If it's a future day this week
+      else if (dayOffset > 0 && dayOffset <= 5) {
+        const minutesUntil = dayOffset * 24 * 60 + slotStartMinutes - currentMinutes;
+        if (minutesUntil < minMinutesUntil) {
+          minMinutesUntil = minutesUntil;
+          bestSlot = { dayOffset, period: slot.period, dayOfWeek: slotDay };
+        }
+      }
+      // Next week (add 7 days if day already passed)
+      else if (dayOffset <= 0) {
+        const adjustedOffset = dayOffset + 7;
+        const minutesUntil = adjustedOffset * 24 * 60 + slotStartMinutes - currentMinutes;
+        if (minutesUntil < minMinutesUntil) {
+          minMinutesUntil = minutesUntil;
+          bestSlot = { dayOffset: adjustedOffset, period: slot.period, dayOfWeek: slotDay };
+        }
+      }
+    }
+    
+    if (!bestSlot) return null;
+    
+    const times = LESSON_TIMES[bestSlot.period];
+    if (!times) return null;
+    
+    // Format the label
+    const dayNames = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+    if (bestSlot.dayOffset === 0) {
+      return { label: `Heute, ${times.start}`, minutesUntil: minMinutesUntil };
+    } else if (bestSlot.dayOffset === 1) {
+      return { label: `Morgen, ${times.start}`, minutesUntil: minMinutesUntil };
+    } else {
+      const targetDate = addDays(now, bestSlot.dayOffset);
+      return { label: `${dayNames[bestSlot.dayOfWeek]}, ${format(targetDate, 'd. MMM', { locale: de })}`, minutesUntil: minMinutesUntil };
+    }
+  };
+
   if (loading || !user) return null;
 
   const myCourses = courses.filter(c => c.is_member);
   const availableCourses = courses.filter(c => !c.is_member);
+  
+  // Sort courses by next upcoming lesson
+  const sortedMyCourses = [...myCourses].sort((a, b) => {
+    const aNext = getNextSlotInfo(a.id);
+    const bNext = getNextSlotInfo(b.id);
+    
+    if (!aNext && !bNext) return 0;
+    if (!aNext) return 1;
+    if (!bNext) return -1;
+    
+    return aNext.minutesUntil - bNext.minutesUntil;
+  });
 
   // Build timetable grid with double lesson detection
   const getEntry = (day: number, period: number) => {
@@ -774,6 +901,9 @@ export default function Schule() {
                         }
                       };
                       
+                      // Check if this period has passed (for graying out)
+                      const hasPassed = isPeriodPassed(date, period);
+                      
                       return (
                         <div
                           key={`${dayIndex}-${period}`}
@@ -790,7 +920,7 @@ export default function Schule() {
                           }}
                           className={`rounded-lg flex flex-col items-center justify-center relative transition-all active:scale-95 ${
                             hasContent || isEva || isVacation ? 'cursor-pointer' : 'bg-muted/20'
-                          }`}
+                          } ${hasPassed ? 'opacity-40' : ''}`}
                           style={{
                             gridColumn: dayIndex + 2,
                             gridRow: isDouble ? `${periodIdx + 2} / span 2` : periodIdx + 2,
@@ -854,54 +984,67 @@ export default function Schule() {
                 </Button>
               </div>
               
-              {/* My Courses - Horizontal scrollable list */}
-              {myCourses.length > 0 ? (
-                <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide">
-                  {myCourses.map(course => {
+              {/* My Courses - Vertical list sorted by next lesson */}
+              {sortedMyCourses.length > 0 ? (
+                <div className="space-y-2">
+                  {sortedMyCourses.map(course => {
                     const grade = getCourseGrade(course.id);
                     const courseColor = course.color || 'hsl(var(--primary))';
+                    const nextSlot = getNextSlotInfo(course.id);
+                    
                     return (
                       <div
                         key={course.id}
-                        className="flex-shrink-0 flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-card border border-border/50 cursor-pointer active:scale-98 transition-transform"
-                        style={{ minWidth: 140 }}
+                        className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border/50 cursor-pointer active:scale-[0.98] transition-transform"
+                        onClick={() => openCourse(course)}
                       >
+                        {/* Course Icon */}
                         <div 
-                          className="w-8 h-8 rounded-lg flex items-center justify-center"
+                          className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
                           style={{ 
                             backgroundColor: `color-mix(in srgb, ${courseColor} 15%, transparent)`,
                             borderWidth: 2,
                             borderColor: courseColor,
                           }}
-                          onClick={() => openCourse(course)}
                         >
                           <span 
-                            className="text-[10px] font-bold"
+                            className="text-xs font-bold"
                             style={{ color: courseColor }}
                           >
                             {(course.short_name || course.name).slice(0, 2).toUpperCase()}
                           </span>
                         </div>
-                        <div className="min-w-0 flex-1" onClick={() => openCourse(course)}>
-                          <p className="text-xs font-medium truncate">{course.short_name || course.name}</p>
-                          {grade !== null && (
-                            <div className="flex items-center gap-1 mt-0.5">
-                              <div className={`w-2 h-2 rounded-full ${getGradeColor(grade)}`} />
-                              <span className="text-[10px] text-muted-foreground font-medium">{grade} Punkte</span>
-                            </div>
-                          )}
+                        
+                        {/* Course Info */}
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium truncate">{course.name}</p>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <Clock className="w-3 h-3 text-muted-foreground" strokeWidth={1.5} />
+                            <span className="text-[10px] text-muted-foreground">
+                              {nextSlot ? nextSlot.label : 'Keine Stunde diese Woche'}
+                            </span>
+                          </div>
                         </div>
+                        
+                        {/* Grade Badge */}
+                        {grade !== null && (
+                          <Badge className={`${getGradeColor(grade)} text-white text-[10px] px-2 py-0.5`}>
+                            {grade.toFixed(1)} P
+                          </Badge>
+                        )}
+                        
+                        {/* Settings Button */}
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-7 w-7 rounded-lg flex-shrink-0"
+                          className="h-8 w-8 rounded-lg flex-shrink-0"
                           onClick={(e) => {
                             e.stopPropagation();
                             setCourseToEdit(course);
                             setEditCourseDialogOpen(true);
                           }}
                         >
-                          <Settings className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
+                          <Settings className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
                         </Button>
                       </div>
                     );
@@ -1006,6 +1149,8 @@ export default function Schule() {
           }}
           context={drawerContext}
           course={selectedCourse}
+          currentWeekStart={currentWeekStart}
+          weekType={weekType}
         />
         
         {/* Edit Course Dialog */}

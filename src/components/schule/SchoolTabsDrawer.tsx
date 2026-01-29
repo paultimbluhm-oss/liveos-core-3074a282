@@ -10,20 +10,23 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Clock, BookOpen, Calendar, Award, Users, Plus, Trash2, CalendarX, Check, Settings } from 'lucide-react';
+import { Clock, BookOpen, Calendar, Award, Users, Plus, Trash2, CalendarX, Check, Settings, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import { format, isPast, isToday, isTomorrow, addDays } from 'date-fns';
+import { format, isPast, isToday, isTomorrow, addDays, eachDayOfInterval, endOfWeek, getWeek } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { useGamification } from '@/contexts/GamificationContext';
-import { Course } from './schools/types';
+import { Course, CourseTimetableSlot } from './schools/types';
 import { DeleteCourseDialog } from './schools/DeleteCourseDialog';
 import { EditCourseDialog } from './schools/EditCourseDialog';
+import { LESSON_TIMES } from '@/components/calendar/types';
 
 interface SchoolTabsDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   context: 'timetable' | 'course';
   course?: Course | null;
+  currentWeekStart?: Date;
+  weekType?: 'A' | 'B';
 }
 
 interface Grade {
@@ -77,10 +80,27 @@ interface LessonAbsence {
   period: number | null;
 }
 
+interface TimetableOverride {
+  id: string;
+  date: string;
+  period: number;
+  override_type: string;
+  label: string | null;
+  original_course_id: string | null;
+}
+
+interface CourseSlotWithStatus {
+  date: Date;
+  period: number;
+  status: 'normal' | 'eva' | 'absent';
+  room: string | null;
+  isDouble: boolean;
+}
+
 const DAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr'];
 const PERIODS = [1, 2, 3, 4, 5, 6, 8, 9];
 
-export function SchoolTabsDrawer({ open, onOpenChange, context, course }: SchoolTabsDrawerProps) {
+export function SchoolTabsDrawer({ open, onOpenChange, context, course, currentWeekStart, weekType }: SchoolTabsDrawerProps) {
   const { user } = useAuth();
   const { addXP } = useGamification();
   const [loading, setLoading] = useState(true);
@@ -99,6 +119,10 @@ export function SchoolTabsDrawer({ open, onOpenChange, context, course }: School
   const [grades, setGrades] = useState<Grade[]>([]);
   const [members, setMembers] = useState<CourseMember[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
+  
+  // Course weekly slots with status
+  const [courseSlots, setCourseSlots] = useState<CourseSlotWithStatus[]>([]);
+  const [courseSlotsLoading, setCourseSlotsLoading] = useState(false);
   
   // Dialogs
   const [homeworkDialogOpen, setHomeworkDialogOpen] = useState(false);
@@ -126,8 +150,11 @@ export function SchoolTabsDrawer({ open, onOpenChange, context, course }: School
   useEffect(() => {
     if (open && user) {
       fetchData();
+      if (context === 'course' && course && currentWeekStart) {
+        fetchCourseWeekSlots();
+      }
     }
-  }, [open, user, context, course?.id]);
+  }, [open, user, context, course?.id, currentWeekStart]);
 
   const fetchData = async () => {
     if (!user) return;
@@ -202,6 +229,173 @@ export function SchoolTabsDrawer({ open, onOpenChange, context, course }: School
     }
     
     setLoading(false);
+  };
+
+  // Fetch course weekly slots with status (EVA, absent)
+  const fetchCourseWeekSlots = async () => {
+    if (!user || !course || !currentWeekStart) return;
+    
+    setCourseSlotsLoading(true);
+    
+    // Get week days (Mo-Fr)
+    const weekEnd = endOfWeek(currentWeekStart, { weekStartsOn: 1 });
+    const weekDays = eachDayOfInterval({ start: currentWeekStart, end: weekEnd }).slice(0, 5);
+    
+    // Fetch course timetable slots
+    const { data: slotsData } = await supabase
+      .from('course_timetable_slots')
+      .select('*')
+      .eq('course_id', course.id);
+    
+    // Fetch overrides for this week
+    const weekStartStr = format(currentWeekStart, 'yyyy-MM-dd');
+    const weekEndStr = format(weekEnd, 'yyyy-MM-dd');
+    
+    const { data: overridesData } = await supabase
+      .from('timetable_overrides')
+      .select('*')
+      .eq('user_id', user.id)
+      .gte('date', weekStartStr)
+      .lte('date', weekEndStr);
+    
+    // Fetch absences for this week
+    const { data: absencesData } = await supabase
+      .from('lesson_absences')
+      .select('*')
+      .eq('user_id', user.id)
+      .gte('date', weekStartStr)
+      .lte('date', weekEndStr);
+    
+    // Build slots with status
+    const slots: CourseSlotWithStatus[] = [];
+    
+    if (slotsData) {
+      for (const slot of slotsData) {
+        // Check week type compatibility
+        if (weekType && slot.week_type !== 'both' && slot.week_type !== weekType) continue;
+        
+        // Get the date for this slot
+        const slotDate = weekDays[slot.day_of_week - 1]; // day_of_week is 1-indexed (1=Monday)
+        if (!slotDate) continue;
+        
+        const dateStr = format(slotDate, 'yyyy-MM-dd');
+        
+        // Check for EVA override
+        const override = overridesData?.find(o => 
+          o.date === dateStr && o.period === slot.period && o.override_type === 'eva'
+        );
+        
+        // Check for absence
+        const absence = absencesData?.find(a => 
+          a.date === dateStr && a.period === slot.period
+        );
+        
+        let status: 'normal' | 'eva' | 'absent' = 'normal';
+        if (override) status = 'eva';
+        else if (absence) status = 'absent';
+        
+        slots.push({
+          date: slotDate,
+          period: slot.period,
+          status,
+          room: slot.room,
+          isDouble: slot.is_double_lesson || false,
+        });
+      }
+    }
+    
+    // Sort by date and period
+    slots.sort((a, b) => {
+      const dateCompare = a.date.getTime() - b.date.getTime();
+      if (dateCompare !== 0) return dateCompare;
+      return a.period - b.period;
+    });
+    
+    setCourseSlots(slots);
+    setCourseSlotsLoading(false);
+  };
+
+  // Toggle EVA status for a slot
+  const toggleSlotEva = async (slot: CourseSlotWithStatus) => {
+    if (!user || !course) return;
+    
+    const dateStr = format(slot.date, 'yyyy-MM-dd');
+    
+    if (slot.status === 'eva') {
+      // Remove EVA
+      await supabase
+        .from('timetable_overrides')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('date', dateStr)
+        .eq('period', slot.period)
+        .eq('override_type', 'eva');
+      toast.success('EVA entfernt');
+    } else {
+      // First remove any existing absence
+      if (slot.status === 'absent') {
+        await supabase
+          .from('lesson_absences')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('date', dateStr)
+          .eq('period', slot.period);
+      }
+      
+      // Add EVA
+      await supabase.from('timetable_overrides').insert({
+        user_id: user.id,
+        date: dateStr,
+        period: slot.period,
+        override_type: 'eva',
+        label: 'EVA',
+        original_course_id: course.id,
+      });
+      toast.success('EVA eingetragen');
+    }
+    
+    fetchCourseWeekSlots();
+  };
+
+  // Toggle absence status for a slot
+  const toggleSlotAbsent = async (slot: CourseSlotWithStatus) => {
+    if (!user || !course) return;
+    
+    const dateStr = format(slot.date, 'yyyy-MM-dd');
+    
+    if (slot.status === 'absent') {
+      // Remove absence
+      await supabase
+        .from('lesson_absences')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('date', dateStr)
+        .eq('period', slot.period);
+      toast.success('Fehlstunde entfernt');
+    } else {
+      // First remove any existing EVA
+      if (slot.status === 'eva') {
+        await supabase
+          .from('timetable_overrides')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('date', dateStr)
+          .eq('period', slot.period)
+          .eq('override_type', 'eva');
+      }
+      
+      // Add absence
+      await supabase.from('lesson_absences').insert({
+        user_id: user.id,
+        date: dateStr,
+        period: slot.period,
+        reason: null,
+        excused: false,
+      });
+      toast.success('Fehlstunde eingetragen');
+    }
+    
+    fetchCourseWeekSlots();
   };
 
   // Homework handlers
@@ -587,10 +781,86 @@ export function SchoolTabsDrawer({ open, onOpenChange, context, course }: School
               <TabsContent value="plan" className="mt-3">
                 {context === 'timetable' ? (
                   renderTimetableGrid()
-                ) : (
+                ) : courseSlotsLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
+                  </div>
+                ) : courseSlots.length === 0 ? (
                   <div className="py-8 text-center">
                     <Clock className="w-8 h-8 mx-auto text-muted-foreground/30 mb-2" strokeWidth={1.5} />
-                    <p className="text-sm text-muted-foreground">Kurs-Stunden im persoenlichen Stundenplan</p>
+                    <p className="text-sm text-muted-foreground">Keine Stunden diese Woche</p>
+                    <p className="text-[10px] text-muted-foreground/70 mt-1">
+                      Der Kurs hat keine Stundenplan-Eintraege fuer KW {currentWeekStart ? getWeek(currentWeekStart, { weekStartsOn: 1 }) : ''}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {/* Week header */}
+                    {currentWeekStart && (
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-xs font-medium text-muted-foreground">
+                          KW {getWeek(currentWeekStart, { weekStartsOn: 1 })} · {weekType}-Woche
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">
+                          {format(currentWeekStart, 'd. MMM', { locale: de })} - {format(endOfWeek(currentWeekStart, { weekStartsOn: 1 }), 'd. MMM', { locale: de })}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {courseSlots.map((slot, idx) => {
+                      const times = LESSON_TIMES[slot.period];
+                      const periodLabel = slot.isDouble ? `${slot.period}-${slot.period + 1}` : `${slot.period}`;
+                      
+                      return (
+                        <Card key={`${format(slot.date, 'yyyy-MM-dd')}-${slot.period}`}>
+                          <CardContent className="p-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <p className="text-sm font-medium">
+                                  {format(slot.date, 'EEE, d. MMM', { locale: de })}
+                                </p>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <span className="text-[10px] text-muted-foreground">
+                                    Stunde {periodLabel}
+                                  </span>
+                                  {times && (
+                                    <span className="text-[10px] text-muted-foreground/70">
+                                      {times.start} - {LESSON_TIMES[slot.isDouble ? slot.period + 1 : slot.period]?.end || times.end}
+                                    </span>
+                                  )}
+                                  {slot.room && (
+                                    <span className="text-[10px] text-muted-foreground/70">
+                                      · {slot.room}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              {/* Status Buttons */}
+                              <div className="flex gap-1">
+                                <Button 
+                                  variant={slot.status === 'eva' ? 'default' : 'outline'} 
+                                  size="sm"
+                                  className={`h-7 text-[10px] px-2 ${slot.status === 'eva' ? 'bg-amber-500 hover:bg-amber-600' : ''}`}
+                                  onClick={() => toggleSlotEva(slot)}
+                                >
+                                  EVA
+                                </Button>
+                                <Button 
+                                  variant={slot.status === 'absent' ? 'destructive' : 'outline'}
+                                  size="sm"
+                                  className="h-7 text-[10px] px-2"
+                                  onClick={() => toggleSlotAbsent(slot)}
+                                >
+                                  <AlertCircle className="w-3 h-3 mr-0.5" strokeWidth={1.5} />
+                                  Gefehlt
+                                </Button>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </div>
                 )}
               </TabsContent>

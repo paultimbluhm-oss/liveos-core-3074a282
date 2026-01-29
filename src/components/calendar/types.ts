@@ -57,10 +57,8 @@ export const LESSON_TIMES: Record<number, { start: string; end: string }> = {
   4: { start: '10:35', end: '11:20' },
   5: { start: '11:40', end: '12:25' },
   6: { start: '12:25', end: '13:10' },
-  7: { start: '14:15', end: '15:00' },
-  8: { start: '15:00', end: '15:45' },
-  9: { start: '15:45', end: '16:30' },
-  10: { start: '16:30', end: '17:15' },
+  8: { start: '14:15', end: '15:00' },
+  9: { start: '15:00', end: '15:45' },
 };
 
 export const DEFAULT_CALENDAR_COLORS = [
