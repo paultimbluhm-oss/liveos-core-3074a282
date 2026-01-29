@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { AlertTriangle, Trash2, Key } from 'lucide-react';
+import { AlertTriangle, Trash2 } from 'lucide-react';
+
 import { toast } from 'sonner';
 
 interface DeleteCourseDialogProps {
@@ -25,7 +26,7 @@ export function DeleteCourseDialog({
   onDeleted 
 }: DeleteCourseDialogProps) {
   const { user } = useAuth();
-  const { verifyCode, requestCode, hasRequestedCode } = useAdminDelete();
+  const { verifyCode } = useAdminDelete();
   const [inputCode, setInputCode] = useState('');
   const [confirmText, setConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
@@ -97,9 +98,7 @@ export function DeleteCourseDialog({
           <div className="space-y-4">
             <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30">
               <p className="text-xs text-destructive">
-                {hasRequestedCode 
-                  ? 'Gib den Loesch-Code ein, den du zuvor angefordert hast.'
-                  : 'Fordere zuerst den Loesch-Code an. Er wird nur einmal angezeigt!'}
+                Gib den Admin-Code ein, um fortzufahren.
               </p>
             </div>
             
@@ -114,27 +113,14 @@ export function DeleteCourseDialog({
               />
             </div>
             
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="flex-1 text-xs"
-                onClick={requestCode}
-                disabled={hasRequestedCode}
-              >
-                <Key className="w-3 h-3 mr-1" strokeWidth={1.5} />
-                {hasRequestedCode ? 'Code angefordert' : 'Code anfordern'}
-              </Button>
-              <Button 
-                variant="destructive" 
-                size="sm" 
-                className="flex-1 text-xs"
-                onClick={handleVerifyCode}
-                disabled={inputCode.length !== 6}
-              >
-                Weiter
-              </Button>
-            </div>
+            <Button 
+              variant="destructive" 
+              className="w-full"
+              onClick={handleVerifyCode}
+              disabled={inputCode.length !== 6}
+            >
+              Weiter
+            </Button>
           </div>
         ) : (
           <div className="space-y-4">
