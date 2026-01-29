@@ -313,48 +313,62 @@ export default function Schule() {
     }
   };
 
-  // Clean up duplicate timetable entries
+  // Clean up duplicate timetable entries - ONLY removes true duplicates
+  // Does NOT delete course entries in favor of free periods
   const cleanupDuplicateEntries = async () => {
     if (!user) return;
     
-    // Get all entries for this user
+    // Get all entries for this user, sorted by created_at ascending (oldest first)
     const { data: entries } = await supabase
       .from('timetable_entries')
       .select('id, day_of_week, period, course_id, week_type, created_at')
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: true });
     
     if (!entries) return;
     
-    // Find duplicates (same day + period + week_type)
-    const seen = new Map<string, string>();
-    const toDelete: string[] = [];
+    // Group entries by slot (day + period + week_type)
+    // We want to keep entries with course_id and only remove true duplicates
+    const slotGroups = new Map<string, typeof entries>();
     
     for (const entry of entries) {
       const key = `${entry.day_of_week}-${entry.period}-${entry.week_type || 'both'}`;
-      if (seen.has(key)) {
-        // Keep the one with course_id if possible, otherwise keep the newest
-        const existingId = seen.get(key)!;
-        const existingEntry = entries.find(e => e.id === existingId);
-        
-        if (entry.course_id && !existingEntry?.course_id) {
-          // Current entry has course, existing doesn't - delete existing
-          toDelete.push(existingId);
-          seen.set(key, entry.id);
-        } else {
-          // Delete current (older or no course)
+      if (!slotGroups.has(key)) {
+        slotGroups.set(key, []);
+      }
+      slotGroups.get(key)!.push(entry);
+    }
+    
+    const toDelete: string[] = [];
+    
+    for (const [, slotEntries] of slotGroups) {
+      if (slotEntries.length <= 1) continue;
+      
+      // Separate entries with course_id and without (free periods)
+      const withCourse = slotEntries.filter(e => e.course_id);
+      const withoutCourse = slotEntries.filter(e => !e.course_id);
+      
+      // Priority: Keep course entries, delete duplicates
+      if (withCourse.length > 0) {
+        // Keep the first (oldest) course entry, delete all others
+        for (let i = 1; i < withCourse.length; i++) {
+          toDelete.push(withCourse[i].id);
+        }
+        // Delete ALL free period entries at the same slot (course takes priority)
+        for (const entry of withoutCourse) {
           toDelete.push(entry.id);
         }
       } else {
-        seen.set(key, entry.id);
+        // No course entries - keep the first free period, delete duplicates
+        for (let i = 1; i < withoutCourse.length; i++) {
+          toDelete.push(withoutCourse[i].id);
+        }
       }
     }
     
     // Delete duplicates
     if (toDelete.length > 0) {
-      for (const id of toDelete) {
-        await supabase.from('timetable_entries').delete().eq('id', id);
-      }
+      await supabase.from('timetable_entries').delete().in('id', toDelete);
     }
   };
   
@@ -669,8 +683,18 @@ export default function Schule() {
   });
 
   // Build timetable grid with double lesson detection
+  // Now considers week_type to show the correct entry for A/B weeks
   const getEntry = (day: number, period: number) => {
-    return timetableEntries.find(e => e.day_of_week === day && e.period === period);
+    // First try to find an entry matching the current week type
+    const matchingWeekType = timetableEntries.find(e => 
+      e.day_of_week === day && 
+      e.period === period && 
+      (e.week_type === 'both' || 
+       (weekType === 'A' && e.week_type === 'odd') || 
+       (weekType === 'B' && e.week_type === 'even'))
+    );
+    
+    return matchingWeekType;
   };
 
   // Helper to check if entry is a free period
