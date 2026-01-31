@@ -90,37 +90,44 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
         if (courseGrades.length === 0) {
           averages[course.id] = null;
         } else {
-          const oralGrades = courseGrades.filter(g => g.grade_type === 'oral');
-          const writtenGrades = courseGrades.filter(g => g.grade_type === 'written');
-          const practicalGrades = courseGrades.filter(g => g.grade_type === 'practical');
+          // Prüfe ob es eine Halbjahresnote gibt
+          const semesterGrade = courseGrades.find(g => g.grade_type === 'semester');
+          if (semesterGrade) {
+            averages[course.id] = semesterGrade.points;
+          } else {
+            // Berechne gewichteten Durchschnitt
+            const oralGrades = courseGrades.filter(g => g.grade_type === 'oral');
+            const writtenGrades = courseGrades.filter(g => g.grade_type === 'written');
+            const practicalGrades = courseGrades.filter(g => g.grade_type === 'practical');
 
-          const oralAvg = oralGrades.length > 0 
-            ? oralGrades.reduce((sum, g) => sum + g.points, 0) / oralGrades.length 
-            : null;
-          const writtenAvg = writtenGrades.length > 0 
-            ? writtenGrades.reduce((sum, g) => sum + g.points, 0) / writtenGrades.length 
-            : null;
-          const practicalAvg = practicalGrades.length > 0 
-            ? practicalGrades.reduce((sum, g) => sum + g.points, 0) / practicalGrades.length 
-            : null;
+            const oralAvg = oralGrades.length > 0 
+              ? oralGrades.reduce((sum, g) => sum + g.points, 0) / oralGrades.length 
+              : null;
+            const writtenAvg = writtenGrades.length > 0 
+              ? writtenGrades.reduce((sum, g) => sum + g.points, 0) / writtenGrades.length 
+              : null;
+            const practicalAvg = practicalGrades.length > 0 
+              ? practicalGrades.reduce((sum, g) => sum + g.points, 0) / practicalGrades.length 
+              : null;
 
-          let totalWeight = 0;
-          let weightedSum = 0;
+            let totalWeight = 0;
+            let weightedSum = 0;
 
-          if (oralAvg !== null) {
-            weightedSum += oralAvg * course.oral_weight;
-            totalWeight += course.oral_weight;
+            if (oralAvg !== null) {
+              weightedSum += oralAvg * course.oral_weight;
+              totalWeight += course.oral_weight;
+            }
+            if (writtenAvg !== null) {
+              weightedSum += writtenAvg * course.written_weight;
+              totalWeight += course.written_weight;
+            }
+            if (practicalAvg !== null && course.has_practical) {
+              weightedSum += practicalAvg * course.practical_weight;
+              totalWeight += course.practical_weight;
+            }
+
+            averages[course.id] = totalWeight > 0 ? Math.round((weightedSum / totalWeight) * 10) / 10 : null;
           }
-          if (writtenAvg !== null) {
-            weightedSum += writtenAvg * course.written_weight;
-            totalWeight += course.written_weight;
-          }
-          if (practicalAvg !== null && course.has_practical) {
-            weightedSum += practicalAvg * course.practical_weight;
-            totalWeight += course.practical_weight;
-          }
-
-          averages[course.id] = totalWeight > 0 ? Math.round((weightedSum / totalWeight) * 10) / 10 : null;
         }
       });
       setCourseAverages(averages);
