@@ -2975,6 +2975,7 @@ export type Database = {
           created_at: string
           grade_level: number
           id: string
+          school_id: string | null
           school_year_id: string
           semester: number
         }
@@ -2982,6 +2983,7 @@ export type Database = {
           created_at?: string
           grade_level: number
           id?: string
+          school_id?: string | null
           school_year_id: string
           semester: number
         }
@@ -2989,10 +2991,18 @@ export type Database = {
           created_at?: string
           grade_level?: number
           id?: string
+          school_id?: string | null
           school_year_id?: string
           semester?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "year_semesters_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "year_semesters_school_year_id_fkey"
             columns: ["school_year_id"]
