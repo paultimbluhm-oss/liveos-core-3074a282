@@ -16,6 +16,14 @@ export interface SchoolYear {
   created_at: string;
 }
 
+export interface YearSemester {
+  id: string;
+  school_year_id: string;
+  grade_level: number;
+  semester: 1 | 2;
+  created_at: string;
+}
+
 export interface Class {
   id: string;
   school_year_id: string;
@@ -41,6 +49,7 @@ export interface ClassMember {
 export interface Course {
   id: string;
   school_year_id: string;
+  semester_id: string | null;
   class_id: string | null;
   name: string;
   short_name: string | null;

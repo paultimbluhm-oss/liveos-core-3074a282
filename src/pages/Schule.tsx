@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useSchoolContext } from '@/hooks/useSchoolContext';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { GraduationCap, Settings, Users, Plus, UserPlus, ChevronLeft, ChevronRight, BookOpen, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,7 @@ import { SchoolSettingsDialog } from '@/components/schule/schools/SchoolSettings
 import { CreateCourseDialog } from '@/components/schule/schools/CreateCourseDialog';
 import { EditCourseDialog } from '@/components/schule/schools/EditCourseDialog';
 import { SchoolTabsDrawer } from '@/components/schule/SchoolTabsDrawer';
+import { SchoolFilterDropdowns } from '@/components/schule/schools/SchoolFilterDropdowns';
 import { Course, CourseTimetableSlot } from '@/components/schule/schools/types';
 import { LESSON_TIMES } from '@/components/calendar/types';
 import { toast } from 'sonner';
@@ -65,11 +67,23 @@ const PERIODS = [1, 2, 3, 4, 5, 6, 8, 9];
 export default function Schule() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const {
+    selectedSchool,
+    selectedYear,
+    gradeLevel,
+    semester,
+    selectedClassId,
+    setGradeLevel,
+    setSemester,
+    setSelectedClassId,
+    availableClasses,
+    getOrCreateSemester,
+    loading: contextLoading,
+    refetch: refetchContext,
+  } = useSchoolContext();
+  
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [selectedSchool, setSelectedSchool] = useState<SchoolInfo | null>(null);
-  const [selectedYear, setSelectedYear] = useState<YearInfo | null>(null);
-  const [selectedClass, setSelectedClass] = useState<ClassInfo | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
   
   // Week navigation
@@ -111,49 +125,12 @@ export default function Schule() {
     }
   }, [user, loading, navigate]);
 
-  const fetchUserSchool = async () => {
-    if (!user) return;
-    
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('selected_school_id, selected_school_year_id, selected_class_id')
-      .eq('user_id', user.id)
-      .single();
-    
-    if (profile?.selected_school_id) {
-      const { data: school } = await supabase
-        .from('schools')
-        .select('id, name, short_name')
-        .eq('id', profile.selected_school_id)
-        .single();
-      
-      if (school) setSelectedSchool(school);
-      
-      if (profile.selected_school_year_id) {
-        const { data: year } = await supabase
-          .from('school_years')
-          .select('id, name, year_number')
-          .eq('id', profile.selected_school_year_id)
-          .single();
-        
-        if (year) setSelectedYear(year);
-      }
-      
-      if (profile.selected_class_id) {
-        const { data: cls } = await supabase
-          .from('classes')
-          .select('id, name')
-          .eq('id', profile.selected_class_id)
-          .single();
-        
-        if (cls) setSelectedClass(cls);
-      } else {
-        setSelectedClass(null);
-      }
+  // Use context loading instead of local fetch
+  useEffect(() => {
+    if (!contextLoading) {
+      setDataLoading(false);
     }
-    
-    setDataLoading(false);
-  };
+  }, [contextLoading]);
 
   const fetchTimetable = async () => {
     if (!user) return;
@@ -257,14 +234,29 @@ export default function Schule() {
   const fetchCourses = async () => {
     if (!user || !selectedYear) return;
     
+    // First, get the semester_id for the current grade level and semester
+    const { data: semesterData } = await supabase
+      .from('year_semesters')
+      .select('id')
+      .eq('school_year_id', selectedYear.id)
+      .eq('grade_level', gradeLevel)
+      .eq('semester', semester)
+      .maybeSingle();
+    
     let query = supabase
       .from('courses')
       .select('*')
       .eq('school_year_id', selectedYear.id)
       .order('name');
     
-    if (selectedClass) {
-      query = query.or(`class_id.eq.${selectedClass.id},class_id.is.null`);
+    // Filter by semester_id if exists, or show courses without semester_id
+    if (semesterData) {
+      query = query.or(`semester_id.eq.${semesterData.id},semester_id.is.null`);
+    }
+    
+    // Filter by class
+    if (selectedClassId) {
+      query = query.or(`class_id.eq.${selectedClassId},class_id.is.null`);
     }
     
     const { data: coursesData } = await query;
@@ -425,9 +417,7 @@ export default function Schule() {
     }
   };
 
-  useEffect(() => {
-    fetchUserSchool();
-  }, [user]);
+  // Context loading is handled by useSchoolContext
 
   useEffect(() => {
     if (user) {
@@ -448,7 +438,7 @@ export default function Schule() {
       // First cleanup duplicate courses, then fetch
       cleanupDuplicateCourses().then(() => fetchCourses());
     }
-  }, [selectedYear, selectedClass, user]);
+  }, [selectedYear, selectedClassId, gradeLevel, semester, user]);
 
   // Week navigation
   const goToPrevWeek = () => setCurrentWeekStart(subWeeks(currentWeekStart, 1));
@@ -796,7 +786,6 @@ export default function Schule() {
                   <h1 className="text-base font-bold leading-tight">{selectedSchool.short_name || selectedSchool.name}</h1>
                   <p className="text-[11px] text-muted-foreground">
                     {selectedYear?.name}
-                    {selectedClass && ` · ${selectedClass.name}`}
                   </p>
                 </>
               ) : (
@@ -804,6 +793,19 @@ export default function Schule() {
               )}
             </div>
           </div>
+          
+          {/* Filter Dropdowns */}
+          {selectedYear && (
+            <SchoolFilterDropdowns
+              gradeLevel={gradeLevel}
+              semester={semester}
+              selectedClassId={selectedClassId}
+              availableClasses={availableClasses}
+              onGradeLevelChange={setGradeLevel}
+              onSemesterChange={setSemester}
+              onClassChange={setSelectedClassId}
+            />
+          )}
           <Button 
             variant="ghost" 
             size="icon" 
@@ -1148,7 +1150,7 @@ export default function Schule() {
         <SchoolSettingsDialog 
           open={settingsOpen}
           onOpenChange={setSettingsOpen}
-          onSchoolChanged={fetchUserSchool}
+          onSchoolChanged={refetchContext}
         />
         
         {selectedYear && (
@@ -1157,7 +1159,9 @@ export default function Schule() {
             onOpenChange={setCreateDialogOpen}
             schoolYearId={selectedYear.id}
             schoolId={selectedSchool?.id || ''}
-            userClassId={selectedClass?.id}
+            userClassId={selectedClassId || undefined}
+            gradeLevel={gradeLevel}
+            semester={semester}
             onCourseCreated={() => { fetchCourses(); fetchTimetable(); }}
           />
         )}

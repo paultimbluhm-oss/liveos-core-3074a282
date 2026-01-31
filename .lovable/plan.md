@@ -1,14 +1,19 @@
 
 # Schulsystem Redesign - Jahrgang, Halbjahr & Klassen-Filter
 
-## Analyse des aktuellen Systems
+## Status: Phase 1 Abgeschlossen
 
-Das aktuelle System funktioniert wie folgt:
-- Nutzer waehlt **Schule** > **Abi-Jahrgang** (z.B. "Abitur 2026") > **Klasse** (optional)
-- Kurse werden fuer einen Abi-Jahrgang erstellt
-- Schueler waehlen ihre Kurse individuell
-- Jeder Schueler hat seinen eigenen Stundenplan basierend auf den gewaehlten Kursen
-- Klassen sind optional und dienen der Filterung von klassenspezifischen Kursen
+### Erledigte Aufgaben:
+- [x] Datenbank-Migration: `year_semesters` Tabelle erstellt
+- [x] Datenbank-Migration: `courses.semester_id` Spalte hinzugefuegt
+- [x] Datenbank-Migration: `profiles.current_grade_level` + `profiles.current_semester` hinzugefuegt
+- [x] Frontend: `useSchoolContext` Hook erstellt
+- [x] Frontend: `SchoolFilterDropdowns` Komponente erstellt
+- [x] Frontend: `Schule.tsx` mit Dropdowns im Header aktualisiert
+- [x] Frontend: `CreateCourseDialog` mit semester_id Integration aktualisiert
+- [x] Frontend: `types.ts` mit `YearSemester` Interface erweitert
+
+## Analyse des aktuellen Systems
 
 ## Neue Struktur
 
