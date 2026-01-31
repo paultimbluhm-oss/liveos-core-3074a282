@@ -10,3 +10,4 @@ export * from './CoursesList';
 export * from './CourseDetailView';
 export * from './DeleteCourseDialog';
 export * from './DeleteSchoolDialog';
+export * from './SchoolFilterDropdowns';

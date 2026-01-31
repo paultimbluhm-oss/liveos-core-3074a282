@@ -770,6 +770,7 @@ export type Database = {
           oral_weight: number | null
           room: string | null
           school_year_id: string
+          semester_id: string | null
           short_name: string | null
           teacher_name: string | null
           written_weight: number | null
@@ -785,6 +786,7 @@ export type Database = {
           oral_weight?: number | null
           room?: string | null
           school_year_id: string
+          semester_id?: string | null
           short_name?: string | null
           teacher_name?: string | null
           written_weight?: number | null
@@ -800,6 +802,7 @@ export type Database = {
           oral_weight?: number | null
           room?: string | null
           school_year_id?: string
+          semester_id?: string | null
           short_name?: string | null
           teacher_name?: string | null
           written_weight?: number | null
@@ -817,6 +820,13 @@ export type Database = {
             columns: ["school_year_id"]
             isOneToOne: false
             referencedRelation: "school_years"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "courses_semester_id_fkey"
+            columns: ["semester_id"]
+            isOneToOne: false
+            referencedRelation: "year_semesters"
             referencedColumns: ["id"]
           },
         ]
@@ -1974,6 +1984,8 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string | null
+          current_grade_level: number | null
+          current_semester: number | null
           display_name: string | null
           id: string
           last_active_date: string | null
@@ -1990,6 +2002,8 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string | null
+          current_grade_level?: number | null
+          current_semester?: number | null
           display_name?: string | null
           id?: string
           last_active_date?: string | null
@@ -2006,6 +2020,8 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string | null
+          current_grade_level?: number | null
+          current_semester?: number | null
           display_name?: string | null
           id?: string
           last_active_date?: string | null
@@ -2947,6 +2963,38 @@ export type Database = {
             columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      year_semesters: {
+        Row: {
+          created_at: string
+          grade_level: number
+          id: string
+          school_year_id: string
+          semester: number
+        }
+        Insert: {
+          created_at?: string
+          grade_level: number
+          id?: string
+          school_year_id: string
+          semester: number
+        }
+        Update: {
+          created_at?: string
+          grade_level?: number
+          id?: string
+          school_year_id?: string
+          semester?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "year_semesters_school_year_id_fkey"
+            columns: ["school_year_id"]
+            isOneToOne: false
+            referencedRelation: "school_years"
             referencedColumns: ["id"]
           },
         ]

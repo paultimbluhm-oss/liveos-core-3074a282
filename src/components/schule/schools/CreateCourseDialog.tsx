@@ -64,6 +64,8 @@ interface CreateCourseDialogProps {
   schoolYearId: string;
   schoolId: string;
   userClassId?: string;
+  gradeLevel?: number;
+  semester?: 1 | 2;
   onCourseCreated: () => void;
 }
 
@@ -73,6 +75,8 @@ export function CreateCourseDialog({
   schoolYearId, 
   schoolId,
   userClassId,
+  gradeLevel = 12,
+  semester = 1,
   onCourseCreated 
 }: CreateCourseDialogProps) {
   const { user } = useAuth();
@@ -234,9 +238,38 @@ export function CreateCourseDialog({
     // Determine class_id based on visibility
     const courseClassId = visibilityType === 'class' ? selectedClassId : null;
     
+    // Get or create semester_id
+    let semesterId: string | null = null;
+    const { data: existingSemester } = await supabase
+      .from('year_semesters')
+      .select('id')
+      .eq('school_year_id', schoolYearId)
+      .eq('grade_level', gradeLevel)
+      .eq('semester', semester)
+      .maybeSingle();
+    
+    if (existingSemester) {
+      semesterId = existingSemester.id;
+    } else {
+      const { data: newSemester } = await supabase
+        .from('year_semesters')
+        .insert({
+          school_year_id: schoolYearId,
+          grade_level: gradeLevel,
+          semester: semester,
+        })
+        .select()
+        .single();
+      
+      if (newSemester) {
+        semesterId = newSemester.id;
+      }
+    }
+    
     // Create course
     const { data: courseData, error } = await supabase.from('courses').insert({
       school_year_id: schoolYearId,
+      semester_id: semesterId,
       class_id: courseClassId || null,
       name: name,
       short_name: shortName || null,
