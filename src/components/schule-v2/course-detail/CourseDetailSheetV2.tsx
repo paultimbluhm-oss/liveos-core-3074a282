@@ -1,0 +1,362 @@
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { V2Course, V2Grade, V2CourseFeedItem } from '../types';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Plus, BookOpen, GraduationCap, Calendar } from 'lucide-react';
+import { format } from 'date-fns';
+import { de } from 'date-fns/locale';
+
+interface CourseDetailSheetV2Props {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  course: V2Course | null;
+}
+
+export function CourseDetailSheetV2({ open, onOpenChange, course }: CourseDetailSheetV2Props) {
+  const { user } = useAuth();
+  
+  const [grades, setGrades] = useState<V2Grade[]>([]);
+  const [feed, setFeed] = useState<V2CourseFeedItem[]>([]);
+  const [addGradeOpen, setAddGradeOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  // Load grades and feed when course changes
+  useEffect(() => {
+    const loadData = async () => {
+      if (!user || !course) return;
+
+      setLoading(true);
+
+      // Load grades
+      const { data: gradesData } = await supabase
+        .from('v2_grades')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('course_id', course.id)
+        .order('created_at', { ascending: false });
+
+      setGrades((gradesData || []).map(g => ({
+        ...g,
+        grade_type: g.grade_type as 'oral' | 'written' | 'practical',
+      })));
+
+      // Load feed
+      const { data: feedData } = await supabase
+        .from('v2_course_feed')
+        .select('*')
+        .eq('course_id', course.id)
+        .order('created_at', { ascending: false });
+
+      setFeed((feedData || []).map(f => ({
+        ...f,
+        type: f.type as 'homework' | 'info' | 'event',
+        priority: f.priority as 'low' | 'normal' | 'high',
+      })));
+
+      setLoading(false);
+    };
+
+    if (open && course) {
+      loadData();
+    }
+  }, [open, course, user]);
+
+  // Calculate average
+  const calculateAverage = () => {
+    if (!course || grades.length === 0) return null;
+
+    const oralGrades = grades.filter(g => g.grade_type === 'oral');
+    const writtenGrades = grades.filter(g => g.grade_type === 'written');
+    const practicalGrades = grades.filter(g => g.grade_type === 'practical');
+
+    const oralAvg = oralGrades.length > 0 
+      ? oralGrades.reduce((sum, g) => sum + g.points, 0) / oralGrades.length 
+      : null;
+    const writtenAvg = writtenGrades.length > 0 
+      ? writtenGrades.reduce((sum, g) => sum + g.points, 0) / writtenGrades.length 
+      : null;
+    const practicalAvg = practicalGrades.length > 0 
+      ? practicalGrades.reduce((sum, g) => sum + g.points, 0) / practicalGrades.length 
+      : null;
+
+    let totalWeight = 0;
+    let weightedSum = 0;
+
+    if (oralAvg !== null) {
+      weightedSum += oralAvg * course.oral_weight;
+      totalWeight += course.oral_weight;
+    }
+    if (writtenAvg !== null) {
+      weightedSum += writtenAvg * course.written_weight;
+      totalWeight += course.written_weight;
+    }
+    if (practicalAvg !== null && course.has_practical) {
+      weightedSum += practicalAvg * course.practical_weight;
+      totalWeight += course.practical_weight;
+    }
+
+    return totalWeight > 0 ? Math.round((weightedSum / totalWeight) * 10) / 10 : null;
+  };
+
+  const average = calculateAverage();
+
+  if (!course) return null;
+
+  return (
+    <>
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl">
+          <SheetHeader className="pb-4">
+            <div className="flex items-center gap-3">
+              <div 
+                className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-medium"
+                style={{ backgroundColor: course.color || '#6366f1' }}
+              >
+                {course.short_name || course.name.substring(0, 2)}
+              </div>
+              <div>
+                <SheetTitle>{course.name}</SheetTitle>
+                <p className="text-sm text-muted-foreground">
+                  {course.teacher_name || 'Kein Lehrer'} · {course.room || 'Kein Raum'}
+                </p>
+              </div>
+              {average !== null && (
+                <div className="ml-auto text-right">
+                  <div className="text-2xl font-bold">{average}</div>
+                  <div className="text-xs text-muted-foreground">Punkte</div>
+                </div>
+              )}
+            </div>
+          </SheetHeader>
+
+          <Tabs defaultValue="grades" className="flex-1">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="grades" className="gap-1.5">
+                <GraduationCap className="w-4 h-4" strokeWidth={1.5} />
+                Noten
+              </TabsTrigger>
+              <TabsTrigger value="feed" className="gap-1.5">
+                <BookOpen className="w-4 h-4" strokeWidth={1.5} />
+                Feed
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="grades" className="mt-4 space-y-4">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full"
+                onClick={() => setAddGradeOpen(true)}
+              >
+                <Plus className="w-4 h-4 mr-1" strokeWidth={1.5} />
+                Note hinzufügen
+              </Button>
+
+              {grades.length === 0 ? (
+                <div className="text-center py-8 text-sm text-muted-foreground">
+                  Noch keine Noten eingetragen
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {grades.map(grade => (
+                    <div 
+                      key={grade.id}
+                      className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
+                    >
+                      <div>
+                        <div className="font-medium text-sm">
+                          {grade.grade_type === 'oral' && 'Mündlich'}
+                          {grade.grade_type === 'written' && 'Schriftlich'}
+                          {grade.grade_type === 'practical' && 'Praxis'}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {grade.description || 'Keine Beschreibung'}
+                          {grade.date && ` · ${format(new Date(grade.date), 'd. MMM', { locale: de })}`}
+                        </div>
+                      </div>
+                      <div className="text-xl font-bold">{grade.points}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Gewichtung anzeigen */}
+              <div className="pt-4 border-t">
+                <div className="text-xs text-muted-foreground mb-2">Gewichtung</div>
+                <div className="flex gap-2 text-xs">
+                  <span className="px-2 py-1 rounded bg-muted">Mündlich: {course.oral_weight}%</span>
+                  <span className="px-2 py-1 rounded bg-muted">Schriftlich: {course.written_weight}%</span>
+                  {course.has_practical && (
+                    <span className="px-2 py-1 rounded bg-muted">Praxis: {course.practical_weight}%</span>
+                  )}
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="feed" className="mt-4">
+              {feed.length === 0 ? (
+                <div className="text-center py-8 text-sm text-muted-foreground">
+                  Noch keine Einträge
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {feed.map(item => (
+                    <div 
+                      key={item.id}
+                      className="p-3 rounded-lg bg-muted/50"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <div className="font-medium text-sm">{item.title}</div>
+                          {item.description && (
+                            <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
+                          )}
+                        </div>
+                        {item.due_date && (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Calendar className="w-3 h-3" strokeWidth={1.5} />
+                            {format(new Date(item.due_date), 'd.M.', { locale: de })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        </SheetContent>
+      </Sheet>
+
+      <AddGradeDialogV2 
+        open={addGradeOpen}
+        onOpenChange={setAddGradeOpen}
+        course={course}
+        onAdded={(grade) => setGrades(prev => [grade, ...prev])}
+      />
+    </>
+  );
+}
+
+// Inline Add Grade Dialog
+interface AddGradeDialogV2Props {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  course: V2Course;
+  onAdded: (grade: V2Grade) => void;
+}
+
+function AddGradeDialogV2({ open, onOpenChange, course, onAdded }: AddGradeDialogV2Props) {
+  const { user } = useAuth();
+  
+  const [gradeType, setGradeType] = useState<'oral' | 'written' | 'practical'>('oral');
+  const [points, setPoints] = useState<number>(10);
+  const [description, setDescription] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleAdd = async () => {
+    if (!user) return;
+
+    setLoading(true);
+
+    const { data, error } = await supabase
+      .from('v2_grades')
+      .insert({
+        user_id: user.id,
+        course_id: course.id,
+        grade_type: gradeType,
+        points,
+        description: description.trim() || null,
+        date: new Date().toISOString().split('T')[0],
+      })
+      .select()
+      .single();
+
+    if (!error && data) {
+      onAdded({
+        ...data,
+        grade_type: data.grade_type as 'oral' | 'written' | 'practical',
+      });
+      setGradeType('oral');
+      setPoints(10);
+      setDescription('');
+      onOpenChange(false);
+    }
+
+    setLoading(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Note hinzufügen</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label>Typ</Label>
+            <Select value={gradeType} onValueChange={(v) => setGradeType(v as any)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="oral">Mündlich</SelectItem>
+                <SelectItem value="written">Schriftlich</SelectItem>
+                {course.has_practical && (
+                  <SelectItem value="practical">Praxis</SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Punkte (0-15)</Label>
+            <div className="flex items-center gap-4">
+              <Input 
+                type="number"
+                value={points}
+                onChange={(e) => setPoints(Math.max(0, Math.min(15, parseInt(e.target.value) || 0)))}
+                min={0}
+                max={15}
+                className="w-20"
+              />
+              <div className="flex-1 flex gap-1">
+                {[0, 5, 10, 15].map(p => (
+                  <Button 
+                    key={p}
+                    variant={points === p ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setPoints(p)}
+                  >
+                    {p}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Beschreibung (optional)</Label>
+            <Input 
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="z.B. Klausur 1"
+            />
+          </div>
+
+          <Button onClick={handleAdd} disabled={loading} className="w-full">
+            Hinzufügen
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

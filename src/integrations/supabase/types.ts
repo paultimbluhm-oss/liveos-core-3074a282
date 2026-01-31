@@ -2970,6 +2970,354 @@ export type Database = {
           },
         ]
       }
+      v2_absences: {
+        Row: {
+          course_id: string
+          created_at: string
+          date: string
+          id: string
+          is_eva: boolean
+          notes: string | null
+          status: string
+          timetable_slot_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          date: string
+          id?: string
+          is_eva?: boolean
+          notes?: string | null
+          status?: string
+          timetable_slot_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          date?: string
+          id?: string
+          is_eva?: boolean
+          notes?: string | null
+          status?: string
+          timetable_slot_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "v2_absences_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v2_courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "v2_absences_timetable_slot_id_fkey"
+            columns: ["timetable_slot_id"]
+            isOneToOne: false
+            referencedRelation: "v2_timetable_slots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v2_course_feed: {
+        Row: {
+          course_id: string
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          priority: string | null
+          shared_by: string
+          title: string
+          type: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string | null
+          shared_by: string
+          title: string
+          type: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string | null
+          shared_by?: string
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "v2_course_feed_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v2_courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v2_course_members: {
+        Row: {
+          course_id: string
+          id: string
+          joined_at: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          course_id: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          course_id?: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "v2_course_members_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v2_courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v2_courses: {
+        Row: {
+          class_name: string | null
+          color: string | null
+          created_at: string
+          created_by: string
+          grade_level: number
+          has_oral: boolean
+          has_practical: boolean
+          has_written: boolean
+          id: string
+          name: string
+          oral_weight: number
+          practical_weight: number
+          room: string | null
+          school_id: string
+          semester: number
+          short_name: string | null
+          teacher_name: string | null
+          written_weight: number
+        }
+        Insert: {
+          class_name?: string | null
+          color?: string | null
+          created_at?: string
+          created_by: string
+          grade_level: number
+          has_oral?: boolean
+          has_practical?: boolean
+          has_written?: boolean
+          id?: string
+          name: string
+          oral_weight?: number
+          practical_weight?: number
+          room?: string | null
+          school_id: string
+          semester: number
+          short_name?: string | null
+          teacher_name?: string | null
+          written_weight?: number
+        }
+        Update: {
+          class_name?: string | null
+          color?: string | null
+          created_at?: string
+          created_by?: string
+          grade_level?: number
+          has_oral?: boolean
+          has_practical?: boolean
+          has_written?: boolean
+          id?: string
+          name?: string
+          oral_weight?: number
+          practical_weight?: number
+          room?: string | null
+          school_id?: string
+          semester?: number
+          short_name?: string | null
+          teacher_name?: string | null
+          written_weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "v2_courses_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "v2_schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v2_grades: {
+        Row: {
+          course_id: string
+          created_at: string
+          date: string | null
+          description: string | null
+          grade_type: string
+          id: string
+          points: number
+          user_id: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          date?: string | null
+          description?: string | null
+          grade_type: string
+          id?: string
+          points: number
+          user_id: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          date?: string | null
+          description?: string | null
+          grade_type?: string
+          id?: string
+          points?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "v2_grades_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v2_courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v2_school_memberships: {
+        Row: {
+          abitur_year: number
+          current_class_name: string
+          current_grade_level: number
+          current_semester: number
+          id: string
+          joined_at: string
+          school_id: string
+          user_id: string
+        }
+        Insert: {
+          abitur_year: number
+          current_class_name?: string
+          current_grade_level?: number
+          current_semester?: number
+          id?: string
+          joined_at?: string
+          school_id: string
+          user_id: string
+        }
+        Update: {
+          abitur_year?: number
+          current_class_name?: string
+          current_grade_level?: number
+          current_semester?: number
+          id?: string
+          joined_at?: string
+          school_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "v2_school_memberships_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "v2_schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v2_schools: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+          short_name: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          name: string
+          short_name?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
+          short_name?: string | null
+        }
+        Relationships: []
+      }
+      v2_timetable_slots: {
+        Row: {
+          course_id: string
+          created_at: string
+          day_of_week: number
+          id: string
+          is_double_lesson: boolean
+          period: number
+          room: string | null
+          week_type: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          day_of_week: number
+          id?: string
+          is_double_lesson?: boolean
+          period: number
+          room?: string | null
+          week_type?: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          day_of_week?: number
+          id?: string
+          is_double_lesson?: boolean
+          period?: number
+          room?: string | null
+          week_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "v2_timetable_slots_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v2_courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       year_semesters: {
         Row: {
           created_at: string

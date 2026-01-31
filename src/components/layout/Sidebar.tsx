@@ -29,6 +29,7 @@ import {
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/schule', icon: GraduationCap, label: 'Schule' },
+  { to: '/schule-v2', icon: GraduationCap, label: 'Schule V2' },
   { to: '/privat', icon: User, label: 'Privat' },
   { to: '/business', icon: Briefcase, label: 'Business' },
   { to: '/freunde', icon: Users, label: 'Freunde' },
@@ -37,6 +38,7 @@ const navItems = [
 const getPageTitle = (pathname: string): string => {
   if (pathname === '/') return 'Dashboard';
   if (pathname === '/schule') return 'Schule';
+  if (pathname === '/schule-v2') return 'Schule V2';
   if (pathname === '/privat') return 'Privat';
   if (pathname === '/business') return 'Business';
   if (pathname === '/freunde') return 'Freunde';
