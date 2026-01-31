@@ -1991,6 +1991,7 @@ export type Database = {
           last_active_date: string | null
           level: number | null
           selected_class_id: string | null
+          selected_class_name: string | null
           selected_school_id: string | null
           selected_school_year_id: string | null
           streak_days: number | null
@@ -2009,6 +2010,7 @@ export type Database = {
           last_active_date?: string | null
           level?: number | null
           selected_class_id?: string | null
+          selected_class_name?: string | null
           selected_school_id?: string | null
           selected_school_year_id?: string | null
           streak_days?: number | null
@@ -2027,6 +2029,7 @@ export type Database = {
           last_active_date?: string | null
           level?: number | null
           selected_class_id?: string | null
+          selected_class_name?: string | null
           selected_school_id?: string | null
           selected_school_year_id?: string | null
           streak_days?: number | null

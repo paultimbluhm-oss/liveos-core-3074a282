@@ -63,7 +63,7 @@ interface CreateCourseDialogProps {
   onOpenChange: (open: boolean) => void;
   schoolYearId: string;
   schoolId: string;
-  userClassId?: string;
+  userClassName?: string; // Class name (A, B, C, D, E)
   gradeLevel?: number;
   semester?: 1 | 2;
   onCourseCreated: () => void;
@@ -74,7 +74,7 @@ export function CreateCourseDialog({
   onOpenChange, 
   schoolYearId, 
   schoolId,
-  userClassId,
+  userClassName,
   gradeLevel = 12,
   semester = 1,
   onCourseCreated 
@@ -113,16 +113,25 @@ export function CreateCourseDialog({
     if (open && schoolId) {
       fetchSchoolSubjects();
       fetchClasses();
-      // Default: if user has a class, pre-select class visibility
-      if (userClassId) {
+    }
+  }, [open, schoolId]);
+  
+  // Pre-select class visibility when user has a class selected and classes are loaded
+  useEffect(() => {
+    if (availableClasses.length > 0 && userClassName) {
+      const matchingClass = availableClasses.find(c => c.name === userClassName);
+      if (matchingClass) {
         setVisibilityType('class');
-        setSelectedClassId(userClassId);
+        setSelectedClassId(matchingClass.id);
       } else {
         setVisibilityType('year');
         setSelectedClassId('');
       }
+    } else {
+      setVisibilityType('year');
+      setSelectedClassId('');
     }
-  }, [open, schoolId, userClassId]);
+  }, [availableClasses, userClassName]);
 
   const fetchClasses = async () => {
     if (!schoolYearId) return;
@@ -390,8 +399,20 @@ export function CreateCourseDialog({
     setOralWeight('50');
     setSlots([]);
     setShowSlotForm(false);
-    setVisibilityType(userClassId ? 'class' : 'year');
-    setSelectedClassId(userClassId || '');
+    // Reset visibility based on userClassName
+    if (userClassName) {
+      const matchingClass = availableClasses.find(c => c.name === userClassName);
+      if (matchingClass) {
+        setVisibilityType('class');
+        setSelectedClassId(matchingClass.id);
+      } else {
+        setVisibilityType('year');
+        setSelectedClassId('');
+      }
+    } else {
+      setVisibilityType('year');
+      setSelectedClassId('');
+    }
   };
 
   const subjectOptions = schoolSubjects.length > 0 
@@ -438,7 +459,9 @@ export function CreateCourseDialog({
                 className="flex-1 h-8 text-xs"
                 onClick={() => {
                   setVisibilityType('class');
-                  setSelectedClassId(userClassId || '');
+                  // Set to user's class if available
+                  const matchingClass = availableClasses.find(c => c.name === userClassName);
+                  setSelectedClassId(matchingClass?.id || '');
                 }}
               >
                 Nur Klasse

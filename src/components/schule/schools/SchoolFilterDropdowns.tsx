@@ -1,26 +1,27 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Class } from './types';
+
+// Fixed class names A-E
+const CLASS_NAMES = ['A', 'B', 'C', 'D', 'E'];
 
 interface SchoolFilterDropdownsProps {
   gradeLevel: number;
   semester: 1 | 2;
-  selectedClassId: string | null;
-  availableClasses: Class[];
+  selectedClassName: string;
   onGradeLevelChange: (level: number) => void;
   onSemesterChange: (sem: 1 | 2) => void;
-  onClassChange: (id: string | null) => void;
+  onClassNameChange: (name: string) => void;
 }
 
 export function SchoolFilterDropdowns({
   gradeLevel,
   semester,
-  selectedClassId,
-  availableClasses,
+  selectedClassName,
   onGradeLevelChange,
   onSemesterChange,
-  onClassChange,
+  onClassNameChange,
 }: SchoolFilterDropdownsProps) {
-  const gradeLevels = [13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
+  // Grade levels 1-12 (not 13, as the Abitur year is the reference point)
+  const gradeLevels = [12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
 
   return (
     <div className="flex items-center gap-1.5">
@@ -55,25 +56,22 @@ export function SchoolFilterDropdowns({
         </SelectContent>
       </Select>
 
-      {/* Class Filter */}
-      {availableClasses.length > 0 && (
-        <Select
-          value={selectedClassId || 'all'}
-          onValueChange={(val) => onClassChange(val === 'all' ? null : val)}
-        >
-          <SelectTrigger className="h-7 w-16 px-2 text-xs border-border/50">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Alle</SelectItem>
-            {availableClasses.map((cls) => (
-              <SelectItem key={cls.id} value={cls.id}>
-                {cls.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      )}
+      {/* Class Name (A, B, C, D, E) */}
+      <Select
+        value={selectedClassName}
+        onValueChange={onClassNameChange}
+      >
+        <SelectTrigger className="h-7 w-12 px-2 text-xs border-border/50">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {CLASS_NAMES.map((name) => (
+            <SelectItem key={name} value={name}>
+              {name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 }

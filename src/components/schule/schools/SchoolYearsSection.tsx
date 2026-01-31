@@ -6,10 +6,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Plus, GraduationCap, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Plus, GraduationCap, ChevronRight, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { School, SchoolYear } from './types';
 import { CoursesSection } from './CoursesSection';
+
+// Auto-generated classes for each school year
+const DEFAULT_CLASSES = ['A', 'B', 'C', 'D', 'E'];
 
 interface SchoolYearsSectionProps {
   school: School;
@@ -23,15 +26,15 @@ export function SchoolYearsSection({ school, onBack }: SchoolYearsSectionProps) 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedYear, setSelectedYear] = useState<SchoolYear | null>(null);
   
-  const [name, setName] = useState('');
-  const [yearNumber, setYearNumber] = useState('');
+  // Simplified: Only ask for Abitur year
+  const [abiYear, setAbiYear] = useState(new Date().getFullYear() + 2);
 
   const fetchYears = async () => {
     const { data, error } = await supabase
       .from('school_years')
       .select('*')
       .eq('school_id', school.id)
-      .order('year_number', { nullsFirst: false });
+      .order('year_number', { ascending: false, nullsFirst: false });
     
     if (!error && data) {
       setYears(data);
@@ -44,27 +47,42 @@ export function SchoolYearsSection({ school, onBack }: SchoolYearsSectionProps) 
   }, [school.id]);
 
   const handleCreate = async () => {
-    if (!user || !name.trim()) {
-      toast.error('Name erforderlich');
+    if (!user) {
+      toast.error('Nicht angemeldet');
       return;
     }
 
-    const { error } = await supabase.from('school_years').insert({
+    // Create school year with Abitur year
+    const { data: yearData, error } = await supabase.from('school_years').insert({
       school_id: school.id,
-      name: name.trim(),
-      year_number: yearNumber ? parseInt(yearNumber) : null,
+      name: `Abitur ${abiYear}`,
+      year_number: abiYear,
       created_by: user.id,
-    });
+    }).select().single();
 
     if (error) {
       toast.error('Fehler beim Erstellen');
-    } else {
-      toast.success('Jahrgang erstellt');
-      setDialogOpen(false);
-      setName('');
-      setYearNumber('');
-      fetchYears();
+      return;
     }
+
+    // Auto-generate classes A-E for this year
+    const classInserts = DEFAULT_CLASSES.map(cls => ({
+      school_year_id: yearData.id,
+      name: cls,
+      created_by: user.id,
+    }));
+
+    const { error: classError } = await supabase.from('classes').insert(classInserts);
+
+    if (classError) {
+      console.error('Error creating classes:', classError);
+      // Don't show error to user - classes are optional
+    }
+
+    toast.success('Jahrgang erstellt');
+    setDialogOpen(false);
+    setAbiYear(new Date().getFullYear() + 2);
+    fetchYears();
   };
 
   if (selectedYear) {
@@ -107,25 +125,21 @@ export function SchoolYearsSection({ school, onBack }: SchoolYearsSectionProps) 
             <DialogHeader>
               <DialogTitle>Jahrgang erstellen</DialogTitle>
             </DialogHeader>
-            <div className="space-y-3 pt-2">
+            <div className="space-y-4 pt-2">
               <div>
-                <Label className="text-xs">Name</Label>
-                <Input 
-                  value={name} 
-                  onChange={(e) => setName(e.target.value)} 
-                  placeholder="z.B. Abitur 2026"
-                  className="h-9"
-                />
-              </div>
-              <div>
-                <Label className="text-xs">Klassenstufe (optional)</Label>
+                <Label className="text-xs">Abitur-Jahr</Label>
                 <Input 
                   type="number"
-                  value={yearNumber} 
-                  onChange={(e) => setYearNumber(e.target.value)} 
-                  placeholder="z.B. 12"
+                  value={abiYear} 
+                  onChange={(e) => setAbiYear(parseInt(e.target.value) || new Date().getFullYear())} 
+                  placeholder="z.B. 2026"
                   className="h-9"
+                  min={2020}
+                  max={2050}
                 />
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Klassen A-E werden automatisch erstellt
+                </p>
               </div>
               <Button onClick={handleCreate} className="w-full">
                 Erstellen
@@ -151,14 +165,15 @@ export function SchoolYearsSection({ school, onBack }: SchoolYearsSectionProps) 
             >
               <CardContent className="p-3 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center text-white font-bold">
-                    {year.year_number || year.name[0]}
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center text-white font-bold text-sm">
+                    {year.year_number || '?'}
                   </div>
                   <div>
                     <p className="font-medium text-sm">{year.name}</p>
-                    {year.year_number && (
-                      <p className="text-[10px] text-muted-foreground">Klasse {year.year_number}</p>
-                    )}
+                    <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                      <Users className="w-3 h-3" />
+                      Klassen A-E
+                    </p>
                   </div>
                 </div>
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />

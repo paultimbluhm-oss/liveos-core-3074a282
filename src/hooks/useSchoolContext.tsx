@@ -22,10 +22,10 @@ export function useSchoolContext() {
   const [selectedSchool, setSelectedSchool] = useState<SchoolInfo | null>(null);
   const [selectedYear, setSelectedYear] = useState<YearInfo | null>(null);
   
-  // Filter states
+  // Filter states - grade levels 1-12 (not 13, as Abi year is the reference)
   const [gradeLevel, setGradeLevel] = useState<number>(12);
   const [semester, setSemester] = useState<1 | 2>(1);
-  const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+  const [selectedClassName, setSelectedClassName] = useState<string>('A'); // A, B, C, D, E
   
   // Current semester entity
   const [currentSemester, setCurrentSemester] = useState<YearSemester | null>(null);
@@ -41,7 +41,7 @@ export function useSchoolContext() {
     
     const { data: profile } = await supabase
       .from('profiles')
-      .select('selected_school_id, selected_school_year_id, selected_class_id, current_grade_level, current_semester')
+      .select('selected_school_id, selected_school_year_id, selected_class_name, current_grade_level, current_semester')
       .eq('user_id', user.id)
       .single();
     
@@ -53,8 +53,8 @@ export function useSchoolContext() {
       if (profile.current_semester) {
         setSemester(profile.current_semester as 1 | 2);
       }
-      if (profile.selected_class_id) {
-        setSelectedClassId(profile.selected_class_id);
+      if (profile.selected_class_name) {
+        setSelectedClassName(profile.selected_class_name);
       }
       
       if (profile.selected_school_id) {
@@ -164,7 +164,7 @@ export function useSchoolContext() {
   const updateProfileFilters = useCallback(async (
     newGradeLevel?: number,
     newSemester?: 1 | 2,
-    newClassId?: string | null
+    newClassName?: string
   ) => {
     if (!user) return;
     
@@ -180,9 +180,9 @@ export function useSchoolContext() {
       setSemester(newSemester);
     }
     
-    if (newClassId !== undefined) {
-      updates.selected_class_id = newClassId;
-      setSelectedClassId(newClassId);
+    if (newClassName !== undefined) {
+      updates.selected_class_name = newClassName;
+      setSelectedClassName(newClassName);
     }
     
     if (Object.keys(updates).length > 0) {
@@ -215,12 +215,12 @@ export function useSchoolContext() {
     // Filter states
     gradeLevel,
     semester,
-    selectedClassId,
+    selectedClassName,
     
     // Update functions
     setGradeLevel: (level: number) => updateProfileFilters(level, undefined, undefined),
     setSemester: (sem: 1 | 2) => updateProfileFilters(undefined, sem, undefined),
-    setSelectedClassId: (id: string | null) => updateProfileFilters(undefined, undefined, id),
+    setSelectedClassName: (name: string) => updateProfileFilters(undefined, undefined, name),
     
     // Semester entity
     currentSemester,
