@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Slider } from '@/components/ui/slider';
 import { Plus, BookOpen, GraduationCap, Calendar, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -356,29 +357,24 @@ function AddGradeDialogV2({ open, onOpenChange, course, currentSemester, onAdded
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>Punkte (0-15)</Label>
-            <div className="flex items-center gap-4">
-              <Input 
-                type="number"
-                value={points}
-                onChange={(e) => setPoints(Math.max(0, Math.min(15, parseInt(e.target.value) || 0)))}
-                min={0}
-                max={15}
-                className="w-20"
-              />
-              <div className="flex-1 flex gap-1">
-                {[0, 5, 10, 15].map(p => (
-                  <Button 
-                    key={p}
-                    variant={points === p ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setPoints(p)}
-                  >
-                    {p}
-                  </Button>
-                ))}
-              </div>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label>Punkte</Label>
+              <span className="text-2xl font-bold tabular-nums">{points}</span>
+            </div>
+            <Slider
+              value={[points]}
+              onValueChange={(v) => setPoints(v[0])}
+              min={0}
+              max={15}
+              step={1}
+              className="w-full"
+            />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>0</span>
+              <span>5</span>
+              <span>10</span>
+              <span>15</span>
             </div>
           </div>
 
