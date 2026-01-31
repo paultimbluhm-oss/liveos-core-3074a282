@@ -130,10 +130,10 @@ export function TimetableSlotManagerV2({ course, onSlotsChange }: TimetableSlotM
                 <div>
                   <div className="font-medium text-sm">
                     {WEEKDAYS[slot.day_of_week - 1]}, {slot.period}. Stunde
-                    {slot.is_double_lesson && ' (Doppelstunde)'}
+                    {slot.is_double_lesson && ` + ${slot.period + 1}. Stunde`}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {PERIOD_TIMES[slot.period]?.start} - {PERIOD_TIMES[slot.period]?.end}
+                    {PERIOD_TIMES[slot.period]?.start} - {slot.is_double_lesson && PERIOD_TIMES[slot.period + 1] ? PERIOD_TIMES[slot.period + 1].end : PERIOD_TIMES[slot.period]?.end}
                     {slot.room && ` · ${slot.room}`}
                     {slot.week_type !== 'both' && ` · Woche ${slot.week_type}`}
                   </div>

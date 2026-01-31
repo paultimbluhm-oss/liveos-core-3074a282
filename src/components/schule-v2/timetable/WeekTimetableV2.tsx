@@ -97,9 +97,10 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
     return slots.filter(s => s.week_type === 'both' || s.week_type === weekType);
   }, [slots, weekType]);
 
-  // Build grid data
+  // Build grid data with double lesson handling
   const gridData = useMemo(() => {
     const grid: Record<number, Record<number, (V2TimetableSlot & { course: V2Course }) | null>> = {};
+    const skipCells: Record<string, boolean> = {}; // Track cells to skip due to double lessons
     
     // Initialize grid
     for (let period = 1; period <= 9; period++) {
@@ -109,14 +110,18 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
       }
     }
 
-    // Fill with slots
+    // Fill with slots and mark skip cells for double lessons
     visibleSlots.forEach(slot => {
       if (grid[slot.period]) {
         grid[slot.period][slot.day_of_week] = slot;
+        // If double lesson, mark the next period as skip
+        if (slot.is_double_lesson && slot.period < 9) {
+          skipCells[`${slot.period + 1}-${slot.day_of_week}`] = true;
+        }
       }
     });
 
-    return grid;
+    return { grid, skipCells };
   }, [visibleSlots]);
 
   const goToPrevWeek = () => setCurrentWeek(prev => subWeeks(prev, 1));
@@ -177,15 +182,24 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
                 </tr>
               </thead>
               <tbody>
-                {displayPeriods.map(period => (
+                {displayPeriods.map((period, periodIdx) => {
+                  return (
                   <tr key={period} className={period === 8 ? 'border-t-2 border-dashed' : ''}>
                     <td className="p-1 text-center text-muted-foreground text-[10px]">
                       {PERIOD_TIMES[period]?.label || period}
                     </td>
                     {[1, 2, 3, 4, 5].map(day => {
-                      const slot = gridData[period]?.[day];
+                      const skipKey = `${period}-${day}`;
+                      
+                      // Skip this cell if it's covered by a double lesson from previous period
+                      if (gridData.skipCells[skipKey]) {
+                        return null;
+                      }
+                      
+                      const slot = gridData.grid[period]?.[day];
                       const date = addDays(currentWeek, day - 1);
                       const isPast = date < new Date() && !isToday(date);
+                      const isDouble = slot?.is_double_lesson;
 
                       if (!slot) {
                         return (
@@ -196,14 +210,15 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
                       }
 
                       return (
-                        <td key={day} className="p-0.5">
+                        <td key={day} className="p-0.5" rowSpan={isDouble ? 2 : 1}>
                           <button
                             onClick={() => onSlotClick?.(slot, slot.course)}
                             className={`
-                              w-full h-10 rounded text-[10px] font-medium text-white
+                              w-full rounded text-[10px] font-medium text-white
                               flex flex-col items-center justify-center
                               transition-all hover:scale-[1.02] active:scale-[0.98]
                               ${isPast ? 'opacity-40' : ''}
+                              ${isDouble ? 'h-[84px]' : 'h-10'}
                             `}
                             style={{ backgroundColor: slot.course.color || '#6366f1' }}
                           >
@@ -216,7 +231,7 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
                       );
                     })}
                   </tr>
-                ))}
+                )})}
               </tbody>
             </table>
           </div>
