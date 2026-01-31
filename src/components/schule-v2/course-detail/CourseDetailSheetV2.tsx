@@ -9,9 +9,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus, BookOpen, GraduationCap, Calendar } from 'lucide-react';
+import { Plus, BookOpen, GraduationCap, Calendar, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
+import { TimetableSlotManagerV2 } from './TimetableSlotManagerV2';
 
 interface CourseDetailSheetV2Props {
   open: boolean;
@@ -137,13 +138,17 @@ export function CourseDetailSheetV2({ open, onOpenChange, course }: CourseDetail
           </SheetHeader>
 
           <Tabs defaultValue="grades" className="flex-1">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="grades" className="gap-1.5">
-                <GraduationCap className="w-4 h-4" strokeWidth={1.5} />
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="grades" className="gap-1.5 text-xs">
+                <GraduationCap className="w-3.5 h-3.5" strokeWidth={1.5} />
                 Noten
               </TabsTrigger>
-              <TabsTrigger value="feed" className="gap-1.5">
-                <BookOpen className="w-4 h-4" strokeWidth={1.5} />
+              <TabsTrigger value="timetable" className="gap-1.5 text-xs">
+                <Clock className="w-3.5 h-3.5" strokeWidth={1.5} />
+                Stunden
+              </TabsTrigger>
+              <TabsTrigger value="feed" className="gap-1.5 text-xs">
+                <BookOpen className="w-3.5 h-3.5" strokeWidth={1.5} />
                 Feed
               </TabsTrigger>
             </TabsList>
@@ -198,6 +203,10 @@ export function CourseDetailSheetV2({ open, onOpenChange, course }: CourseDetail
                   )}
                 </div>
               </div>
+            </TabsContent>
+
+            <TabsContent value="timetable" className="mt-4">
+              <TimetableSlotManagerV2 course={course} />
             </TabsContent>
 
             <TabsContent value="feed" className="mt-4">
