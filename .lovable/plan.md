@@ -1,268 +1,291 @@
 
-# Vollstaendiges Modularisierungs- und Customization-Konzept
+# Schulsystem Redesign - Jahrgang, Halbjahr & Klassen-Filter
 
-## Analyse des aktuellen Zustands
+## Analyse des aktuellen Systems
 
-### Hardcodierte Elemente (Problem)
+Das aktuelle System funktioniert wie folgt:
+- Nutzer waehlt **Schule** > **Abi-Jahrgang** (z.B. "Abitur 2026") > **Klasse** (optional)
+- Kurse werden fuer einen Abi-Jahrgang erstellt
+- Schueler waehlen ihre Kurse individuell
+- Jeder Schueler hat seinen eigenen Stundenplan basierend auf den gewaehlten Kursen
+- Klassen sind optional und dienen der Filterung von klassenspezifischen Kursen
 
-| Bereich | Aktuell hardcodiert | Auswirkung |
-|---------|---------------------|------------|
-| **Sidebar** | 5 feste NavItems (Dashboard, Schule, Privat, Business, Freunde) | Kein Nutzer kann Menues ausblenden/umordnen |
-| **Privat-Seite** | 8 feste Sections (Habits, Finanzen, Aufgaben, Lifetime, Gesundheit, Journal, Checklisten, Geschenke) | Alle Nutzer sehen identische Module |
-| **Business-Seite** | 2 feste Sections (Kontakte, Auftraege) | Keine Anpassbarkeit |
-| **Dashboard** | Bereits konfigurierbar via `dashboard_config` Tabelle | Gutes Muster zur Nachahmung |
-| **App-Name** | "LifeOS" fest in Sidebar und Auth-Seite | Nicht white-label-faehig |
+## Neue Struktur
 
-### Bereits vorhandene Konfigurationslogik
+Die neue Logik trennt:
+- **Abi-Jahrgang** (z.B. "Abitur 2026") - bleibt als Grundstruktur
+- **Klassenstufe** (1-13) - NEUES Dropdown im Header
+- **Halbjahr** (1 oder 2) - NEUES Dropdown im Header  
+- **Klasse** (z.B. "12a", "12b") - BESTEHENDES Dropdown im Header
 
-Die `dashboard_config` Tabelle und der `useDashboardConfig` Hook zeigen das richtige Muster:
-- `widget_order: string[]` - Reihenfolge
-- `hidden_widgets: string[]` - Ausgeblendete Elemente
-- Pro Nutzer konfigurierbar
-
----
-
-## Neues Konfigurationssystem
-
-### Datenbankstruktur
-
-Neue Tabelle: `user_app_config`
-
-```sql
-CREATE TABLE user_app_config (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  
-  -- Sidebar Konfiguration
-  sidebar_items TEXT[] DEFAULT ARRAY['dashboard','schule','privat','business','freunde'],
-  hidden_sidebar_items TEXT[] DEFAULT '{}',
-  
-  -- Privat-Seite Sektionen
-  privat_sections TEXT[] DEFAULT ARRAY['habits','finanzen','aufgaben','lifetime','gesundheit','journal','checklisten','geschenke'],
-  hidden_privat_sections TEXT[] DEFAULT '{}',
-  
-  -- Business-Seite Sektionen
-  business_sections TEXT[] DEFAULT ARRAY['kontakte','auftraege'],
-  hidden_business_sections TEXT[] DEFAULT '{}',
-  
-  -- Schule-Seite Elemente
-  hidden_school_features TEXT[] DEFAULT '{}',
-  
-  -- UI Praeferenzen
-  show_time_score BOOLEAN DEFAULT true,
-  show_streak BOOLEAN DEFAULT true,
-  compact_mode BOOLEAN DEFAULT false,
-  
-  -- Timestamps
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
-  
-  UNIQUE(user_id)
-);
-```
-
----
-
-## Komponenten-Architektur
-
-### Neuer zentraler Hook: `useAppConfig`
+### Datenmodell-Erweiterung
 
 ```text
-src/hooks/useAppConfig.tsx
-```
++------------------+     +------------------+     +------------------+
+|     schools      |     |   school_years   |     |     classes      |
++------------------+     +------------------+     +------------------+
+| id               |---->| id               |---->| id               |
+| name             |     | school_id        |     | school_year_id   |
+| short_name       |     | name (Abi 2026)  |     | name (12a, 12b)  |
++------------------+     | year_number      |     +------------------+
+                         +------------------+
 
-Dieser Hook verwaltet die gesamte App-Konfiguration und bietet:
-- Sidebar-Items lesen/umordnen/verstecken
-- Privat-Sections lesen/umordnen/verstecken
-- Business-Sections lesen/umordnen/verstecken
-- UI-Praeferenzen aendern
-- Reset auf Standardwerte
-
-### Erweiterte Settings-Seite
-
-```text
-src/pages/Profile.tsx
-  Tabs:
-  - Dashboard (existiert)
-  - Navigation (NEU - Sidebar anpassen)
-  - Module (NEU - Privat/Business Sections)
-  - Sicherheit (existiert)
-  - Info (existiert)
+                                 |
+                                 v
+                         +------------------+
+                         |  year_semesters  |  <-- NEU
+                         +------------------+
+                         | id               |
+                         | school_year_id   |
+                         | grade_level (1-13)|
+                         | semester (1 oder 2)|
+                         | created_at       |
+                         +------------------+
+                                 |
+                                 v
+                         +------------------+
+                         |     courses      |  <-- ERWEITERT
+                         +------------------+
+                         | id               |
+                         | school_year_id   |
+                         | semester_id      |  <-- NEU (FK zu year_semesters)
+                         | class_id         |
+                         | name             |
+                         | ...              |
+                         +------------------+
 ```
 
 ---
 
-## Detaillierte Aenderungen
+## UI-Aenderungen
 
-### 1. Sidebar konfigurierbar machen
+### Header-Bereich mit Dropdowns
 
-**Vorher (Sidebar.tsx):**
+```text
++------------------------------------------------------------+
+|  [HS]  [Jahrgang v]  [Halbjahr v]  [Klasse v]  [Settings]  |
++------------------------------------------------------------+
+          |              |              |
+          v              v              v
+       12             1. HJ           12a
+       11             2. HJ           12b
+       10                             --
+       ...
+```
+
+Alle drei Dropdowns kompakt nebeneinander:
+- **Jahrgang**: 1-13 (Klassenstufe)
+- **Halbjahr**: 1 oder 2
+- **Klasse**: Verfuegbare Klassen (12a, 12b, etc.) oder "Alle"
+
+### Technische Umsetzung der Dropdowns
+
+Die Dropdowns werden als Select-Komponenten implementiert:
+
 ```typescript
-const navItems = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/schule', icon: GraduationCap, label: 'Schule' },
-  // ... hardcodiert
-];
-```
-
-**Nachher:**
-```typescript
-// Alle verfuegbaren Menue-Punkte als Konstante
-export const ALL_NAV_ITEMS = [
-  { id: 'dashboard', to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { id: 'schule', to: '/schule', icon: GraduationCap, label: 'Schule' },
-  { id: 'privat', to: '/privat', icon: User, label: 'Privat' },
-  { id: 'business', to: '/business', icon: Briefcase, label: 'Business' },
-  { id: 'freunde', to: '/freunde', icon: Users, label: 'Freunde' },
-  { id: 'kalender', to: '/kalender', icon: Calendar, label: 'Kalender' },
-];
-
-// In Sidebar Komponente:
-const { visibleNavItems } = useAppConfig();
-// Zeigt nur sichtbare Items in der konfigurierten Reihenfolge
-```
-
-### 2. Privat-Seite konfigurierbar machen
-
-**Vorher (Privat.tsx):**
-```typescript
-const sections = [
-  { id: 'habits', icon: Check, label: 'Habits', color: 'text-emerald-500' },
-  // ... hardcodiert
-];
-```
-
-**Nachher:**
-```typescript
-// Alle verfuegbaren Sections als Konstante
-export const ALL_PRIVAT_SECTIONS = [
-  { id: 'habits', icon: Check, label: 'Habits', color: 'text-emerald-500', component: HabitsSection },
-  { id: 'finanzen', icon: Wallet, label: 'Finanzen', color: 'text-amber-500', component: FinanceSection },
-  // ...
-];
-
-// In Privat Komponente:
-const { visiblePrivatSections } = useAppConfig();
-// Zeigt nur sichtbare Sections in der konfigurierten Reihenfolge
-```
-
-### 3. Business-Seite konfigurierbar machen
-
-Gleiches Muster wie Privat-Seite.
-
-### 4. Neue Settings-Komponenten
-
-```text
-src/components/settings/
-  DashboardSettings.tsx (existiert)
-  NavigationSettings.tsx (NEU)
-  ModuleSettings.tsx (NEU)
-  SecuritySettings.tsx (existiert)
-  InfoSettings.tsx (existiert)
-```
-
-**NavigationSettings.tsx:**
-- Sidebar-Items ein-/ausblenden
-- Reihenfolge per Drag-and-Drop oder Pfeile aendern
-- Time-Score und Streak im Header anzeigen/verstecken
-
-**ModuleSettings.tsx:**
-- Privat-Sections konfigurieren
-- Business-Sections konfigurieren
-- Mit Vorschau welche Module sichtbar sind
-
----
-
-## Visuelle Darstellung
-
-### NavigationSettings UI
-
-```text
-+--------------------------------------------------+
-| Navigation anpassen                              |
-+--------------------------------------------------+
-
-| Sichtbare Menue-Punkte                           |
-+--------------------------------------------------+
-| [v] [^] Dashboard                    [Sichtbar]  |
-| [v] [^] Schule                       [Sichtbar]  |
-| [v] [^] Privat                       [Sichtbar]  |
-| [v] [^] Business                     [Versteckt] |
-| [v] [^] Freunde                      [Sichtbar]  |
-| [v] [^] Kalender                     [Versteckt] |
-+--------------------------------------------------+
-
-| Header-Anzeigen                                  |
-+--------------------------------------------------+
-| Time-Score anzeigen             [====O]          |
-| Streak anzeigen                 [====O]          |
-+--------------------------------------------------+
-
-                                   [Zuruecksetzen] |
-```
-
-### ModuleSettings UI
-
-```text
-+--------------------------------------------------+
-| Module anpassen                                  |
-+--------------------------------------------------+
-
-| Privat-Bereich                                   |
-+--------------------------------------------------+
-| [v] [^] Habits                       [Sichtbar]  |
-| [v] [^] Finanzen                     [Sichtbar]  |
-| [v] [^] Aufgaben                     [Sichtbar]  |
-| [v] [^] Lifetime                     [Sichtbar]  |
-| [v] [^] Gesundheit                   [Versteckt] |
-| [v] [^] Journal                      [Versteckt] |
-| [v] [^] Checklisten                  [Sichtbar]  |
-| [v] [^] Geschenke                    [Versteckt] |
-+--------------------------------------------------+
-
-| Business-Bereich                                 |
-+--------------------------------------------------+
-| [v] [^] Kontakte                     [Sichtbar]  |
-| [v] [^] Auftraege                    [Sichtbar]  |
-+--------------------------------------------------+
+// State fuer die Filter
+const [selectedGradeLevel, setSelectedGradeLevel] = useState<number>(12);
+const [selectedSemester, setSelectedSemester] = useState<1 | 2>(1);
+const [selectedClassFilter, setSelectedClassFilter] = useState<string | null>(null);
 ```
 
 ---
 
-## Dateiaenderungen-Uebersicht
+## Neue Datenbank-Tabelle: `year_semesters`
+
+Diese Tabelle speichert die Kombination aus Klassenstufe + Halbjahr fuer jeden Abi-Jahrgang:
+
+| Spalte | Typ | Beschreibung |
+|--------|-----|--------------|
+| id | UUID | Primaerschluessel |
+| school_year_id | UUID | FK zu school_years |
+| grade_level | INTEGER | Klassenstufe (1-13) |
+| semester | INTEGER | Halbjahr (1 oder 2) |
+| created_at | TIMESTAMPTZ | Erstellungszeitpunkt |
+
+**Unique Constraint**: (school_year_id, grade_level, semester)
+
+---
+
+## Erweiterung der `courses` Tabelle
+
+Neue Spalte:
+
+| Spalte | Typ | Beschreibung |
+|--------|-----|--------------|
+| semester_id | UUID | FK zu year_semesters (optional) |
+
+Wenn `semester_id` gesetzt ist, gehoert der Kurs zu einem spezifischen Jahrgang + Halbjahr.
+
+---
+
+## Logik-Aenderungen
+
+### 1. Kurs-Erstellung
+
+Beim Erstellen eines Kurses wird der aktuelle Jahrgang + Halbjahr automatisch zugeordnet:
+
+```typescript
+// Beim Kurs erstellen
+const createCourse = async (courseData) => {
+  // Hole oder erstelle das semester_id fuer die aktuelle Auswahl
+  const semesterId = await getOrCreateSemester(
+    selectedSchoolYearId, 
+    selectedGradeLevel, 
+    selectedSemester
+  );
+  
+  await supabase.from('courses').insert({
+    ...courseData,
+    school_year_id: selectedSchoolYearId,
+    semester_id: semesterId,
+    class_id: selectedClassFilter || null,
+  });
+};
+```
+
+### 2. Kurs-Filterung
+
+Kurse werden nach Jahrgang + Halbjahr + Klasse gefiltert:
+
+```typescript
+const fetchCourses = async () => {
+  // Hole das passende semester_id
+  const { data: semester } = await supabase
+    .from('year_semesters')
+    .select('id')
+    .eq('school_year_id', selectedYearId)
+    .eq('grade_level', selectedGradeLevel)
+    .eq('semester', selectedSemester)
+    .maybeSingle();
+  
+  if (!semester) {
+    setCourses([]);
+    return;
+  }
+  
+  let query = supabase
+    .from('courses')
+    .select('*')
+    .eq('semester_id', semester.id);
+  
+  if (selectedClassFilter) {
+    query = query.or(`class_id.eq.${selectedClassFilter},class_id.is.null`);
+  }
+  
+  const { data } = await query;
+  setCourses(data || []);
+};
+```
+
+### 3. Stundenplan
+
+Der Stundenplan zeigt nur Kurse des aktuellen Jahrgangs + Halbjahrs:
+
+- Beim Wechsel des Halbjahrs aendert sich der Stundenplan
+- Kurs-Mitgliedschaften bleiben erhalten (User ist weiterhin Mitglied)
+- Aber die `timetable_entries` werden nach semester_id gefiltert
+
+---
+
+## Profil-Erweiterung
+
+Neue Spalten in `profiles`:
+
+| Spalte | Typ | Beschreibung |
+|--------|-----|--------------|
+| current_grade_level | INTEGER | Aktuelle Klassenstufe (1-13) |
+| current_semester | INTEGER | Aktuelles Halbjahr (1 oder 2) |
+
+---
+
+## Dateistruktur-Aenderungen
 
 | Datei | Aenderung |
 |-------|-----------|
-| `supabase/migrations/xxx_add_user_app_config.sql` | Neue Tabelle erstellen |
-| `src/integrations/supabase/types.ts` | Wird automatisch regeneriert |
-| `src/hooks/useAppConfig.tsx` | NEU - Zentraler Config-Hook |
-| `src/components/layout/Sidebar.tsx` | Nutzt useAppConfig statt hardcodierter Items |
-| `src/pages/Privat.tsx` | Nutzt useAppConfig fuer Sections |
-| `src/pages/Business.tsx` | Nutzt useAppConfig fuer Sections |
-| `src/pages/Profile.tsx` | Neue Tabs hinzufuegen |
-| `src/components/settings/NavigationSettings.tsx` | NEU |
-| `src/components/settings/ModuleSettings.tsx` | NEU |
-| `src/constants/appConfig.ts` | NEU - Alle verfuegbaren Items/Sections |
+| **Datenbank** | |
+| Migration | `year_semesters` Tabelle erstellen |
+| Migration | `courses.semester_id` hinzufuegen |
+| Migration | `profiles.current_grade_level` + `profiles.current_semester` hinzufuegen |
+| **Frontend** | |
+| `src/pages/Schule.tsx` | Header mit 3 Dropdowns, Filterlogik |
+| `src/components/schule/schools/SchoolSettingsDialog.tsx` | Jahrgang/Halbjahr-Einstellungen |
+| `src/components/schule/schools/CreateCourseDialog.tsx` | semester_id beim Erstellen setzen |
+| `src/components/schule/schools/types.ts` | Neue Typen hinzufuegen |
 
 ---
 
-## Migrations-Sicherheit
+## Migrations-SQL
 
-Fuer bestehende Nutzer:
-- Default-Werte entsprechen dem aktuellen Verhalten
-- Keine Funktionen werden automatisch versteckt
-- Nutzer koennen aktiv Module deaktivieren
+```sql
+-- 1. Neue Tabelle year_semesters
+CREATE TABLE year_semesters (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  school_year_id UUID NOT NULL REFERENCES school_years(id) ON DELETE CASCADE,
+  grade_level INTEGER NOT NULL CHECK (grade_level >= 1 AND grade_level <= 13),
+  semester INTEGER NOT NULL CHECK (semester IN (1, 2)),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(school_year_id, grade_level, semester)
+);
+
+-- 2. RLS fuer year_semesters
+ALTER TABLE year_semesters ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "year_semesters_select" ON year_semesters
+  FOR SELECT USING (true);
+
+CREATE POLICY "year_semesters_insert" ON year_semesters
+  FOR INSERT WITH CHECK (true);
+
+-- 3. courses.semester_id hinzufuegen
+ALTER TABLE courses ADD COLUMN semester_id UUID REFERENCES year_semesters(id);
+
+-- 4. profiles erweitern
+ALTER TABLE profiles ADD COLUMN current_grade_level INTEGER DEFAULT 12;
+ALTER TABLE profiles ADD COLUMN current_semester INTEGER DEFAULT 1;
+```
 
 ---
 
-## Zusammenfassung der Vorteile
+## Visuelle Darstellung des neuen Headers
+
+```text
++------------------------------------------------------------------+
+| [HS]         [12 v]    [1. HJ v]    [12a v]         [Settings]   |
+|  ^             ^          ^           ^                ^          |
+| Schul-     Jahrgang    Halbjahr    Klasse         Einstellungen  |
+| kuerzel    (1-13)      (1/2)       (optional)                    |
++------------------------------------------------------------------+
+```
+
+Mobile-optimiert mit kompakten Select-Komponenten.
+
+---
+
+## Workflow fuer Admin (Kurs erstellen)
+
+1. Admin waehlt oben: Jahrgang 12, Halbjahr 1, Klasse 12a
+2. Klickt auf "+ Kurs"
+3. Traegt Kurs-Daten ein (Name, Lehrer, Zeiten)
+4. Kurs wird automatisch dem Jahrgang 12 / 1. Halbjahr / Klasse 12a zugeordnet
+5. Alle Schueler mit Jahrgang 12 + 1. Halbjahr + Klasse 12a sehen diesen Kurs
+
+## Workflow fuer Schueler (Kurs beitreten)
+
+1. Schueler stellt ein: Jahrgang 12, Halbjahr 1, Klasse 12a
+2. Sieht alle verfuegbaren Kurse fuer diese Kombination
+3. Tritt Kursen bei
+4. Stundenplan wird automatisch aktualisiert
+5. Bei Wechsel auf Halbjahr 2: Muss neue Kurse waehlen
+
+---
+
+## Zusammenfassung
 
 | Aspekt | Vorher | Nachher |
 |--------|--------|---------|
-| Sidebar | Alle 5 Items fuer alle | Jeder waehlt seine Items |
-| Privat-Seite | Alle 8 Sections identisch | Individuell konfigurierbar |
-| Business-Seite | Beide Sections sichtbar | Selektiv nutzbar |
-| Header | Time-Score/Streak immer sichtbar | Optional versteckbar |
-| Rollout-faehigkeit | Alle sehen alles | Nutzer konfigurieren selbst |
-
-Dieses System ermoeglicht es, die App fuer den gesamten Schuljahrgang auszurollen, wobei jeder Nutzer nur die Module sieht und verwendet, die er benoetigt.
+| Struktur | Schule > Abi-Jahrgang > Klasse | Schule > Abi-Jahrgang + Jahrgang/Halbjahr/Klasse Filter |
+| Kurse | Pro Abi-Jahrgang | Pro Abi-Jahrgang + Jahrgang + Halbjahr |
+| Stundenplan | Individuell, aber nicht halbjahr-getrennt | Individuell + halbjahr-spezifisch |
+| Filter | Nur Klasse | Jahrgang + Halbjahr + Klasse |
+| Klassen | Optional | Optional, als Filter |
