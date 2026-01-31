@@ -9,6 +9,7 @@ import { AdminDeleteProvider } from "@/contexts/AdminDeleteContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Schule from "./pages/Schule";
+import SchuleV2 from "./pages/SchuleV2";
 import Privat from "./pages/Privat";
 import Business from "./pages/Business";
 import Profile from "./pages/Profile";
@@ -32,6 +33,7 @@ const App = () => (
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/kalender" element={<Kalender />} />
                 <Route path="/schule" element={<Schule />} />
+                <Route path="/schule-v2" element={<SchuleV2 />} />
                 <Route path="/privat" element={<Privat />} />
                 <Route path="/business" element={<Business />} />
                 <Route path="/freunde" element={<Freunde />} />
