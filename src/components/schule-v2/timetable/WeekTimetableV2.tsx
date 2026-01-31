@@ -2,12 +2,14 @@ import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useSchoolV2 } from '../context/SchoolV2Context';
-import { V2Course, V2TimetableSlot, PERIOD_TIMES, WEEKDAYS } from '../types';
+import { useGradeColors } from '@/hooks/useGradeColors';
+import { V2Course, V2TimetableSlot, V2Grade, PERIOD_TIMES, WEEKDAYS } from '../types';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Settings } from 'lucide-react';
 import { format, addWeeks, subWeeks, startOfWeek, addDays, isToday } from 'date-fns';
 import { de } from 'date-fns/locale';
+import { GradeColorSettingsV2 } from '../settings/GradeColorSettingsV2';
 
 interface WeekTimetableV2Props {
   onSlotClick?: (slot: V2TimetableSlot, course: V2Course) => void;
@@ -16,10 +18,14 @@ interface WeekTimetableV2Props {
 export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
   const { user } = useAuth();
   const { scope } = useSchoolV2();
+  const { getGradeColor, settings: gradeColorSettings } = useGradeColors();
   
   const [currentWeek, setCurrentWeek] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [slots, setSlots] = useState<(V2TimetableSlot & { course: V2Course })[]>([]);
+  const [courseAverages, setCourseAverages] = useState<Record<string, number | null>>({});
   const [loading, setLoading] = useState(true);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Load timetable slots for user's courses in current scope
   useEffect(() => {
@@ -70,6 +76,55 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
         .select('*')
         .in('course_id', scopeCourseIds);
 
+      // Hole Noten für diese Kurse um Durchschnitte zu berechnen
+      const { data: gradesData } = await supabase
+        .from('v2_grades')
+        .select('*')
+        .eq('user_id', user.id)
+        .in('course_id', scopeCourseIds);
+
+      // Berechne Durchschnitte pro Kurs
+      const averages: Record<string, number | null> = {};
+      courses.forEach(course => {
+        const courseGrades = (gradesData || []).filter(g => g.course_id === course.id);
+        if (courseGrades.length === 0) {
+          averages[course.id] = null;
+        } else {
+          const oralGrades = courseGrades.filter(g => g.grade_type === 'oral');
+          const writtenGrades = courseGrades.filter(g => g.grade_type === 'written');
+          const practicalGrades = courseGrades.filter(g => g.grade_type === 'practical');
+
+          const oralAvg = oralGrades.length > 0 
+            ? oralGrades.reduce((sum, g) => sum + g.points, 0) / oralGrades.length 
+            : null;
+          const writtenAvg = writtenGrades.length > 0 
+            ? writtenGrades.reduce((sum, g) => sum + g.points, 0) / writtenGrades.length 
+            : null;
+          const practicalAvg = practicalGrades.length > 0 
+            ? practicalGrades.reduce((sum, g) => sum + g.points, 0) / practicalGrades.length 
+            : null;
+
+          let totalWeight = 0;
+          let weightedSum = 0;
+
+          if (oralAvg !== null) {
+            weightedSum += oralAvg * course.oral_weight;
+            totalWeight += course.oral_weight;
+          }
+          if (writtenAvg !== null) {
+            weightedSum += writtenAvg * course.written_weight;
+            totalWeight += course.written_weight;
+          }
+          if (practicalAvg !== null && course.has_practical) {
+            weightedSum += practicalAvg * course.practical_weight;
+            totalWeight += course.practical_weight;
+          }
+
+          averages[course.id] = totalWeight > 0 ? Math.round((weightedSum / totalWeight) * 10) / 10 : null;
+        }
+      });
+      setCourseAverages(averages);
+
       if (slotsData) {
         const enrichedSlots = slotsData.map(slot => ({
           ...slot,
@@ -84,7 +139,7 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
     };
 
     loadSlots();
-  }, [user, scope.school?.id, scope.gradeLevel, scope.semester, scope.className]);
+  }, [user, scope.school?.id, scope.gradeLevel, scope.semester, scope.className, refreshKey]);
 
   // Determine week type (A/B) based on week number
   const weekType = useMemo(() => {
@@ -131,7 +186,15 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
   // Periods to display (skip 7 = Pause visually but keep structure)
   const displayPeriods = [1, 2, 3, 4, 5, 6, 8, 9];
 
+  const getGradeBgClass = (points: number | null): string => {
+    if (points === null) return '';
+    if (points >= gradeColorSettings.green_min) return 'bg-emerald-500';
+    if (points >= gradeColorSettings.yellow_min) return 'bg-amber-500';
+    return 'bg-rose-500';
+  };
+
   return (
+    <>
     <Card>
       <CardHeader className="pb-2 px-3 pt-3">
         <div className="flex items-center justify-between">
@@ -147,9 +210,14 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
             <span className="text-muted-foreground ml-1">({weekType})</span>
           </button>
           
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goToNextWeek}>
-            <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goToNextWeek}>
+              <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSettingsOpen(true)}>
+              <Settings className="w-4 h-4" strokeWidth={1.5} />
+            </Button>
+          </div>
         </div>
       </CardHeader>
 
@@ -209,12 +277,14 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
                         );
                       }
 
+                      const avg = courseAverages[slot.course.id];
+
                       return (
                         <td key={day} className="p-0.5" rowSpan={isDouble ? 2 : 1}>
                           <button
                             onClick={() => onSlotClick?.(slot, slot.course)}
                             className={`
-                              w-full rounded text-[10px] font-medium text-white
+                              w-full rounded text-[10px] font-medium text-white relative
                               flex flex-col items-center justify-center
                               transition-all hover:scale-[1.02] active:scale-[0.98]
                               ${isPast ? 'opacity-40' : ''}
@@ -223,8 +293,12 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
                             style={{ backgroundColor: slot.course.color || '#6366f1' }}
                           >
                             <span>{slot.course.short_name || slot.course.name.substring(0, 3)}</span>
-                            {slot.room && (
-                              <span className="text-[8px] opacity-80">{slot.room}</span>
+                            {avg !== null && (
+                              <span 
+                                className={`absolute bottom-0.5 right-0.5 text-[8px] font-bold px-1 rounded ${getGradeBgClass(avg)}`}
+                              >
+                                {avg}
+                              </span>
                             )}
                           </button>
                         </td>
@@ -238,5 +312,12 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
         )}
       </CardContent>
     </Card>
+
+    <GradeColorSettingsV2 
+      open={settingsOpen} 
+      onOpenChange={setSettingsOpen}
+      onSettingsChange={() => setRefreshKey(prev => prev + 1)}
+    />
+    </>
   );
 }
