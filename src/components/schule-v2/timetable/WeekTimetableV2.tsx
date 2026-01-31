@@ -295,7 +295,7 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
                             <span>{slot.course.short_name || slot.course.name.substring(0, 3)}</span>
                             {avg !== null && (
                               <span 
-                                className={`absolute bottom-0.5 right-0.5 text-[8px] font-bold px-1 rounded ${getGradeBgClass(avg)}`}
+                                className={`absolute -top-1 -right-1 w-4 h-4 text-[8px] font-bold rounded-full flex items-center justify-center ${getGradeBgClass(avg)}`}
                               >
                                 {avg}
                               </span>
