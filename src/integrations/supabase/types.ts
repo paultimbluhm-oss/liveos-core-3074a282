@@ -3180,6 +3180,7 @@ export type Database = {
           grade_type: string
           id: string
           points: number
+          semester: number
           user_id: string
         }
         Insert: {
@@ -3190,6 +3191,7 @@ export type Database = {
           grade_type: string
           id?: string
           points: number
+          semester?: number
           user_id: string
         }
         Update: {
@@ -3200,6 +3202,7 @@ export type Database = {
           grade_type?: string
           id?: string
           points?: number
+          semester?: number
           user_id?: string
         }
         Relationships: [

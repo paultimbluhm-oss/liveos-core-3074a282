@@ -71,10 +71,11 @@ export interface V2Grade {
   id: string;
   user_id: string;
   course_id: string;
-  grade_type: 'oral' | 'written' | 'practical';
+  grade_type: 'oral' | 'written' | 'practical' | 'semester';
   points: number; // 0-15
   date: string | null;
   description: string | null;
+  semester: 1 | 2;
   created_at: string;
 }
 

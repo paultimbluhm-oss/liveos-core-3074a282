@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useSchoolV2 } from '../context/SchoolV2Context';
 import { V2Course, V2Grade, V2CourseFeedItem } from '../types';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -18,10 +19,12 @@ interface CourseDetailSheetV2Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   course: V2Course | null;
+  onTimetableChange?: () => void;
 }
 
-export function CourseDetailSheetV2({ open, onOpenChange, course }: CourseDetailSheetV2Props) {
+export function CourseDetailSheetV2({ open, onOpenChange, course, onTimetableChange }: CourseDetailSheetV2Props) {
   const { user } = useAuth();
+  const { scope } = useSchoolV2();
   
   const [grades, setGrades] = useState<V2Grade[]>([]);
   const [feed, setFeed] = useState<V2CourseFeedItem[]>([]);
@@ -45,7 +48,8 @@ export function CourseDetailSheetV2({ open, onOpenChange, course }: CourseDetail
 
       setGrades((gradesData || []).map(g => ({
         ...g,
-        grade_type: g.grade_type as 'oral' | 'written' | 'practical',
+        grade_type: g.grade_type as 'oral' | 'written' | 'practical' | 'semester',
+        semester: g.semester as 1 | 2,
       })));
 
       // Load feed
@@ -176,10 +180,14 @@ export function CourseDetailSheetV2({ open, onOpenChange, course }: CourseDetail
                       className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
                     >
                       <div>
-                        <div className="font-medium text-sm">
+                        <div className="font-medium text-sm flex items-center gap-2">
                           {grade.grade_type === 'oral' && 'Mündlich'}
                           {grade.grade_type === 'written' && 'Schriftlich'}
                           {grade.grade_type === 'practical' && 'Praxis'}
+                          {grade.grade_type === 'semester' && 'Halbjahresnote'}
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-primary/10 text-primary">
+                            HJ {(grade as any).semester || scope.semester}
+                          </span>
                         </div>
                         <div className="text-xs text-muted-foreground">
                           {grade.description || 'Keine Beschreibung'}
@@ -206,7 +214,7 @@ export function CourseDetailSheetV2({ open, onOpenChange, course }: CourseDetail
             </TabsContent>
 
             <TabsContent value="timetable" className="mt-4">
-              <TimetableSlotManagerV2 course={course} />
+              <TimetableSlotManagerV2 course={course} onSlotsChange={onTimetableChange} />
             </TabsContent>
 
             <TabsContent value="feed" className="mt-4">
@@ -248,6 +256,7 @@ export function CourseDetailSheetV2({ open, onOpenChange, course }: CourseDetail
         open={addGradeOpen}
         onOpenChange={setAddGradeOpen}
         course={course}
+        currentSemester={scope.semester}
         onAdded={(grade) => setGrades(prev => [grade, ...prev])}
       />
     </>
@@ -259,13 +268,15 @@ interface AddGradeDialogV2Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   course: V2Course;
+  currentSemester: 1 | 2;
   onAdded: (grade: V2Grade) => void;
 }
 
-function AddGradeDialogV2({ open, onOpenChange, course, onAdded }: AddGradeDialogV2Props) {
+function AddGradeDialogV2({ open, onOpenChange, course, currentSemester, onAdded }: AddGradeDialogV2Props) {
   const { user } = useAuth();
   
-  const [gradeType, setGradeType] = useState<'oral' | 'written' | 'practical'>('oral');
+  const [gradeType, setGradeType] = useState<'oral' | 'written' | 'practical' | 'semester'>('oral');
+  const [semester, setSemester] = useState<1 | 2>(currentSemester);
   const [points, setPoints] = useState<number>(10);
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
@@ -284,6 +295,7 @@ function AddGradeDialogV2({ open, onOpenChange, course, onAdded }: AddGradeDialo
         points,
         description: description.trim() || null,
         date: new Date().toISOString().split('T')[0],
+        semester,
       })
       .select()
       .single();
@@ -291,9 +303,11 @@ function AddGradeDialogV2({ open, onOpenChange, course, onAdded }: AddGradeDialo
     if (!error && data) {
       onAdded({
         ...data,
-        grade_type: data.grade_type as 'oral' | 'written' | 'practical',
+        grade_type: data.grade_type as 'oral' | 'written' | 'practical' | 'semester',
+        semester: data.semester as 1 | 2,
       });
       setGradeType('oral');
+      setSemester(currentSemester);
       setPoints(10);
       setDescription('');
       onOpenChange(false);
@@ -310,20 +324,36 @@ function AddGradeDialogV2({ open, onOpenChange, course, onAdded }: AddGradeDialo
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="space-y-2">
-            <Label>Typ</Label>
-            <Select value={gradeType} onValueChange={(v) => setGradeType(v as any)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="oral">Mündlich</SelectItem>
-                <SelectItem value="written">Schriftlich</SelectItem>
-                {course.has_practical && (
-                  <SelectItem value="practical">Praxis</SelectItem>
-                )}
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>Typ</Label>
+              <Select value={gradeType} onValueChange={(v) => setGradeType(v as any)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="oral">Mündlich</SelectItem>
+                  <SelectItem value="written">Schriftlich</SelectItem>
+                  {course.has_practical && (
+                    <SelectItem value="practical">Praxis</SelectItem>
+                  )}
+                  <SelectItem value="semester">Halbjahresnote</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Halbjahr</Label>
+              <Select value={String(semester)} onValueChange={(v) => setSemester(parseInt(v) as 1 | 2)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">1. Halbjahr</SelectItem>
+                  <SelectItem value="2">2. Halbjahr</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="space-y-2">

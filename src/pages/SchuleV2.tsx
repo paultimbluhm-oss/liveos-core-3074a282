@@ -21,6 +21,7 @@ function SchuleV2Content() {
   const [selectedCourse, setSelectedCourse] = useState<V2Course | null>(null);
   const [courseDetailOpen, setCourseDetailOpen] = useState(false);
   const [totalLessons, setTotalLessons] = useState(0);
+  const [timetableKey, setTimetableKey] = useState(0);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -40,6 +41,10 @@ function SchuleV2Content() {
 
   const handleCourseCreated = () => {
     refresh();
+  };
+
+  const handleTimetableChange = () => {
+    setTimetableKey(prev => prev + 1);
   };
 
   if (authLoading || !user) return null;
@@ -73,7 +78,7 @@ function SchuleV2Content() {
         </div>
 
         {/* Timetable */}
-        <WeekTimetableV2 onSlotClick={handleSlotClick} />
+        <WeekTimetableV2 key={timetableKey} onSlotClick={handleSlotClick} />
 
         {/* Courses List */}
         <CoursesListV2 
@@ -97,6 +102,7 @@ function SchuleV2Content() {
         open={courseDetailOpen}
         onOpenChange={setCourseDetailOpen}
         course={selectedCourse}
+        onTimetableChange={handleTimetableChange}
       />
     </AppLayout>
   );
