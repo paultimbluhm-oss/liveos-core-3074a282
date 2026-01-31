@@ -346,7 +346,7 @@ export function CoursesList({ schoolYearId, schoolId, schoolName, yearName, clas
         onOpenChange={setCreateDialogOpen}
         schoolYearId={schoolYearId}
         schoolId={schoolId}
-        userClassId={classId}
+        userClassName={className}
         onCourseCreated={fetchCourses}
       />
     </div>

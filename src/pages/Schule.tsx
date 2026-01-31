@@ -72,10 +72,10 @@ export default function Schule() {
     selectedYear,
     gradeLevel,
     semester,
-    selectedClassId,
+    selectedClassName,
     setGradeLevel,
     setSemester,
-    setSelectedClassId,
+    setSelectedClassName,
     availableClasses,
     getOrCreateSemester,
     loading: contextLoading,
@@ -254,9 +254,12 @@ export default function Schule() {
       query = query.or(`semester_id.eq.${semesterData.id},semester_id.is.null`);
     }
     
-    // Filter by class
-    if (selectedClassId) {
-      query = query.or(`class_id.eq.${selectedClassId},class_id.is.null`);
+    // Filter by class name - find the class_id for the selected class name
+    if (selectedClassName && availableClasses.length > 0) {
+      const matchingClass = availableClasses.find(c => c.name === selectedClassName);
+      if (matchingClass) {
+        query = query.or(`class_id.eq.${matchingClass.id},class_id.is.null`);
+      }
     }
     
     const { data: coursesData } = await query;
@@ -438,7 +441,7 @@ export default function Schule() {
       // First cleanup duplicate courses, then fetch
       cleanupDuplicateCourses().then(() => fetchCourses());
     }
-  }, [selectedYear, selectedClassId, gradeLevel, semester, user]);
+  }, [selectedYear, selectedClassName, gradeLevel, semester, user, availableClasses]);
 
   // Week navigation
   const goToPrevWeek = () => setCurrentWeekStart(subWeeks(currentWeekStart, 1));
@@ -799,11 +802,10 @@ export default function Schule() {
             <SchoolFilterDropdowns
               gradeLevel={gradeLevel}
               semester={semester}
-              selectedClassId={selectedClassId}
-              availableClasses={availableClasses}
+              selectedClassName={selectedClassName}
               onGradeLevelChange={setGradeLevel}
               onSemesterChange={setSemester}
-              onClassChange={setSelectedClassId}
+              onClassNameChange={setSelectedClassName}
             />
           )}
           <Button 
@@ -1159,7 +1161,7 @@ export default function Schule() {
             onOpenChange={setCreateDialogOpen}
             schoolYearId={selectedYear.id}
             schoolId={selectedSchool?.id || ''}
-            userClassId={selectedClassId || undefined}
+            userClassName={selectedClassName}
             gradeLevel={gradeLevel}
             semester={semester}
             onCourseCreated={() => { fetchCourses(); fetchTimetable(); }}
