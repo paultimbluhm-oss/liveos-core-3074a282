@@ -3215,6 +3215,47 @@ export type Database = {
           },
         ]
       }
+      v2_homework: {
+        Row: {
+          completed: boolean | null
+          course_id: string
+          created_at: string
+          description: string | null
+          due_date: string
+          id: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean | null
+          course_id: string
+          created_at?: string
+          description?: string | null
+          due_date: string
+          id?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean | null
+          course_id?: string
+          created_at?: string
+          description?: string | null
+          due_date?: string
+          id?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "v2_homework_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v2_courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v2_school_memberships: {
         Row: {
           abitur_year: number

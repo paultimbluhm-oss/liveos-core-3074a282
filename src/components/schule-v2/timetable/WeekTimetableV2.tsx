@@ -3,11 +3,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useSchoolV2 } from '../context/SchoolV2Context';
 import { useGradeColors } from '@/hooks/useGradeColors';
-import { V2Course, V2TimetableSlot, V2Grade, PERIOD_TIMES, WEEKDAYS } from '../types';
+import { V2Course, V2TimetableSlot, V2Grade, V2Homework, PERIOD_TIMES, WEEKDAYS } from '../types';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Settings } from 'lucide-react';
-import { format, addWeeks, subWeeks, startOfWeek, addDays, isToday } from 'date-fns';
+import { format, addWeeks, subWeeks, startOfWeek, addDays, isToday, isSameDay } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { GradeColorSettingsV2 } from '../settings/GradeColorSettingsV2';
 
@@ -23,6 +23,7 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
   const [currentWeek, setCurrentWeek] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [slots, setSlots] = useState<(V2TimetableSlot & { course: V2Course })[]>([]);
   const [courseAverages, setCourseAverages] = useState<Record<string, number | null>>({});
+  const [homeworkByDate, setHomeworkByDate] = useState<Record<string, V2Homework[]>>({});
   const [loading, setLoading] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -126,11 +127,27 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
               totalWeight += course.practical_weight;
             }
 
-            averages[course.id] = totalWeight > 0 ? Math.round((weightedSum / totalWeight) * 10) / 10 : null;
+          averages[course.id] = totalWeight > 0 ? Math.round((weightedSum / totalWeight) * 10) / 10 : null;
           }
         }
       });
       setCourseAverages(averages);
+
+      // Hole Hausaufgaben für diese Kurse
+      const { data: homeworkData } = await supabase
+        .from('v2_homework')
+        .select('*')
+        .in('course_id', scopeCourseIds)
+        .eq('completed', false);
+
+      // Gruppiere nach Fälligkeitsdatum
+      const hwByDate: Record<string, V2Homework[]> = {};
+      (homeworkData || []).forEach(hw => {
+        const dateKey = hw.due_date;
+        if (!hwByDate[dateKey]) hwByDate[dateKey] = [];
+        hwByDate[dateKey].push(hw as V2Homework);
+      });
+      setHomeworkByDate(hwByDate);
 
       if (slotsData) {
         const enrichedSlots = slotsData.map(slot => ({
@@ -273,6 +290,7 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
                       
                       const slot = gridData.grid[period]?.[day];
                       const date = addDays(currentWeek, day - 1);
+                      const dateKey = format(date, 'yyyy-MM-dd');
                       const isPast = date < new Date() && !isToday(date);
                       const isDouble = slot?.is_double_lesson;
 
@@ -285,6 +303,12 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
                       }
 
                       const avg = courseAverages[slot.course.id];
+                      
+                      // Hausaufgaben für diesen Kurs an diesem Tag fällig?
+                      const hwForSlot = (homeworkByDate[dateKey] || []).filter(
+                        hw => hw.course_id === slot.course.id
+                      );
+                      const hwCount = hwForSlot.length;
 
                       return (
                         <td key={day} className="p-0.5" rowSpan={isDouble ? 2 : 1}>
@@ -300,6 +324,15 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
                             style={{ backgroundColor: slot.course.color || '#6366f1' }}
                           >
                             <span>{slot.course.short_name || slot.course.name.substring(0, 3)}</span>
+                            {/* Hausaufgaben Badge links oben */}
+                            {hwCount > 0 && (
+                              <span 
+                                className="absolute -top-2 -left-2 w-5 h-5 text-[9px] font-bold rounded-full flex items-center justify-center shadow-sm bg-rose-500 text-white"
+                              >
+                                {hwCount}
+                              </span>
+                            )}
+                            {/* Noten Badge rechts oben */}
                             {avg !== null && (
                               <span 
                                 className={`absolute -top-2 -right-2 w-6 h-6 text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm ${getGradeBgClass(avg)}`}

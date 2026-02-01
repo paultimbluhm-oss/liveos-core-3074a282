@@ -92,6 +92,17 @@ export interface V2Absence {
   updated_at: string;
 }
 
+export interface V2Homework {
+  id: string;
+  course_id: string;
+  user_id: string;
+  title: string;
+  description: string | null;
+  due_date: string;
+  completed: boolean;
+  created_at: string;
+}
+
 export interface V2CourseFeedItem {
   id: string;
   course_id: string;
