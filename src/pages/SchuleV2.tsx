@@ -47,6 +47,10 @@ function SchuleV2Content() {
     setTimetableKey(prev => prev + 1);
   };
 
+  const handleHomeworkChange = () => {
+    setTimetableKey(prev => prev + 1);
+  };
+
   if (authLoading || !user) return null;
 
   if (schoolLoading) {
@@ -103,6 +107,7 @@ function SchuleV2Content() {
         onOpenChange={setCourseDetailOpen}
         course={selectedCourse}
         onTimetableChange={handleTimetableChange}
+        onHomeworkChange={handleHomeworkChange}
       />
     </AppLayout>
   );

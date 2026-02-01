@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useSchoolV2 } from '../context/SchoolV2Context';
-import { V2Course, V2Grade, V2CourseFeedItem } from '../types';
+import { V2Course, V2Grade } from '../types';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -11,28 +11,29 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Slider } from '@/components/ui/slider';
-import { Plus, BookOpen, GraduationCap, Calendar, Clock } from 'lucide-react';
+import { Plus, ClipboardList, GraduationCap, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { TimetableSlotManagerV2 } from './TimetableSlotManagerV2';
+import { HomeworkTabV2 } from './HomeworkTabV2';
 
 interface CourseDetailSheetV2Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   course: V2Course | null;
   onTimetableChange?: () => void;
+  onHomeworkChange?: () => void;
 }
 
-export function CourseDetailSheetV2({ open, onOpenChange, course, onTimetableChange }: CourseDetailSheetV2Props) {
+export function CourseDetailSheetV2({ open, onOpenChange, course, onTimetableChange, onHomeworkChange }: CourseDetailSheetV2Props) {
   const { user } = useAuth();
   const { scope } = useSchoolV2();
   
   const [grades, setGrades] = useState<V2Grade[]>([]);
-  const [feed, setFeed] = useState<V2CourseFeedItem[]>([]);
   const [addGradeOpen, setAddGradeOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Load grades and feed when course changes
+  // Load grades when course changes
   useEffect(() => {
     const loadData = async () => {
       if (!user || !course) return;
@@ -51,19 +52,6 @@ export function CourseDetailSheetV2({ open, onOpenChange, course, onTimetableCha
         ...g,
         grade_type: g.grade_type as 'oral' | 'written' | 'practical' | 'semester',
         semester: g.semester as 1 | 2,
-      })));
-
-      // Load feed
-      const { data: feedData } = await supabase
-        .from('v2_course_feed')
-        .select('*')
-        .eq('course_id', course.id)
-        .order('created_at', { ascending: false });
-
-      setFeed((feedData || []).map(f => ({
-        ...f,
-        type: f.type as 'homework' | 'info' | 'event',
-        priority: f.priority as 'low' | 'normal' | 'high',
       })));
 
       setLoading(false);
@@ -152,9 +140,9 @@ export function CourseDetailSheetV2({ open, onOpenChange, course, onTimetableCha
                 <Clock className="w-3.5 h-3.5" strokeWidth={1.5} />
                 Stunden
               </TabsTrigger>
-              <TabsTrigger value="feed" className="gap-1.5 text-xs">
-                <BookOpen className="w-3.5 h-3.5" strokeWidth={1.5} />
-                Feed
+              <TabsTrigger value="homework" className="gap-1.5 text-xs">
+                <ClipboardList className="w-3.5 h-3.5" strokeWidth={1.5} />
+                Hausaufgaben
               </TabsTrigger>
             </TabsList>
 
@@ -218,36 +206,8 @@ export function CourseDetailSheetV2({ open, onOpenChange, course, onTimetableCha
               <TimetableSlotManagerV2 course={course} onSlotsChange={onTimetableChange} />
             </TabsContent>
 
-            <TabsContent value="feed" className="mt-4">
-              {feed.length === 0 ? (
-                <div className="text-center py-8 text-sm text-muted-foreground">
-                  Noch keine Einträge
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {feed.map(item => (
-                    <div 
-                      key={item.id}
-                      className="p-3 rounded-lg bg-muted/50"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <div className="font-medium text-sm">{item.title}</div>
-                          {item.description && (
-                            <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
-                          )}
-                        </div>
-                        {item.due_date && (
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <Calendar className="w-3 h-3" strokeWidth={1.5} />
-                            {format(new Date(item.due_date), 'd.M.', { locale: de })}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+            <TabsContent value="homework" className="mt-4">
+              <HomeworkTabV2 course={course} onHomeworkChange={onHomeworkChange} />
             </TabsContent>
           </Tabs>
         </SheetContent>
