@@ -11,3 +11,9 @@ verify_jwt = false
 
 [functions.get-stock-price]
 verify_jwt = false
+
+[functions.v2-process-automations]
+verify_jwt = false
+
+[functions.v2-daily-snapshot]
+verify_jwt = false
