@@ -131,11 +131,13 @@ interface FinanceV2ContextType {
   // Actions
   refreshData: () => Promise<void>;
   refreshAccounts: () => Promise<void>;
+  refreshCategories: () => Promise<void>;
   refreshTransactions: () => Promise<void>;
   refreshInvestments: () => Promise<void>;
   refreshMaterialAssets: () => Promise<void>;
   refreshAutomations: () => Promise<void>;
   refreshSnapshots: () => Promise<void>;
+  createSnapshot: () => Promise<void>;
   
   // EUR/USD rate
   eurUsdRate: number;
@@ -270,12 +272,73 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
     setLoading(false);
   }, [refreshAccounts, refreshCategories, refreshTransactions, refreshInvestments, refreshMaterialAssets, refreshAutomations, refreshSnapshots]);
 
-  // Initial load
+  // Create/update today's snapshot
+  const createSnapshot = useCallback(async () => {
+    if (!user) return;
+    const supabase = getSupabase();
+    const today = format(new Date(), 'yyyy-MM-dd');
+    
+    // Calculate totals
+    const accountBalances: Record<string, number> = {};
+    let totalAccountsEurCalc = 0;
+    
+    accounts.forEach(acc => {
+      accountBalances[acc.id] = acc.balance;
+      if (acc.currency === 'USD') {
+        totalAccountsEurCalc += acc.balance / eurUsdRate;
+      } else {
+        totalAccountsEurCalc += acc.balance;
+      }
+    });
+    
+    let totalInvestmentsEurCalc = 0;
+    investments.forEach(inv => {
+      const value = inv.quantity * (inv.current_price || inv.avg_purchase_price);
+      if (inv.currency === 'USD') {
+        totalInvestmentsEurCalc += value / eurUsdRate;
+      } else {
+        totalInvestmentsEurCalc += value;
+      }
+    });
+    
+    // Calculate today's income/expenses
+    const todayTx = transactions.filter(tx => tx.date === today);
+    let incomeEur = 0;
+    let expensesEur = 0;
+    
+    todayTx.forEach(tx => {
+      const amt = tx.currency === 'USD' ? tx.amount / eurUsdRate : tx.amount;
+      if (tx.transaction_type === 'income' || tx.transaction_type === 'investment_sell') {
+        incomeEur += amt;
+      } else if (tx.transaction_type === 'expense' || tx.transaction_type === 'investment_buy') {
+        expensesEur += amt;
+      }
+    });
+    
+    await supabase.from('v2_daily_snapshots').upsert({
+      user_id: user.id,
+      date: today,
+      account_balances: accountBalances,
+      total_accounts_eur: totalAccountsEurCalc,
+      total_investments_eur: totalInvestmentsEurCalc,
+      net_worth_eur: totalAccountsEurCalc + totalInvestmentsEurCalc,
+      income_eur: incomeEur,
+      expenses_eur: expensesEur,
+      eur_usd_rate: eurUsdRate,
+    }, { onConflict: 'user_id,date' });
+    
+    await refreshSnapshots();
+  }, [user, accounts, investments, transactions, eurUsdRate, refreshSnapshots]);
+
+  // Initial load + create snapshot
   useEffect(() => {
     if (user) {
-      refreshData();
+      refreshData().then(() => {
+        // Create snapshot after data is loaded
+        createSnapshot();
+      });
     }
-  }, [user, refreshData]);
+  }, [user]); // Only depend on user to avoid infinite loops
 
   // Computed values
   const totalAccountsEur = accounts.reduce((sum, acc) => {
@@ -311,11 +374,13 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
       netWorthEur,
       refreshData,
       refreshAccounts,
+      refreshCategories,
       refreshTransactions,
       refreshInvestments,
       refreshMaterialAssets,
       refreshAutomations,
       refreshSnapshots,
+      createSnapshot,
       eurUsdRate,
     }}>
       {children}
