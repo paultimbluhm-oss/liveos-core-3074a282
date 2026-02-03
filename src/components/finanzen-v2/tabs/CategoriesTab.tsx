@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Tag, Trash2, Edit2, Check, X } from 'lucide-react';
+import { Plus, Tag, Trash2, Edit2, Check, X, Sparkles } from 'lucide-react';
 import { useFinanceV2, V2Category } from '../context/FinanceV2Context';
 import { useAuth, getSupabase } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -164,113 +163,121 @@ export function CategoriesTab() {
   };
 
   return (
-    <div className="space-y-4">
-      {/* Add Category */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Neue Kategorie</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-2">
-            <Input
-              placeholder="Kategorie-Name"
-              value={newCategory}
-              onChange={(e) => setNewCategory(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleAddCategory()}
-            />
-            <Button onClick={handleAddCategory} disabled={adding || !newCategory.trim()}>
-              <Plus className="w-4 h-4" />
-            </Button>
-          </div>
-          
-          {categories.length === 0 && (
-            <Button 
-              variant="outline" 
-              className="w-full mt-3"
-              onClick={handleAddDefaults}
-              disabled={adding}
-            >
-              Standardkategorien hinzufügen
-            </Button>
-          )}
-        </CardContent>
-      </Card>
+    <div className="space-y-6">
+      {/* Add Category Section */}
+      <div className="rounded-3xl bg-white/5 backdrop-blur-xl border border-white/10 p-6">
+        <h3 className="text-sm font-semibold text-muted-foreground mb-4">Neue Kategorie</h3>
+        <div className="flex gap-3">
+          <Input
+            placeholder="Kategorie-Name eingeben"
+            value={newCategory}
+            onChange={(e) => setNewCategory(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleAddCategory()}
+            className="h-12 rounded-2xl bg-white/5 border-white/10 focus:border-primary"
+          />
+          <Button 
+            onClick={handleAddCategory} 
+            disabled={adding || !newCategory.trim()}
+            className="h-12 w-12 rounded-2xl bg-primary hover:bg-primary/90"
+          >
+            <Plus className="w-5 h-5" />
+          </Button>
+        </div>
+        
+        {categories.length === 0 && (
+          <Button 
+            variant="ghost" 
+            className="w-full mt-4 h-12 rounded-2xl bg-gradient-to-r from-violet-500/20 to-purple-500/20 hover:from-violet-500/30 hover:to-purple-500/30 border border-violet-500/20"
+            onClick={handleAddDefaults}
+            disabled={adding}
+          >
+            <Sparkles className="w-4 h-4 mr-2 text-violet-400" />
+            <span className="text-violet-300">Standardkategorien hinzufügen</span>
+          </Button>
+        )}
+      </div>
 
       {/* Categories List */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Tag className="w-4 h-4" />
-            Kategorien ({categories.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-1">
+      <div className="rounded-3xl bg-white/5 backdrop-blur-xl border border-white/10 overflow-hidden">
+        <div className="flex items-center justify-between p-5 border-b border-white/5">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-primary/20 flex items-center justify-center">
+              <Tag className="w-4 h-4 text-primary" />
+            </div>
+            <h3 className="font-semibold">Kategorien</h3>
+          </div>
+          <span className="text-sm text-muted-foreground">{categories.length}</span>
+        </div>
+        
+        <div className="divide-y divide-white/5">
           {categories.map(category => (
             <div 
               key={category.id}
-              className={`flex items-center justify-between py-2 px-3 rounded-lg border transition-colors ${!category.is_active ? 'opacity-50' : ''}`}
+              className={`flex items-center justify-between p-4 transition-colors ${!category.is_active ? 'opacity-50' : ''}`}
             >
               {editingId === category.id ? (
                 <div className="flex items-center gap-2 flex-1">
                   <Input
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className="h-8"
+                    className="h-10 rounded-xl bg-white/5 border-white/10"
                     autoFocus
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') handleEdit(category);
                       if (e.key === 'Escape') setEditingId(null);
                     }}
                   />
-                  <Button 
-                    size="icon" 
-                    variant="ghost" 
-                    className="h-8 w-8"
+                  <button 
+                    className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center hover:bg-emerald-500/30 transition-colors"
                     onClick={() => handleEdit(category)}
                   >
-                    <Check className="w-4 h-4" />
-                  </Button>
-                  <Button 
-                    size="icon" 
-                    variant="ghost" 
-                    className="h-8 w-8"
+                    <Check className="w-4 h-4 text-emerald-400" />
+                  </button>
+                  <button 
+                    className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors"
                     onClick={() => setEditingId(null)}
                   >
-                    <X className="w-4 h-4" />
-                  </Button>
+                    <X className="w-4 h-4 text-muted-foreground" />
+                  </button>
                 </div>
               ) : (
                 <>
-                  <div className="flex items-center gap-2">
-                    <span 
-                      className={`font-medium cursor-pointer ${!category.is_active ? 'line-through' : ''}`}
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center cursor-pointer transition-colors ${
+                        category.is_active ? 'bg-primary/20' : 'bg-white/5'
+                      }`}
                       onClick={() => handleToggleActive(category)}
                     >
-                      {category.name}
-                    </span>
-                    {category.is_default && (
-                      <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                        Standard
+                      <Tag className={`w-4 h-4 ${category.is_active ? 'text-primary' : 'text-muted-foreground'}`} />
+                    </div>
+                    <div>
+                      <span 
+                        className={`font-medium cursor-pointer ${!category.is_active ? 'line-through' : ''}`}
+                        onClick={() => handleToggleActive(category)}
+                      >
+                        {category.name}
                       </span>
-                    )}
+                      {category.is_default && (
+                        <span className="ml-2 text-xs text-muted-foreground bg-white/10 px-2 py-0.5 rounded-full">
+                          Standard
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center gap-1">
-                    <Button 
-                      size="icon" 
-                      variant="ghost" 
-                      className="h-8 w-8"
+                    <button 
+                      className="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors"
                       onClick={() => { setEditingId(category.id); setEditValue(category.name); }}
                     >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </Button>
-                    <Button 
-                      size="icon" 
-                      variant="ghost" 
-                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                      <Edit2 className="w-4 h-4 text-muted-foreground" />
+                    </button>
+                    <button 
+                      className="w-9 h-9 rounded-xl bg-rose-500/10 flex items-center justify-center hover:bg-rose-500/20 transition-colors"
                       onClick={() => setDeleteCategory(category)}
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
+                      <Trash2 className="w-4 h-4 text-rose-400" />
+                    </button>
                   </div>
                 </>
               )}
@@ -278,17 +285,19 @@ export function CategoriesTab() {
           ))}
           
           {categories.length === 0 && (
-            <div className="py-8 text-center text-muted-foreground">
-              <Tag className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>Noch keine Kategorien</p>
+            <div className="py-12 text-center">
+              <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
+                <Tag className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <p className="text-muted-foreground">Noch keine Kategorien</p>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Delete Confirmation */}
       <AlertDialog open={!!deleteCategory} onOpenChange={(open) => !open && setDeleteCategory(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="rounded-3xl border-white/10 bg-card/95 backdrop-blur-xl">
           <AlertDialogHeader>
             <AlertDialogTitle>Kategorie löschen?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -296,8 +305,8 @@ export function CategoriesTab() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} disabled={deleting}>
+            <AlertDialogCancel className="rounded-xl">Abbrechen</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={deleting} className="rounded-xl bg-rose-500 hover:bg-rose-600">
               {deleting ? 'Lösche...' : 'Löschen'}
             </AlertDialogAction>
           </AlertDialogFooter>

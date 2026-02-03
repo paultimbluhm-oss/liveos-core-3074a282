@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Package, ChevronRight, TrendingDown } from 'lucide-react';
+import { Plus, Package, ChevronRight, TrendingDown, TrendingUp } from 'lucide-react';
 import { useFinanceV2, V2MaterialAsset } from '../context/FinanceV2Context';
 import { AddMaterialAssetDialog } from '../dialogs/AddMaterialAssetDialog';
 import { MaterialAssetDetailSheet } from '../sheets/MaterialAssetDetailSheet';
@@ -46,93 +45,119 @@ export function MaterialTab() {
   }
 
   return (
-    <div className="space-y-4">
-      {/* Summary Card */}
-      <Card className="bg-gradient-to-br from-amber-500/10 to-amber-500/5">
-        <CardContent className="pt-6 pb-4">
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground mb-1">Materieller Besitz</p>
-            <p className="text-3xl font-bold">{formatCurrency(totals.current)}</p>
-            <div className="flex justify-center gap-4 mt-3 text-sm">
-              <div>
-                <p className="text-muted-foreground text-xs">Kaufpreis</p>
-                <p className="font-medium">{formatCurrency(totals.purchase)}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground text-xs">Wertänderung</p>
-                <p className={`font-medium ${totals.delta >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                  {totals.delta >= 0 ? '+' : ''}{formatCurrency(totals.delta)}
-                </p>
-              </div>
+    <div className="space-y-6">
+      {/* Hero Card */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-500 via-orange-500 to-red-500 p-8 shadow-2xl">
+        <div className="absolute inset-0 bg-white/10 backdrop-blur-3xl" />
+        <div className="absolute -top-32 -right-32 w-64 h-64 bg-white/20 rounded-full blur-3xl" />
+        <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-white/10 rounded-full blur-2xl" />
+        
+        <div className="relative z-10 text-center">
+          <p className="text-white/70 text-sm font-medium mb-2">Materieller Besitz</p>
+          <p className="text-4xl font-bold text-white tracking-tight mb-4">{formatCurrency(totals.current)}</p>
+          
+          <div className="flex justify-center gap-6">
+            <div className="bg-white/10 backdrop-blur-xl rounded-2xl px-4 py-2">
+              <p className="text-white/60 text-xs">Kaufpreis</p>
+              <p className="text-white font-semibold">{formatCurrency(totals.purchase)}</p>
+            </div>
+            <div className="bg-white/10 backdrop-blur-xl rounded-2xl px-4 py-2">
+              <p className="text-white/60 text-xs">Wertänderung</p>
+              <p className={`font-semibold ${totals.delta >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>
+                {totals.delta >= 0 ? '+' : ''}{formatCurrency(totals.delta)}
+              </p>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Info Note */}
-      <div className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-3">
-        Materieller Besitz wird separat vom Finanz-Nettovermögen geführt und nicht in die Gesamtstatistik eingerechnet.
+      <div className="rounded-2xl bg-amber-500/10 border border-amber-500/20 p-4">
+        <p className="text-sm text-amber-300/80">
+          Materieller Besitz wird separat geführt und nicht in die Nettovermögensberechnung einbezogen.
+        </p>
       </div>
 
       {/* Add Button */}
       <Button 
         onClick={() => setShowAddDialog(true)} 
-        className="w-full"
-        variant="outline"
+        className="w-full h-14 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 backdrop-blur-xl text-foreground"
+        variant="ghost"
       >
-        <Plus className="w-4 h-4 mr-2" />
+        <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center mr-3">
+          <Plus className="w-5 h-5 text-amber-400" />
+        </div>
         Neuer Gegenstand
       </Button>
 
       {/* Assets by Category */}
       {Object.entries(groupedAssets).map(([category, assets]) => (
-        <Card key={category}>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">{category}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {assets.map(asset => {
+        <div key={category} className="space-y-3">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide px-1">
+            {category}
+          </h3>
+          
+          <div className="rounded-2xl overflow-hidden bg-white/5 backdrop-blur-xl border border-white/10">
+            {assets.map((asset, index) => {
               const delta = (asset.current_value || 0) - (asset.purchase_price || 0);
+              
               return (
                 <div 
                   key={asset.id} 
-                  className="flex items-center justify-between py-3 px-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors border"
+                  className={`
+                    flex items-center gap-4 p-4 cursor-pointer
+                    transition-all duration-200 active:scale-[0.98]
+                    hover:bg-white/5
+                    ${index !== assets.length - 1 ? 'border-b border-white/5' : ''}
+                  `}
                   onClick={() => setSelectedAsset(asset)}
                 >
-                  <div className="flex-1">
-                    <p className="font-medium">{asset.name}</p>
+                  {/* Icon */}
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/10 flex items-center justify-center">
+                    <Package className="w-6 h-6 text-amber-400" />
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-foreground truncate">{asset.name}</p>
                     {asset.purchase_date && (
-                      <p className="text-xs text-muted-foreground">
-                        Gekauft: {format(new Date(asset.purchase_date), 'dd.MM.yyyy', { locale: de })}
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {format(new Date(asset.purchase_date), 'dd.MM.yyyy', { locale: de })}
                       </p>
                     )}
                   </div>
-                  <div className="text-right">
-                    <p className="font-semibold">
-                      {formatCurrency(asset.current_value || asset.purchase_price || 0)}
-                    </p>
-                    {asset.purchase_price && asset.current_value && delta !== 0 && (
-                      <p className={`text-xs ${delta >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                        {delta >= 0 ? '+' : ''}{formatCurrency(delta)}
+
+                  {/* Value */}
+                  <div className="flex items-center gap-2">
+                    <div className="text-right">
+                      <p className="font-bold text-foreground">
+                        {formatCurrency(asset.current_value || asset.purchase_price || 0)}
                       </p>
-                    )}
+                      {asset.purchase_price && asset.current_value && delta !== 0 && (
+                        <p className={`text-xs font-medium flex items-center justify-end gap-0.5 ${delta >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                          {delta >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                          {delta >= 0 ? '+' : ''}{formatCurrency(delta)}
+                        </p>
+                      )}
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
                   </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground ml-2" />
                 </div>
               );
             })}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       ))}
 
+      {/* Empty State */}
       {materialAssets.length === 0 && (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <Package className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
-            <p className="text-muted-foreground">Noch keine Gegenstände</p>
-            <p className="text-sm text-muted-foreground mt-1">Erfasse deinen materiellen Besitz</p>
-          </CardContent>
-        </Card>
+        <div className="rounded-3xl bg-white/5 backdrop-blur-xl border border-white/10 p-12 text-center">
+          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center mx-auto mb-6">
+            <Package className="w-10 h-10 text-amber-400" />
+          </div>
+          <p className="text-lg font-semibold text-foreground mb-2">Noch keine Gegenstände</p>
+          <p className="text-sm text-muted-foreground">Erfasse deinen materiellen Besitz</p>
+        </div>
       )}
 
       {/* Dialogs & Sheets */}
