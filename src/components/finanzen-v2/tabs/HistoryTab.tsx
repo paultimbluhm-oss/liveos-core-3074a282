@@ -1,20 +1,38 @@
 import { useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, ArrowUpRight, ArrowDownRight, ArrowLeftRight, TrendingUp, Filter, X } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, ArrowLeftRight, TrendingUp, Filter, X } from 'lucide-react';
 import { useFinanceV2, V2Transaction } from '../context/FinanceV2Context';
 import { AddTransactionDialog } from '../dialogs/AddTransactionDialog';
 import { TransactionDetailSheet } from '../sheets/TransactionDetailSheet';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-const transactionTypeIcons: Record<string, React.ReactNode> = {
-  income: <ArrowUpRight className="w-4 h-4 text-emerald-500" />,
-  expense: <ArrowDownRight className="w-4 h-4 text-rose-500" />,
-  transfer: <ArrowLeftRight className="w-4 h-4 text-blue-500" />,
-  investment_buy: <TrendingUp className="w-4 h-4 text-purple-500" />,
-  investment_sell: <TrendingUp className="w-4 h-4 text-amber-500" />,
+const transactionTypeConfig: Record<string, { icon: React.ReactNode; color: string; bg: string }> = {
+  income: { 
+    icon: <ArrowUpRight className="w-5 h-5" />, 
+    color: 'text-emerald-400',
+    bg: 'bg-emerald-500/20'
+  },
+  expense: { 
+    icon: <ArrowDownRight className="w-5 h-5" />, 
+    color: 'text-rose-400',
+    bg: 'bg-rose-500/20'
+  },
+  transfer: { 
+    icon: <ArrowLeftRight className="w-5 h-5" />, 
+    color: 'text-blue-400',
+    bg: 'bg-blue-500/20'
+  },
+  investment_buy: { 
+    icon: <TrendingUp className="w-5 h-5" />, 
+    color: 'text-violet-400',
+    bg: 'bg-violet-500/20'
+  },
+  investment_sell: { 
+    icon: <TrendingUp className="w-5 h-5" />, 
+    color: 'text-amber-400',
+    bg: 'bg-amber-500/20'
+  },
 };
 
 const transactionTypeLabels: Record<string, string> = {
@@ -31,7 +49,6 @@ export function HistoryTab() {
   const [addDialogType, setAddDialogType] = useState<'income' | 'expense' | 'transfer'>('expense');
   const [selectedTransaction, setSelectedTransaction] = useState<V2Transaction | null>(null);
   const [filterType, setFilterType] = useState<string>('all');
-  const [filterAccount, setFilterAccount] = useState<string>('all');
 
   const formatCurrency = (value: number, currency: string = 'EUR') => 
     value.toLocaleString('de-DE', { style: 'currency', currency, maximumFractionDigits: 2 });
@@ -40,10 +57,9 @@ export function HistoryTab() {
   const filteredTransactions = useMemo(() => {
     return transactions.filter(tx => {
       if (filterType !== 'all' && tx.transaction_type !== filterType) return false;
-      if (filterAccount !== 'all' && tx.account_id !== filterAccount && tx.to_account_id !== filterAccount) return false;
       return true;
     });
-  }, [transactions, filterType, filterAccount]);
+  }, [transactions, filterType]);
 
   // Group by date
   const groupedTransactions = useMemo(() => {
@@ -67,7 +83,7 @@ export function HistoryTab() {
     return cat?.name || null;
   };
 
-  const hasFilters = filterType !== 'all' || filterAccount !== 'all';
+  const hasFilters = filterType !== 'all';
 
   if (loading) {
     return (
@@ -77,113 +93,119 @@ export function HistoryTab() {
     );
   }
 
+  const filterOptions = [
+    { key: 'all', label: 'Alle' },
+    { key: 'income', label: 'Einnahmen' },
+    { key: 'expense', label: 'Ausgaben' },
+    { key: 'transfer', label: 'Umbuchungen' },
+  ];
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Quick Add Buttons */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-3">
         <Button 
-          variant="outline" 
-          className="flex-col h-auto py-3"
+          className="h-16 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 hover:from-emerald-500/30 hover:to-emerald-600/20 border border-emerald-500/20 flex-col gap-1"
+          variant="ghost"
           onClick={() => { setAddDialogType('income'); setShowAddDialog(true); }}
         >
-          <ArrowUpRight className="w-5 h-5 text-emerald-500 mb-1" />
-          <span className="text-xs">Einnahme</span>
+          <ArrowUpRight className="w-6 h-6 text-emerald-400" />
+          <span className="text-xs font-medium text-emerald-400">Einnahme</span>
         </Button>
         <Button 
-          variant="outline" 
-          className="flex-col h-auto py-3"
+          className="h-16 rounded-2xl bg-gradient-to-br from-rose-500/20 to-rose-600/10 hover:from-rose-500/30 hover:to-rose-600/20 border border-rose-500/20 flex-col gap-1"
+          variant="ghost"
           onClick={() => { setAddDialogType('expense'); setShowAddDialog(true); }}
         >
-          <ArrowDownRight className="w-5 h-5 text-rose-500 mb-1" />
-          <span className="text-xs">Ausgabe</span>
+          <ArrowDownRight className="w-6 h-6 text-rose-400" />
+          <span className="text-xs font-medium text-rose-400">Ausgabe</span>
         </Button>
         <Button 
-          variant="outline" 
-          className="flex-col h-auto py-3"
+          className="h-16 rounded-2xl bg-gradient-to-br from-blue-500/20 to-blue-600/10 hover:from-blue-500/30 hover:to-blue-600/20 border border-blue-500/20 flex-col gap-1"
+          variant="ghost"
           onClick={() => { setAddDialogType('transfer'); setShowAddDialog(true); }}
         >
-          <ArrowLeftRight className="w-5 h-5 text-blue-500 mb-1" />
-          <span className="text-xs">Umbuchung</span>
+          <ArrowLeftRight className="w-6 h-6 text-blue-400" />
+          <span className="text-xs font-medium text-blue-400">Umbuchung</span>
         </Button>
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-2">
-        <Select value={filterType} onValueChange={setFilterType}>
-          <SelectTrigger className="flex-1">
-            <SelectValue placeholder="Typ" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Alle Typen</SelectItem>
-            <SelectItem value="income">Einnahmen</SelectItem>
-            <SelectItem value="expense">Ausgaben</SelectItem>
-            <SelectItem value="transfer">Umbuchungen</SelectItem>
-            <SelectItem value="investment_buy">Käufe</SelectItem>
-            <SelectItem value="investment_sell">Verkäufe</SelectItem>
-          </SelectContent>
-        </Select>
-        
-        <Select value={filterAccount} onValueChange={setFilterAccount}>
-          <SelectTrigger className="flex-1">
-            <SelectValue placeholder="Konto" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Alle Konten</SelectItem>
-            {accounts.map(acc => (
-              <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {hasFilters && (
-          <Button 
-            variant="ghost" 
-            size="icon"
-            onClick={() => { setFilterType('all'); setFilterAccount('all'); }}
+      {/* Filter Pills */}
+      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+        {filterOptions.map(option => (
+          <button
+            key={option.key}
+            onClick={() => setFilterType(option.key)}
+            className={`
+              px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200
+              ${filterType === option.key 
+                ? 'bg-primary text-primary-foreground shadow-lg' 
+                : 'bg-white/5 text-muted-foreground hover:bg-white/10 border border-white/10'
+              }
+            `}
           >
-            <X className="w-4 h-4" />
-          </Button>
+            {option.label}
+          </button>
+        ))}
+        {hasFilters && (
+          <button
+            onClick={() => setFilterType('all')}
+            className="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors"
+          >
+            <X className="w-4 h-4 text-muted-foreground" />
+          </button>
         )}
       </div>
 
       {/* Transactions grouped by date */}
       {Object.entries(groupedTransactions).map(([date, txs]) => (
-        <Card key={date}>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">
-              {format(new Date(date), 'EEEE, dd. MMMM yyyy', { locale: de })}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-1 pt-0">
-            {txs.map(tx => {
+        <div key={date} className="space-y-2">
+          <h3 className="text-sm font-semibold text-muted-foreground px-1">
+            {format(new Date(date), 'EEEE, dd. MMMM', { locale: de })}
+          </h3>
+          
+          <div className="rounded-2xl overflow-hidden bg-white/5 backdrop-blur-xl border border-white/10">
+            {txs.map((tx, index) => {
+              const config = transactionTypeConfig[tx.transaction_type];
               const category = getCategoryName(tx.category_id);
+              
               return (
                 <div 
                   key={tx.id} 
-                  className="flex items-center gap-3 py-2.5 px-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                  className={`
+                    flex items-center gap-4 p-4 cursor-pointer
+                    transition-all duration-200 active:scale-[0.98]
+                    hover:bg-white/5
+                    ${index !== txs.length - 1 ? 'border-b border-white/5' : ''}
+                  `}
                   onClick={() => setSelectedTransaction(tx)}
                 >
-                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                    {transactionTypeIcons[tx.transaction_type]}
+                  {/* Icon */}
+                  <div className={`w-11 h-11 rounded-2xl ${config.bg} flex items-center justify-center`}>
+                    <span className={config.color}>{config.icon}</span>
                   </div>
+
+                  {/* Info */}
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">
+                    <p className="font-semibold text-foreground truncate">
                       {tx.transaction_type === 'transfer' 
                         ? `${getAccountName(tx.account_id)} → ${getAccountName(tx.to_account_id)}`
                         : tx.note || transactionTypeLabels[tx.transaction_type]
                       }
                     </p>
-                    <p className="text-xs text-muted-foreground truncate">
+                    <p className="text-xs text-muted-foreground truncate mt-0.5">
                       {tx.transaction_type !== 'transfer' && getAccountName(tx.account_id)}
-                      {category && ` • ${category}`}
+                      {category && ` · ${category}`}
                     </p>
                   </div>
-                  <span className={`font-semibold text-sm ${
+
+                  {/* Amount */}
+                  <span className={`font-bold text-base ${
                     tx.transaction_type === 'income' || tx.transaction_type === 'investment_sell' 
-                      ? 'text-emerald-600' 
+                      ? 'text-emerald-400' 
                       : tx.transaction_type === 'expense' || tx.transaction_type === 'investment_buy'
-                        ? 'text-rose-600'
-                        : 'text-blue-600'
+                        ? 'text-rose-400'
+                        : 'text-blue-400'
                   }`}>
                     {tx.transaction_type === 'income' || tx.transaction_type === 'investment_sell' ? '+' : 
                      tx.transaction_type === 'expense' || tx.transaction_type === 'investment_buy' ? '-' : ''}
@@ -192,19 +214,23 @@ export function HistoryTab() {
                 </div>
               );
             })}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       ))}
 
+      {/* Empty State */}
       {filteredTransactions.length === 0 && (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <Filter className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
-            <p className="text-muted-foreground">
-              {hasFilters ? 'Keine Transaktionen mit diesem Filter' : 'Noch keine Transaktionen'}
-            </p>
-          </CardContent>
-        </Card>
+        <div className="rounded-3xl bg-white/5 backdrop-blur-xl border border-white/10 p-12 text-center">
+          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-slate-500/20 to-slate-600/20 flex items-center justify-center mx-auto mb-6">
+            <Filter className="w-10 h-10 text-slate-400" />
+          </div>
+          <p className="text-lg font-semibold text-foreground mb-2">
+            {hasFilters ? 'Keine Ergebnisse' : 'Noch keine Transaktionen'}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {hasFilters ? 'Keine Transaktionen mit diesem Filter' : 'Erstelle deine erste Buchung'}
+          </p>
+        </div>
       )}
 
       {/* Dialogs & Sheets */}

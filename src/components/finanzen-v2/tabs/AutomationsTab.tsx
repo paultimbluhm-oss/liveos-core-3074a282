@@ -1,10 +1,9 @@
 import { useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, RefreshCw, Calendar, ArrowUpRight, ArrowDownRight, ArrowLeftRight, TrendingUp, Settings, Trash2 } from 'lucide-react';
+import { Plus, RefreshCw, Calendar, ArrowUpRight, ArrowDownRight, ArrowLeftRight, TrendingUp, Trash2 } from 'lucide-react';
 import { useFinanceV2, V2Automation } from '../context/FinanceV2Context';
 import { AddAutomationDialog } from '../dialogs/AddAutomationDialog';
-import { format, addDays, addWeeks, addMonths, addYears } from 'date-fns';
+import { format, addDays, addMonths, addYears } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { useAuth, getSupabase } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -19,11 +18,27 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-const automationTypeIcons: Record<string, React.ReactNode> = {
-  income: <ArrowUpRight className="w-4 h-4 text-emerald-500" />,
-  expense: <ArrowDownRight className="w-4 h-4 text-rose-500" />,
-  transfer: <ArrowLeftRight className="w-4 h-4 text-blue-500" />,
-  investment: <TrendingUp className="w-4 h-4 text-purple-500" />,
+const automationTypeConfig: Record<string, { icon: React.ReactNode; color: string; bg: string }> = {
+  income: { 
+    icon: <ArrowUpRight className="w-5 h-5" />, 
+    color: 'text-emerald-400',
+    bg: 'bg-emerald-500/20'
+  },
+  expense: { 
+    icon: <ArrowDownRight className="w-5 h-5" />, 
+    color: 'text-rose-400',
+    bg: 'bg-rose-500/20'
+  },
+  transfer: { 
+    icon: <ArrowLeftRight className="w-5 h-5" />, 
+    color: 'text-blue-400',
+    bg: 'bg-blue-500/20'
+  },
+  investment: { 
+    icon: <TrendingUp className="w-5 h-5" />, 
+    color: 'text-violet-400',
+    bg: 'bg-violet-500/20'
+  },
 };
 
 const automationTypeLabels: Record<string, string> = {
@@ -88,7 +103,6 @@ export function AutomationsTab() {
     if (auto.next_execution_date) {
       return format(new Date(auto.next_execution_date), 'dd.MM.yyyy', { locale: de });
     }
-    // Calculate next execution
     const today = new Date();
     let nextDate = new Date(today.getFullYear(), today.getMonth(), auto.execution_day);
     
@@ -142,106 +156,123 @@ export function AutomationsTab() {
   }
 
   return (
-    <div className="space-y-4">
-      {/* Monthly Summary */}
-      <Card className="bg-gradient-to-br from-violet-500/10 to-violet-500/5">
-        <CardContent className="pt-6 pb-4">
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground mb-1">Monatliche Automationen</p>
-            <div className="flex justify-center gap-6 mt-2">
-              <div>
-                <p className="text-xs text-muted-foreground">Einnahmen</p>
-                <p className="text-lg font-semibold text-emerald-600">{formatCurrency(monthlyTotals.income)}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Ausgaben</p>
-                <p className="text-lg font-semibold text-rose-600">{formatCurrency(monthlyTotals.expenses)}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Netto</p>
-                <p className={`text-lg font-semibold ${monthlyTotals.difference >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                  {monthlyTotals.difference >= 0 ? '+' : ''}{formatCurrency(monthlyTotals.difference)}
-                </p>
-              </div>
+    <div className="space-y-6">
+      {/* Hero Card */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-500 p-8 shadow-2xl">
+        <div className="absolute inset-0 bg-white/10 backdrop-blur-3xl" />
+        <div className="absolute -top-32 -right-32 w-64 h-64 bg-white/20 rounded-full blur-3xl" />
+        <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-white/10 rounded-full blur-2xl" />
+        
+        <div className="relative z-10 text-center">
+          <p className="text-white/70 text-sm font-medium mb-4">Monatliche Automationen</p>
+          
+          <div className="flex justify-center gap-6">
+            <div className="bg-white/10 backdrop-blur-xl rounded-2xl px-5 py-3">
+              <p className="text-white/60 text-xs">Einnahmen</p>
+              <p className="text-xl font-bold text-emerald-300">{formatCurrency(monthlyTotals.income)}</p>
+            </div>
+            <div className="bg-white/10 backdrop-blur-xl rounded-2xl px-5 py-3">
+              <p className="text-white/60 text-xs">Ausgaben</p>
+              <p className="text-xl font-bold text-rose-300">{formatCurrency(monthlyTotals.expenses)}</p>
+            </div>
+            <div className="bg-white/10 backdrop-blur-xl rounded-2xl px-5 py-3">
+              <p className="text-white/60 text-xs">Netto</p>
+              <p className={`text-xl font-bold ${monthlyTotals.difference >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>
+                {monthlyTotals.difference >= 0 ? '+' : ''}{formatCurrency(monthlyTotals.difference)}
+              </p>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Add Button */}
       <Button 
         onClick={() => setShowAddDialog(true)} 
-        className="w-full"
-        variant="outline"
+        className="w-full h-14 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 backdrop-blur-xl text-foreground"
+        variant="ghost"
       >
-        <Plus className="w-4 h-4 mr-2" />
+        <div className="w-8 h-8 rounded-full bg-violet-500/20 flex items-center justify-center mr-3">
+          <Plus className="w-5 h-5 text-violet-400" />
+        </div>
         Neue Automation
       </Button>
 
       {/* Automations by Type */}
-      {Object.entries(groupedAutomations).map(([type, autos]) => (
-        <Card key={type}>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              {automationTypeIcons[type]}
-              {automationTypeLabels[type]}n
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {autos.map(auto => (
-              <div 
-                key={auto.id} 
-                className={`flex items-center justify-between py-3 px-3 rounded-lg border transition-colors ${!auto.is_active ? 'opacity-50' : ''}`}
-              >
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium">{auto.name}</p>
-                    {!auto.is_active && (
-                      <span className="text-xs bg-muted px-1.5 py-0.5 rounded">Pausiert</span>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {intervalLabels[auto.interval_type]} am {auto.interval_type === 'weekly' ? ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'][auto.execution_day] : `${auto.execution_day}.`}
-                    {' • '}
-                    {type === 'transfer' 
-                      ? `${getAccountName(auto.account_id)} → ${getAccountName(auto.to_account_id)}`
-                      : type === 'investment'
-                        ? `${getAccountName(auto.account_id)} → ${getInvestmentName(auto.investment_id)}`
-                        : getAccountName(auto.account_id)
-                    }
-                  </p>
-                  <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                    <Calendar className="w-3 h-3" />
-                    Nächste: {getNextExecution(auto)}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className={`font-semibold ${type === 'income' ? 'text-emerald-600' : type === 'expense' ? 'text-rose-600' : ''}`}>
-                    {formatCurrency(auto.amount, auto.currency)}
-                  </span>
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                    onClick={() => setDeleteAutomation(auto)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
+      {Object.entries(groupedAutomations).map(([type, autos]) => {
+        const config = automationTypeConfig[type] || automationTypeConfig.expense;
+        
+        return (
+          <div key={type} className="space-y-3">
+            <div className="flex items-center gap-2 px-1">
+              <div className={`w-6 h-6 rounded-lg ${config.bg} flex items-center justify-center`}>
+                <span className={config.color}>{config.icon}</span>
               </div>
-            ))}
-          </CardContent>
-        </Card>
-      ))}
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                {automationTypeLabels[type]}n
+              </h3>
+            </div>
+            
+            <div className="rounded-2xl overflow-hidden bg-white/5 backdrop-blur-xl border border-white/10">
+              {autos.map((auto, index) => (
+                <div 
+                  key={auto.id} 
+                  className={`
+                    flex items-center gap-4 p-4
+                    transition-all duration-200
+                    ${!auto.is_active ? 'opacity-50' : ''}
+                    ${index !== autos.length - 1 ? 'border-b border-white/5' : ''}
+                  `}
+                >
+                  {/* Icon */}
+                  <div className={`w-12 h-12 rounded-2xl ${config.bg} flex items-center justify-center`}>
+                    <span className={config.color}>{config.icon}</span>
+                  </div>
 
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-foreground truncate">{auto.name}</p>
+                      {!auto.is_active && (
+                        <span className="text-xs bg-white/10 px-2 py-0.5 rounded-full text-muted-foreground">Pausiert</span>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {intervalLabels[auto.interval_type]} am {auto.interval_type === 'weekly' ? ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'][auto.execution_day] : `${auto.execution_day}.`}
+                    </p>
+                    <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                      <Calendar className="w-3 h-3" />
+                      <span>Nächste: {getNextExecution(auto)}</span>
+                    </div>
+                  </div>
+
+                  {/* Amount & Delete */}
+                  <div className="flex items-center gap-3">
+                    <span className={`font-bold text-base ${config.color}`}>
+                      {formatCurrency(auto.amount, auto.currency)}
+                    </span>
+                    <button 
+                      className="w-9 h-9 rounded-xl bg-rose-500/10 flex items-center justify-center hover:bg-rose-500/20 transition-colors"
+                      onClick={() => setDeleteAutomation(auto)}
+                    >
+                      <Trash2 className="w-4 h-4 text-rose-400" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Empty State */}
       {automations.length === 0 && (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <RefreshCw className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
-            <p className="text-muted-foreground">Noch keine Automationen</p>
-            <p className="text-sm text-muted-foreground mt-1">Richte wiederkehrende Buchungen ein</p>
-          </CardContent>
-        </Card>
+        <div className="rounded-3xl bg-white/5 backdrop-blur-xl border border-white/10 p-12 text-center">
+          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-violet-500/20 to-purple-500/20 flex items-center justify-center mx-auto mb-6">
+            <RefreshCw className="w-10 h-10 text-violet-400" />
+          </div>
+          <p className="text-lg font-semibold text-foreground mb-2">Noch keine Automationen</p>
+          <p className="text-sm text-muted-foreground">Richte wiederkehrende Buchungen ein</p>
+        </div>
       )}
 
       {/* Dialogs */}
@@ -251,7 +282,7 @@ export function AutomationsTab() {
       />
 
       <AlertDialog open={!!deleteAutomation} onOpenChange={(open) => !open && setDeleteAutomation(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="rounded-3xl border-white/10 bg-card/95 backdrop-blur-xl">
           <AlertDialogHeader>
             <AlertDialogTitle>Automation löschen?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -259,8 +290,8 @@ export function AutomationsTab() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} disabled={deleting}>
+            <AlertDialogCancel className="rounded-xl">Abbrechen</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={deleting} className="rounded-xl bg-rose-500 hover:bg-rose-600">
               {deleting ? 'Lösche...' : 'Löschen'}
             </AlertDialogAction>
           </AlertDialogFooter>

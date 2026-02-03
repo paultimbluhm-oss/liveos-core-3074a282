@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LayoutDashboard, Wallet, TrendingUp, Package, History, RefreshCw, Tag } from 'lucide-react';
 import { DashboardTab } from '@/components/finanzen-v2/tabs/DashboardTab';
 import { AccountsTab } from '@/components/finanzen-v2/tabs/AccountsTab';
@@ -11,94 +10,86 @@ import { AutomationsTab } from '@/components/finanzen-v2/tabs/AutomationsTab';
 import { CategoriesTab } from '@/components/finanzen-v2/tabs/CategoriesTab';
 import { FinanceV2Provider } from '@/components/finanzen-v2/context/FinanceV2Context';
 
+const tabs = [
+  { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { id: 'accounts', icon: Wallet, label: 'Konten' },
+  { id: 'investments', icon: TrendingUp, label: 'Invest' },
+  { id: 'material', icon: Package, label: 'Materiell' },
+  { id: 'automations', icon: RefreshCw, label: 'Auto' },
+  { id: 'history', icon: History, label: 'Verlauf' },
+  { id: 'categories', icon: Tag, label: 'Kat.' },
+];
+
 export default function FinanzenV2() {
   const [activeTab, setActiveTab] = useState('dashboard');
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'dashboard': return <DashboardTab />;
+      case 'accounts': return <AccountsTab />;
+      case 'investments': return <InvestmentsTab />;
+      case 'material': return <MaterialTab />;
+      case 'automations': return <AutomationsTab />;
+      case 'history': return <HistoryTab />;
+      case 'categories': return <CategoriesTab />;
+      default: return <DashboardTab />;
+    }
+  };
 
   return (
     <AppLayout>
       <FinanceV2Provider>
-        <div className="p-4 pb-24 max-w-7xl mx-auto">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid grid-cols-7 w-full h-12 mb-4">
-              <TabsTrigger 
-                value="dashboard" 
-                className="flex flex-col items-center gap-0.5 text-[10px] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-              >
-                <LayoutDashboard className="w-4 h-4" />
-                <span className="hidden sm:inline">Dashboard</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="accounts" 
-                className="flex flex-col items-center gap-0.5 text-[10px] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-              >
-                <Wallet className="w-4 h-4" />
-                <span className="hidden sm:inline">Konten</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="investments" 
-                className="flex flex-col items-center gap-0.5 text-[10px] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-              >
-                <TrendingUp className="w-4 h-4" />
-                <span className="hidden sm:inline">Invest</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="material" 
-                className="flex flex-col items-center gap-0.5 text-[10px] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-              >
-                <Package className="w-4 h-4" />
-                <span className="hidden sm:inline">Materiell</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="automations" 
-                className="flex flex-col items-center gap-0.5 text-[10px] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-              >
-                <RefreshCw className="w-4 h-4" />
-                <span className="hidden sm:inline">Auto</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="history" 
-                className="flex flex-col items-center gap-0.5 text-[10px] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-              >
-                <History className="w-4 h-4" />
-                <span className="hidden sm:inline">Verlauf</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="categories" 
-                className="flex flex-col items-center gap-0.5 text-[10px] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-              >
-                <Tag className="w-4 h-4" />
-                <span className="hidden sm:inline">Kat.</span>
-              </TabsTrigger>
-            </TabsList>
+        <div className="min-h-screen pb-28">
+          {/* Content Area */}
+          <div className="p-4 max-w-2xl mx-auto">
+            {renderContent()}
+          </div>
 
-            <TabsContent value="dashboard" className="mt-0">
-              <DashboardTab />
-            </TabsContent>
-
-            <TabsContent value="accounts" className="mt-0">
-              <AccountsTab />
-            </TabsContent>
-
-            <TabsContent value="investments" className="mt-0">
-              <InvestmentsTab />
-            </TabsContent>
-
-            <TabsContent value="material" className="mt-0">
-              <MaterialTab />
-            </TabsContent>
-
-            <TabsContent value="automations" className="mt-0">
-              <AutomationsTab />
-            </TabsContent>
-
-            <TabsContent value="history" className="mt-0">
-              <HistoryTab />
-            </TabsContent>
-
-            <TabsContent value="categories" className="mt-0">
-              <CategoriesTab />
-            </TabsContent>
-          </Tabs>
+          {/* iOS-Style Bottom Tab Bar */}
+          <div className="fixed bottom-0 left-0 right-0 z-50">
+            <div className="bg-card/80 backdrop-blur-2xl border-t border-white/10">
+              <div className="max-w-2xl mx-auto px-2 py-2">
+                <div className="flex justify-around items-center">
+                  {tabs.map(tab => {
+                    const Icon = tab.icon;
+                    const isActive = activeTab === tab.id;
+                    
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={`
+                          flex flex-col items-center justify-center py-2 px-3 rounded-2xl transition-all duration-300
+                          ${isActive 
+                            ? 'text-primary' 
+                            : 'text-muted-foreground hover:text-foreground'
+                          }
+                        `}
+                      >
+                        <div className={`
+                          relative p-2 rounded-2xl transition-all duration-300
+                          ${isActive ? 'bg-primary/20' : ''}
+                        `}>
+                          <Icon className={`w-5 h-5 transition-transform duration-300 ${isActive ? 'scale-110' : ''}`} />
+                          {isActive && (
+                            <div className="absolute inset-0 bg-primary/20 rounded-2xl blur-xl" />
+                          )}
+                        </div>
+                        <span className={`text-[10px] mt-1 font-medium transition-all duration-300 ${isActive ? 'opacity-100' : 'opacity-70'}`}>
+                          {tab.label}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+            
+            {/* Home Indicator Line */}
+            <div className="bg-card/80 backdrop-blur-2xl pb-2 flex justify-center">
+              <div className="w-32 h-1 bg-white/20 rounded-full" />
+            </div>
+          </div>
         </div>
       </FinanceV2Provider>
     </AppLayout>

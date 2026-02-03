@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, TrendingUp, TrendingDown, ChevronRight, ShoppingCart, DollarSign } from 'lucide-react';
+import { Plus, TrendingUp, TrendingDown, ShoppingCart, DollarSign, ChevronRight } from 'lucide-react';
 import { useFinanceV2, V2Investment } from '../context/FinanceV2Context';
 import { AddInvestmentDialog } from '../dialogs/AddInvestmentDialog';
 import { InvestmentDetailSheet } from '../sheets/InvestmentDetailSheet';
@@ -14,6 +13,15 @@ const assetTypeLabels: Record<string, string> = {
   crypto: 'Krypto',
   metal: 'Edelmetall',
   other: 'Sonstige',
+};
+
+const assetTypeColors: Record<string, { gradient: string; text: string }> = {
+  etf: { gradient: 'from-blue-500/20 to-blue-600/10', text: 'text-blue-400' },
+  stock: { gradient: 'from-emerald-500/20 to-emerald-600/10', text: 'text-emerald-400' },
+  fund: { gradient: 'from-violet-500/20 to-violet-600/10', text: 'text-violet-400' },
+  crypto: { gradient: 'from-amber-500/20 to-amber-600/10', text: 'text-amber-400' },
+  metal: { gradient: 'from-slate-500/20 to-slate-600/10', text: 'text-slate-400' },
+  other: { gradient: 'from-pink-500/20 to-pink-600/10', text: 'text-pink-400' },
 };
 
 export function InvestmentsTab() {
@@ -91,38 +99,47 @@ export function InvestmentsTab() {
   }
 
   return (
-    <div className="space-y-4">
-      {/* Summary Card */}
-      <Card className="bg-gradient-to-br from-emerald-500/10 to-emerald-500/5">
-        <CardContent className="pt-6 pb-4">
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground mb-1">Investments gesamt</p>
-            <p className="text-3xl font-bold">{formatCurrency(totalInvestmentsEur)}</p>
-            <div className={`flex items-center justify-center gap-1 mt-2 ${totalStats.profit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-              {totalStats.profit >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-              <span className="font-medium">
-                {totalStats.profit >= 0 ? '+' : ''}{formatCurrency(totalStats.profit)} ({totalStats.profitPercent.toFixed(1)}%)
-              </span>
-            </div>
+    <div className="space-y-6">
+      {/* Hero Card */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 p-8 shadow-2xl">
+        <div className="absolute inset-0 bg-white/10 backdrop-blur-3xl" />
+        <div className="absolute -top-32 -right-32 w-64 h-64 bg-white/20 rounded-full blur-3xl" />
+        <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-white/10 rounded-full blur-2xl" />
+        
+        <div className="relative z-10 text-center">
+          <p className="text-white/70 text-sm font-medium mb-2">Portfolio-Wert</p>
+          <p className="text-4xl font-bold text-white tracking-tight mb-3">{formatCurrency(totalInvestmentsEur)}</p>
+          
+          <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${totalStats.profit >= 0 ? 'bg-white/20' : 'bg-rose-500/30'}`}>
+            {totalStats.profit >= 0 ? <TrendingUp className="w-4 h-4 text-white" /> : <TrendingDown className="w-4 h-4 text-white" />}
+            <span className="font-semibold text-white">
+              {totalStats.profit >= 0 ? '+' : ''}{formatCurrency(totalStats.profit)} ({totalStats.profitPercent.toFixed(1)}%)
+            </span>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Action Buttons */}
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-3">
         <Button 
           onClick={() => setShowAddDialog(true)} 
-          variant="outline"
+          className="h-14 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 backdrop-blur-xl text-foreground"
+          variant="ghost"
         >
-          <Plus className="w-4 h-4 mr-2" />
+          <div className="w-8 h-8 rounded-full bg-violet-500/20 flex items-center justify-center mr-3">
+            <Plus className="w-5 h-5 text-violet-400" />
+          </div>
           Neue Position
         </Button>
         <Button 
           onClick={() => handleBuy()} 
-          variant="outline"
+          className="h-14 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 backdrop-blur-xl text-foreground"
+          variant="ghost"
           disabled={investments.length === 0 || accounts.length === 0}
         >
-          <ShoppingCart className="w-4 h-4 mr-2" />
+          <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center mr-3">
+            <ShoppingCart className="w-5 h-5 text-emerald-400" />
+          </div>
           Kaufen
         </Button>
       </div>
@@ -130,18 +147,21 @@ export function InvestmentsTab() {
       {/* Investments by Type */}
       {Object.entries(groupedInvestments).map(([type, invs]) => {
         const stats = typeStats[type];
+        const colors = assetTypeColors[type] || assetTypeColors.other;
+        
         return (
-          <Card key={type}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center justify-between">
-                <span>{assetTypeLabels[type]}</span>
-                <span className={`text-xs font-normal ${stats.profit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                  {stats.profit >= 0 ? '+' : ''}{formatCurrency(stats.profit)}
-                </span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {invs.map(inv => {
+          <div key={type} className="space-y-3">
+            <div className="flex items-center justify-between px-1">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                {assetTypeLabels[type]}
+              </h3>
+              <span className={`text-sm font-semibold ${stats.profit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                {stats.profit >= 0 ? '+' : ''}{formatCurrency(stats.profit)}
+              </span>
+            </div>
+            
+            <div className="rounded-2xl overflow-hidden bg-white/5 backdrop-blur-xl border border-white/10">
+              {invs.map((inv, index) => {
                 const value = inv.quantity * (inv.current_price || inv.avg_purchase_price);
                 const cost = inv.quantity * inv.avg_purchase_price;
                 const profit = value - cost;
@@ -150,67 +170,81 @@ export function InvestmentsTab() {
                 return (
                   <div 
                     key={inv.id} 
-                    className="flex items-center justify-between py-3 px-3 rounded-lg hover:bg-muted/50 transition-colors border"
+                    className={`
+                      flex items-center gap-4 p-4
+                      transition-all duration-200 
+                      hover:bg-white/5
+                      ${index !== invs.length - 1 ? 'border-b border-white/5' : ''}
+                    `}
                   >
+                    {/* Icon */}
                     <div 
-                      className="flex-1 cursor-pointer"
+                      className={`w-12 h-12 rounded-2xl flex items-center justify-center bg-gradient-to-br ${colors.gradient} cursor-pointer`}
+                      onClick={() => setSelectedInvestment(inv)}
+                    >
+                      <TrendingUp className={`w-6 h-6 ${colors.text}`} />
+                    </div>
+
+                    {/* Info */}
+                    <div 
+                      className="flex-1 min-w-0 cursor-pointer"
                       onClick={() => setSelectedInvestment(inv)}
                     >
                       <div className="flex items-center gap-2">
-                        <p className="font-medium">{inv.name}</p>
+                        <p className="font-semibold text-foreground truncate">{inv.name}</p>
                         {inv.symbol && (
-                          <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                          <span className="text-xs text-muted-foreground bg-white/10 px-2 py-0.5 rounded-full">
                             {inv.symbol}
                           </span>
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {inv.quantity.toLocaleString('de-DE', { maximumFractionDigits: 4 })} Stk. @ {(inv.current_price || inv.avg_purchase_price).toLocaleString('de-DE', { style: 'currency', currency: inv.currency })}
+                        {inv.quantity.toLocaleString('de-DE', { maximumFractionDigits: 4 })} Stk.
                       </p>
                     </div>
-                    <div className="flex items-center gap-2">
+
+                    {/* Value & Actions */}
+                    <div className="flex items-center gap-3">
                       <div className="text-right">
-                        <p className="font-semibold">{formatCurrency(value, inv.currency)}</p>
-                        <p className={`text-xs ${profit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                          {profit >= 0 ? '+' : ''}{formatCurrency(profit, inv.currency)} ({profitPercent.toFixed(1)}%)
+                        <p className="font-bold text-foreground">{formatCurrency(value, inv.currency)}</p>
+                        <p className={`text-xs font-medium ${profit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                          {profit >= 0 ? '+' : ''}{profitPercent.toFixed(1)}%
                         </p>
                       </div>
-                      <div className="flex flex-col gap-1">
-                        <Button 
-                          size="icon" 
-                          variant="ghost" 
-                          className="h-7 w-7"
+                      
+                      <div className="flex gap-1">
+                        <button 
+                          className="w-9 h-9 rounded-xl bg-emerald-500/20 flex items-center justify-center hover:bg-emerald-500/30 transition-colors"
                           onClick={(e) => { e.stopPropagation(); handleBuy(inv); }}
                         >
-                          <ShoppingCart className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button 
-                          size="icon" 
-                          variant="ghost" 
-                          className="h-7 w-7"
+                          <ShoppingCart className="w-4 h-4 text-emerald-400" />
+                        </button>
+                        <button 
+                          className="w-9 h-9 rounded-xl bg-rose-500/20 flex items-center justify-center hover:bg-rose-500/30 transition-colors disabled:opacity-30"
                           onClick={(e) => { e.stopPropagation(); handleSell(inv); }}
                           disabled={inv.quantity <= 0}
                         >
-                          <DollarSign className="w-3.5 h-3.5" />
-                        </Button>
+                          <DollarSign className="w-4 h-4 text-rose-400" />
+                        </button>
                       </div>
                     </div>
                   </div>
                 );
               })}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         );
       })}
 
+      {/* Empty State */}
       {investments.length === 0 && (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <TrendingUp className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
-            <p className="text-muted-foreground">Noch keine Investments</p>
-            <p className="text-sm text-muted-foreground mt-1">Füge deine erste Position hinzu</p>
-          </CardContent>
-        </Card>
+        <div className="rounded-3xl bg-white/5 backdrop-blur-xl border border-white/10 p-12 text-center">
+          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500/20 to-teal-500/20 flex items-center justify-center mx-auto mb-6">
+            <TrendingUp className="w-10 h-10 text-emerald-400" />
+          </div>
+          <p className="text-lg font-semibold text-foreground mb-2">Noch keine Investments</p>
+          <p className="text-sm text-muted-foreground">Füge deine erste Position hinzu</p>
+        </div>
       )}
 
       {/* Dialogs & Sheets */}
