@@ -1,16 +1,21 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, Wallet, Banknote, PiggyBank, HelpCircle, Coins, ChevronRight } from 'lucide-react';
-import { useFinanceV2, V2Account } from '../context/FinanceV2Context';
+import { Input } from '@/components/ui/input';
+import { Plus, Wallet, Banknote, PiggyBank, HelpCircle, Coins, ChevronRight, Users, Check } from 'lucide-react';
+import { useFinanceV2, V2Account, V2ExternalSaving } from '../context/FinanceV2Context';
 import { AddAccountDialog } from '../dialogs/AddAccountDialog';
 import { AccountDetailSheet } from '../sheets/AccountDetailSheet';
 import { CashDenominationSheet } from '../sheets/CashDenominationSheet';
+import { AddExternalSavingDialog } from '../dialogs/AddExternalSavingDialog';
+import { ExternalSavingDetailSheet } from '../sheets/ExternalSavingDetailSheet';
+import { getSupabase } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
 const accountTypeIcons: Record<string, React.ReactNode> = {
-  giro: <Wallet className="w-5 h-5" />,
-  tagesgeld: <PiggyBank className="w-5 h-5" />,
-  cash: <Banknote className="w-5 h-5" />,
-  sonstiges: <HelpCircle className="w-5 h-5" />,
+  giro: <Wallet className="w-4 h-4" />,
+  tagesgeld: <PiggyBank className="w-4 h-4" />,
+  cash: <Banknote className="w-4 h-4" />,
+  sonstiges: <HelpCircle className="w-4 h-4" />,
 };
 
 const accountTypeLabels: Record<string, string> = {
@@ -20,19 +25,20 @@ const accountTypeLabels: Record<string, string> = {
   sonstiges: 'Sonstiges',
 };
 
-const accountTypeColors: Record<string, string> = {
-  giro: 'from-blue-500/20 to-blue-600/10',
-  tagesgeld: 'from-emerald-500/20 to-emerald-600/10',
-  cash: 'from-amber-500/20 to-amber-600/10',
-  sonstiges: 'from-slate-500/20 to-slate-600/10',
-};
-
 export function AccountsTab() {
-  const { accounts, totalAccountsEur, loading } = useFinanceV2();
+  const { accounts, externalSavings, totalAccountsEur, totalExternalSavingsEur, loading, refreshAccounts, refreshExternalSavings } = useFinanceV2();
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<V2Account | null>(null);
   const [showCashSheet, setShowCashSheet] = useState(false);
   const [selectedCashAccount, setSelectedCashAccount] = useState<V2Account | null>(null);
+  
+  // External savings state
+  const [showAddExternalDialog, setShowAddExternalDialog] = useState(false);
+  const [selectedExternalSaving, setSelectedExternalSaving] = useState<V2ExternalSaving | null>(null);
+  
+  // Quick cash input state
+  const [quickCashAmount, setQuickCashAmount] = useState('');
+  const [savingCash, setSavingCash] = useState(false);
 
   const formatCurrency = (value: number, currency: string = 'EUR') => 
     value.toLocaleString('de-DE', { style: 'currency', currency, maximumFractionDigits: 2 });
@@ -44,12 +50,42 @@ export function AccountsTab() {
     return acc;
   }, {} as Record<string, V2Account[]>);
 
+  // Get first cash account for quick input
+  const cashAccount = accounts.find(a => a.account_type === 'cash');
+
   const handleAccountClick = (account: V2Account) => {
     if (account.account_type === 'cash') {
       setSelectedCashAccount(account);
       setShowCashSheet(true);
     } else {
       setSelectedAccount(account);
+    }
+  };
+
+  const handleQuickCashSave = async () => {
+    if (!cashAccount || !quickCashAmount) return;
+    
+    const amount = parseFloat(quickCashAmount.replace(',', '.'));
+    if (isNaN(amount)) {
+      toast.error('Ungültiger Betrag');
+      return;
+    }
+    
+    setSavingCash(true);
+    try {
+      const supabase = getSupabase();
+      await supabase
+        .from('v2_accounts')
+        .update({ balance: amount, updated_at: new Date().toISOString() })
+        .eq('id', cashAccount.id);
+      
+      await refreshAccounts();
+      setQuickCashAmount('');
+      toast.success('Bargeld aktualisiert');
+    } catch (error) {
+      toast.error('Fehler beim Speichern');
+    } finally {
+      setSavingCash(false);
     }
   };
 
@@ -62,80 +98,87 @@ export function AccountsTab() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Hero Total Card - iOS Glassmorphism Style */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-500 to-indigo-600 p-6 shadow-2xl">
-        <div className="absolute inset-0 bg-white/10 backdrop-blur-3xl" />
-        <div className="absolute -top-24 -right-24 w-48 h-48 bg-white/20 rounded-full blur-3xl" />
-        <div className="absolute -bottom-12 -left-12 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
-        
-        <div className="relative z-10 text-center">
-          <p className="text-white/70 text-sm font-medium mb-2">Kontenstände gesamt</p>
-          <p className="text-4xl font-bold text-white tracking-tight">{formatCurrency(totalAccountsEur)}</p>
-        </div>
+    <div className="space-y-4">
+      {/* Total Card */}
+      <div className="rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 p-5">
+        <p className="text-white/70 text-xs font-medium mb-1">Kontenstände gesamt</p>
+        <p className="text-3xl font-bold text-white tracking-tight">{formatCurrency(totalAccountsEur)}</p>
       </div>
 
-      {/* Add Account Button - Pill Style */}
+      {/* Quick Cash Input - Only show if cash account exists */}
+      {cashAccount && (
+        <div className="rounded-2xl bg-card border border-border p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Coins className="w-4 h-4 text-amber-500" />
+            <span className="text-sm font-medium">Bargeld aktualisieren</span>
+          </div>
+          <div className="flex gap-2">
+            <Input
+              type="text"
+              inputMode="decimal"
+              placeholder={formatCurrency(cashAccount.balance)}
+              value={quickCashAmount}
+              onChange={(e) => setQuickCashAmount(e.target.value)}
+              className="flex-1 h-10 rounded-xl bg-secondary border-0"
+            />
+            <Button
+              onClick={handleQuickCashSave}
+              disabled={!quickCashAmount || savingCash}
+              className="h-10 w-10 rounded-xl bg-primary p-0"
+            >
+              <Check className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Add Account Button */}
       <Button 
         onClick={() => setShowAddDialog(true)} 
-        className="w-full h-14 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 backdrop-blur-xl text-foreground transition-all duration-300"
         variant="ghost"
+        className="w-full h-12 rounded-xl bg-card border border-border hover:bg-secondary"
       >
-        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center mr-3">
-          <Plus className="w-5 h-5 text-primary" />
-        </div>
-        <span className="font-medium">Neues Konto hinzufügen</span>
+        <Plus className="w-4 h-4 mr-2 text-primary" />
+        <span className="font-medium">Neues Konto</span>
       </Button>
 
-      {/* Accounts by Type - iOS Card Groups */}
+      {/* Accounts by Type */}
       {Object.entries(groupedAccounts).map(([type, accs]) => (
-        <div key={type} className="space-y-3">
+        <div key={type} className="space-y-2">
           <div className="flex items-center gap-2 px-1">
-            <div className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center">
-              {accountTypeIcons[type]}
-            </div>
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               {accountTypeLabels[type]}
-            </h3>
+            </span>
           </div>
           
-          <div className="rounded-2xl overflow-hidden bg-white/5 backdrop-blur-xl border border-white/10">
+          <div className="rounded-2xl bg-card border border-border overflow-hidden">
             {accs.map((account, index) => (
               <div 
                 key={account.id} 
                 className={`
-                  flex items-center gap-4 p-4 cursor-pointer
-                  transition-all duration-200 active:scale-[0.98]
-                  hover:bg-white/5
-                  ${index !== accs.length - 1 ? 'border-b border-white/5' : ''}
+                  flex items-center gap-3 p-3 cursor-pointer hover:bg-secondary/50 transition-colors
+                  ${index !== accs.length - 1 ? 'border-b border-border' : ''}
                 `}
                 onClick={() => handleAccountClick(account)}
               >
-                {/* Account Icon with Gradient */}
-                <div className={`
-                  w-12 h-12 rounded-2xl flex items-center justify-center
-                  bg-gradient-to-br ${accountTypeColors[account.account_type]}
-                  shadow-lg shadow-black/10
-                `}>
+                <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
                   {account.account_type === 'cash' ? (
-                    <Coins className="w-6 h-6 text-amber-400" />
+                    <Coins className="w-5 h-5 text-amber-500" />
                   ) : (
-                    <span className="text-blue-400">{accountTypeIcons[account.account_type]}</span>
+                    <span className="text-blue-500">{accountTypeIcons[account.account_type]}</span>
                   )}
                 </div>
 
-                {/* Account Info */}
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-foreground truncate">{account.name}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{account.currency}</p>
+                  <p className="font-medium text-sm truncate">{account.name}</p>
+                  <p className="text-xs text-muted-foreground">{account.currency}</p>
                 </div>
 
-                {/* Balance & Chevron */}
                 <div className="flex items-center gap-2">
-                  <span className="text-lg font-bold text-foreground">
+                  <span className="font-semibold text-sm">
                     {formatCurrency(account.balance, account.currency)}
                   </span>
-                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
                 </div>
               </div>
             ))}
@@ -143,14 +186,72 @@ export function AccountsTab() {
         </div>
       ))}
 
+      {/* External Savings Section */}
+      <div className="space-y-2 pt-4 border-t border-border">
+        <div className="flex items-center justify-between px-1">
+          <div className="flex items-center gap-2">
+            <Users className="w-4 h-4 text-muted-foreground" />
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Externe Sparbeträge
+            </span>
+          </div>
+          <span className="text-sm font-semibold text-primary">{formatCurrency(totalExternalSavingsEur)}</span>
+        </div>
+        
+        <Button 
+          onClick={() => setShowAddExternalDialog(true)} 
+          variant="ghost"
+          className="w-full h-10 rounded-xl bg-card border border-border hover:bg-secondary text-sm"
+        >
+          <Plus className="w-4 h-4 mr-2 text-primary" />
+          Neuer Sparbetrag
+        </Button>
+
+        {externalSavings.length > 0 && (
+          <div className="rounded-2xl bg-card border border-border overflow-hidden">
+            {externalSavings.map((saving, index) => (
+              <div 
+                key={saving.id} 
+                className={`
+                  flex items-center gap-3 p-3 cursor-pointer hover:bg-secondary/50 transition-colors
+                  ${index !== externalSavings.length - 1 ? 'border-b border-border' : ''}
+                `}
+                onClick={() => setSelectedExternalSaving(saving)}
+              >
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${saving.is_received ? 'bg-emerald-500/10' : 'bg-primary/10'}`}>
+                  <Users className={`w-5 h-5 ${saving.is_received ? 'text-emerald-500' : 'text-primary'}`} />
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm truncate">{saving.name}</p>
+                  <p className="text-xs text-muted-foreground">{saving.source_person}</p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <div className="text-right">
+                    <span className="font-semibold text-sm block">
+                      {formatCurrency(saving.amount)}
+                    </span>
+                    {saving.is_received && (
+                      <span className="text-[10px] text-emerald-500">Erhalten</span>
+                    )}
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Empty State */}
       {accounts.length === 0 && (
-        <div className="rounded-3xl bg-white/5 backdrop-blur-xl border border-white/10 p-12 text-center">
-          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500/20 to-indigo-500/20 flex items-center justify-center mx-auto mb-6">
-            <Wallet className="w-10 h-10 text-blue-400" />
+        <div className="rounded-2xl bg-card border border-border p-8 text-center">
+          <div className="w-16 h-16 rounded-full bg-blue-500/10 flex items-center justify-center mx-auto mb-4">
+            <Wallet className="w-8 h-8 text-blue-500" />
           </div>
-          <p className="text-lg font-semibold text-foreground mb-2">Noch keine Konten</p>
-          <p className="text-sm text-muted-foreground">Erstelle dein erstes Konto um loszulegen</p>
+          <p className="font-semibold mb-1">Noch keine Konten</p>
+          <p className="text-sm text-muted-foreground">Erstelle dein erstes Konto</p>
         </div>
       )}
 
@@ -170,6 +271,17 @@ export function AccountsTab() {
         account={selectedCashAccount}
         open={showCashSheet}
         onOpenChange={setShowCashSheet}
+      />
+      
+      <AddExternalSavingDialog
+        open={showAddExternalDialog}
+        onOpenChange={setShowAddExternalDialog}
+      />
+      
+      <ExternalSavingDetailSheet
+        saving={selectedExternalSaving}
+        open={!!selectedExternalSaving}
+        onOpenChange={(open) => !open && setSelectedExternalSaving(null)}
       />
     </div>
   );

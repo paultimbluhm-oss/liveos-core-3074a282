@@ -109,6 +109,22 @@ export interface V2CashDenomination {
   quantity: number;
 }
 
+export interface V2ExternalSaving {
+  id: string;
+  user_id: string;
+  name: string;
+  source_person: string;
+  amount: number;
+  currency: string;
+  expected_date?: string;
+  note?: string;
+  is_received: boolean;
+  received_date?: string;
+  received_account_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 interface FinanceV2ContextType {
   // Data
   accounts: V2Account[];
@@ -119,6 +135,7 @@ interface FinanceV2ContextType {
   automations: V2Automation[];
   snapshots: V2DailySnapshot[];
   cashDenominations: Record<string, V2CashDenomination[]>;
+  externalSavings: V2ExternalSaving[];
   
   // Loading states
   loading: boolean;
@@ -127,6 +144,7 @@ interface FinanceV2ContextType {
   totalAccountsEur: number;
   totalInvestmentsEur: number;
   netWorthEur: number;
+  totalExternalSavingsEur: number;
   
   // Actions
   refreshData: () => Promise<void>;
@@ -137,6 +155,7 @@ interface FinanceV2ContextType {
   refreshMaterialAssets: () => Promise<void>;
   refreshAutomations: () => Promise<void>;
   refreshSnapshots: () => Promise<void>;
+  refreshExternalSavings: () => Promise<void>;
   createSnapshot: () => Promise<void>;
   
   // EUR/USD rate
@@ -156,6 +175,7 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
   const [automations, setAutomations] = useState<V2Automation[]>([]);
   const [snapshots, setSnapshots] = useState<V2DailySnapshot[]>([]);
   const [cashDenominations, setCashDenominations] = useState<Record<string, V2CashDenomination[]>>({});
+  const [externalSavings, setExternalSavings] = useState<V2ExternalSaving[]>([]);
   const [loading, setLoading] = useState(true);
   const [eurUsdRate, setEurUsdRate] = useState(1.08);
 
@@ -258,6 +278,17 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
     if (data) setSnapshots(data as V2DailySnapshot[]);
   }, [user]);
 
+  const refreshExternalSavings = useCallback(async () => {
+    if (!user) return;
+    const supabase = getSupabase();
+    const { data } = await supabase
+      .from('v2_external_savings')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+    if (data) setExternalSavings(data as V2ExternalSaving[]);
+  }, [user]);
+
   const refreshData = useCallback(async () => {
     setLoading(true);
     await Promise.all([
@@ -268,9 +299,10 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
       refreshMaterialAssets(),
       refreshAutomations(),
       refreshSnapshots(),
+      refreshExternalSavings(),
     ]);
     setLoading(false);
-  }, [refreshAccounts, refreshCategories, refreshTransactions, refreshInvestments, refreshMaterialAssets, refreshAutomations, refreshSnapshots]);
+  }, [refreshAccounts, refreshCategories, refreshTransactions, refreshInvestments, refreshMaterialAssets, refreshAutomations, refreshSnapshots, refreshExternalSavings]);
 
   // Create/update today's snapshot
   const createSnapshot = useCallback(async () => {
@@ -334,11 +366,10 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (user) {
       refreshData().then(() => {
-        // Create snapshot after data is loaded
         createSnapshot();
       });
     }
-  }, [user]); // Only depend on user to avoid infinite loops
+  }, [user]);
 
   // Computed values
   const totalAccountsEur = accounts.reduce((sum, acc) => {
@@ -358,6 +389,15 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
 
   const netWorthEur = totalAccountsEur + totalInvestmentsEur;
 
+  const totalExternalSavingsEur = externalSavings
+    .filter(s => !s.is_received)
+    .reduce((sum, s) => {
+      if (s.currency === 'USD') {
+        return sum + s.amount / eurUsdRate;
+      }
+      return sum + s.amount;
+    }, 0);
+
   return (
     <FinanceV2Context.Provider value={{
       accounts,
@@ -368,10 +408,12 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
       automations,
       snapshots,
       cashDenominations,
+      externalSavings,
       loading,
       totalAccountsEur,
       totalInvestmentsEur,
       netWorthEur,
+      totalExternalSavingsEur,
       refreshData,
       refreshAccounts,
       refreshCategories,
@@ -380,6 +422,7 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
       refreshMaterialAssets,
       refreshAutomations,
       refreshSnapshots,
+      refreshExternalSavings,
       createSnapshot,
       eurUsdRate,
     }}>

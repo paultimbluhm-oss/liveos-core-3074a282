@@ -3418,6 +3418,62 @@ export type Database = {
         }
         Relationships: []
       }
+      v2_external_savings: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          expected_date: string | null
+          id: string
+          is_received: boolean
+          name: string
+          note: string | null
+          received_account_id: string | null
+          received_date: string | null
+          source_person: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          expected_date?: string | null
+          id?: string
+          is_received?: boolean
+          name: string
+          note?: string | null
+          received_account_id?: string | null
+          received_date?: string | null
+          source_person: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          expected_date?: string | null
+          id?: string
+          is_received?: boolean
+          name?: string
+          note?: string | null
+          received_account_id?: string | null
+          received_date?: string | null
+          source_person?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "v2_external_savings_received_account_id_fkey"
+            columns: ["received_account_id"]
+            isOneToOne: false
+            referencedRelation: "v2_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v2_grades: {
         Row: {
           course_id: string
