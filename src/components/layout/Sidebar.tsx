@@ -13,6 +13,7 @@ import {
   Flame,
   Zap,
   Users,
+  Coins,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
@@ -29,6 +30,7 @@ import {
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/schule-v2', icon: GraduationCap, label: 'Schule' },
+  { to: '/finanzen-v2', icon: Coins, label: 'Finanzen' },
   { to: '/privat', icon: User, label: 'Privat' },
   { to: '/business', icon: Briefcase, label: 'Business' },
   { to: '/freunde', icon: Users, label: 'Freunde' },
@@ -37,6 +39,7 @@ const navItems = [
 const getPageTitle = (pathname: string): string => {
   if (pathname === '/') return 'Dashboard';
   if (pathname === '/schule-v2') return 'Schule';
+  if (pathname === '/finanzen-v2') return 'Finanzen';
   if (pathname === '/privat') return 'Privat';
   if (pathname === '/business') return 'Business';
   if (pathname === '/freunde') return 'Freunde';
