@@ -1,0 +1,332 @@
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { useAuth, getSupabase } from '@/hooks/useAuth';
+import { format } from 'date-fns';
+
+// Types
+export interface V2Account {
+  id: string;
+  user_id: string;
+  name: string;
+  account_type: 'giro' | 'tagesgeld' | 'cash' | 'sonstiges';
+  currency: 'EUR' | 'USD';
+  balance: number;
+  icon?: string;
+  color?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface V2Category {
+  id: string;
+  user_id: string;
+  name: string;
+  icon?: string;
+  color?: string;
+  is_default: boolean;
+  is_active: boolean;
+}
+
+export interface V2Transaction {
+  id: string;
+  user_id: string;
+  transaction_type: 'income' | 'expense' | 'transfer' | 'investment_buy' | 'investment_sell';
+  amount: number;
+  currency: string;
+  date: string;
+  time?: string;
+  account_id?: string;
+  to_account_id?: string;
+  category_id?: string;
+  investment_id?: string;
+  note?: string;
+  automation_id?: string;
+  execution_id?: string;
+  created_at: string;
+}
+
+export interface V2Investment {
+  id: string;
+  user_id: string;
+  name: string;
+  symbol?: string;
+  asset_type: 'etf' | 'stock' | 'fund' | 'crypto' | 'metal' | 'other';
+  currency: string;
+  quantity: number;
+  avg_purchase_price: number;
+  current_price?: number;
+  current_price_updated_at?: string;
+  is_active: boolean;
+}
+
+export interface V2MaterialAsset {
+  id: string;
+  user_id: string;
+  name: string;
+  category?: string;
+  purchase_price?: number;
+  purchase_date?: string;
+  current_value?: number;
+  note?: string;
+}
+
+export interface V2Automation {
+  id: string;
+  user_id: string;
+  name: string;
+  automation_type: 'income' | 'expense' | 'transfer' | 'investment';
+  amount: number;
+  currency: string;
+  interval_type: 'weekly' | 'monthly' | 'yearly';
+  execution_day: number;
+  account_id?: string;
+  to_account_id?: string;
+  investment_id?: string;
+  category_id?: string;
+  note?: string;
+  is_active: boolean;
+  last_executed_at?: string;
+  next_execution_date?: string;
+}
+
+export interface V2DailySnapshot {
+  id: string;
+  user_id: string;
+  date: string;
+  account_balances: Record<string, number>;
+  total_accounts_eur: number;
+  total_investments_eur: number;
+  net_worth_eur: number;
+  income_eur: number;
+  expenses_eur: number;
+  eur_usd_rate?: number;
+}
+
+export interface V2CashDenomination {
+  id: string;
+  account_id: string;
+  denomination: number;
+  quantity: number;
+}
+
+interface FinanceV2ContextType {
+  // Data
+  accounts: V2Account[];
+  categories: V2Category[];
+  transactions: V2Transaction[];
+  investments: V2Investment[];
+  materialAssets: V2MaterialAsset[];
+  automations: V2Automation[];
+  snapshots: V2DailySnapshot[];
+  cashDenominations: Record<string, V2CashDenomination[]>;
+  
+  // Loading states
+  loading: boolean;
+  
+  // Computed values
+  totalAccountsEur: number;
+  totalInvestmentsEur: number;
+  netWorthEur: number;
+  
+  // Actions
+  refreshData: () => Promise<void>;
+  refreshAccounts: () => Promise<void>;
+  refreshTransactions: () => Promise<void>;
+  refreshInvestments: () => Promise<void>;
+  refreshMaterialAssets: () => Promise<void>;
+  refreshAutomations: () => Promise<void>;
+  refreshSnapshots: () => Promise<void>;
+  
+  // EUR/USD rate
+  eurUsdRate: number;
+}
+
+const FinanceV2Context = createContext<FinanceV2ContextType | undefined>(undefined);
+
+export function FinanceV2Provider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
+  
+  const [accounts, setAccounts] = useState<V2Account[]>([]);
+  const [categories, setCategories] = useState<V2Category[]>([]);
+  const [transactions, setTransactions] = useState<V2Transaction[]>([]);
+  const [investments, setInvestments] = useState<V2Investment[]>([]);
+  const [materialAssets, setMaterialAssets] = useState<V2MaterialAsset[]>([]);
+  const [automations, setAutomations] = useState<V2Automation[]>([]);
+  const [snapshots, setSnapshots] = useState<V2DailySnapshot[]>([]);
+  const [cashDenominations, setCashDenominations] = useState<Record<string, V2CashDenomination[]>>({});
+  const [loading, setLoading] = useState(true);
+  const [eurUsdRate, setEurUsdRate] = useState(1.08);
+
+  const refreshAccounts = useCallback(async () => {
+    if (!user) return;
+    const supabase = getSupabase();
+    const { data } = await supabase
+      .from('v2_accounts')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('name');
+    if (data) {
+      setAccounts(data as V2Account[]);
+      
+      // Load cash denominations for cash accounts
+      const cashAccounts = data.filter(a => a.account_type === 'cash');
+      if (cashAccounts.length > 0) {
+        const { data: denoms } = await supabase
+          .from('v2_cash_denominations')
+          .select('*')
+          .in('account_id', cashAccounts.map(a => a.id));
+        
+        if (denoms) {
+          const denomMap: Record<string, V2CashDenomination[]> = {};
+          denoms.forEach((d: V2CashDenomination) => {
+            if (!denomMap[d.account_id]) denomMap[d.account_id] = [];
+            denomMap[d.account_id].push(d);
+          });
+          setCashDenominations(denomMap);
+        }
+      }
+    }
+  }, [user]);
+
+  const refreshCategories = useCallback(async () => {
+    if (!user) return;
+    const supabase = getSupabase();
+    const { data } = await supabase
+      .from('v2_categories')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('name');
+    if (data) setCategories(data as V2Category[]);
+  }, [user]);
+
+  const refreshTransactions = useCallback(async () => {
+    if (!user) return;
+    const supabase = getSupabase();
+    const { data } = await supabase
+      .from('v2_transactions')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('date', { ascending: false })
+      .limit(100);
+    if (data) setTransactions(data as V2Transaction[]);
+  }, [user]);
+
+  const refreshInvestments = useCallback(async () => {
+    if (!user) return;
+    const supabase = getSupabase();
+    const { data } = await supabase
+      .from('v2_investments')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('name');
+    if (data) setInvestments(data as V2Investment[]);
+  }, [user]);
+
+  const refreshMaterialAssets = useCallback(async () => {
+    if (!user) return;
+    const supabase = getSupabase();
+    const { data } = await supabase
+      .from('v2_material_assets')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('name');
+    if (data) setMaterialAssets(data as V2MaterialAsset[]);
+  }, [user]);
+
+  const refreshAutomations = useCallback(async () => {
+    if (!user) return;
+    const supabase = getSupabase();
+    const { data } = await supabase
+      .from('v2_automations')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('name');
+    if (data) setAutomations(data as V2Automation[]);
+  }, [user]);
+
+  const refreshSnapshots = useCallback(async () => {
+    if (!user) return;
+    const supabase = getSupabase();
+    const { data } = await supabase
+      .from('v2_daily_snapshots')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('date', { ascending: false })
+      .limit(365);
+    if (data) setSnapshots(data as V2DailySnapshot[]);
+  }, [user]);
+
+  const refreshData = useCallback(async () => {
+    setLoading(true);
+    await Promise.all([
+      refreshAccounts(),
+      refreshCategories(),
+      refreshTransactions(),
+      refreshInvestments(),
+      refreshMaterialAssets(),
+      refreshAutomations(),
+      refreshSnapshots(),
+    ]);
+    setLoading(false);
+  }, [refreshAccounts, refreshCategories, refreshTransactions, refreshInvestments, refreshMaterialAssets, refreshAutomations, refreshSnapshots]);
+
+  // Initial load
+  useEffect(() => {
+    if (user) {
+      refreshData();
+    }
+  }, [user, refreshData]);
+
+  // Computed values
+  const totalAccountsEur = accounts.reduce((sum, acc) => {
+    if (acc.currency === 'USD') {
+      return sum + acc.balance / eurUsdRate;
+    }
+    return sum + acc.balance;
+  }, 0);
+
+  const totalInvestmentsEur = investments.reduce((sum, inv) => {
+    const value = inv.quantity * (inv.current_price || inv.avg_purchase_price);
+    if (inv.currency === 'USD') {
+      return sum + value / eurUsdRate;
+    }
+    return sum + value;
+  }, 0);
+
+  const netWorthEur = totalAccountsEur + totalInvestmentsEur;
+
+  return (
+    <FinanceV2Context.Provider value={{
+      accounts,
+      categories,
+      transactions,
+      investments,
+      materialAssets,
+      automations,
+      snapshots,
+      cashDenominations,
+      loading,
+      totalAccountsEur,
+      totalInvestmentsEur,
+      netWorthEur,
+      refreshData,
+      refreshAccounts,
+      refreshTransactions,
+      refreshInvestments,
+      refreshMaterialAssets,
+      refreshAutomations,
+      refreshSnapshots,
+      eurUsdRate,
+    }}>
+      {children}
+    </FinanceV2Context.Provider>
+  );
+}
+
+export function useFinanceV2() {
+  const context = useContext(FinanceV2Context);
+  if (!context) {
+    throw new Error('useFinanceV2 must be used within FinanceV2Provider');
+  }
+  return context;
+}

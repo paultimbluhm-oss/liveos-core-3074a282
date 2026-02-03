@@ -3024,6 +3024,208 @@ export type Database = {
           },
         ]
       }
+      v2_accounts: {
+        Row: {
+          account_type: string
+          balance: number
+          color: string | null
+          created_at: string | null
+          currency: string
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          account_type: string
+          balance?: number
+          color?: string | null
+          created_at?: string | null
+          currency?: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          account_type?: string
+          balance?: number
+          color?: string | null
+          created_at?: string | null
+          currency?: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      v2_automations: {
+        Row: {
+          account_id: string | null
+          amount: number
+          automation_type: string
+          category_id: string | null
+          created_at: string | null
+          currency: string
+          execution_day: number
+          id: string
+          interval_type: string
+          investment_id: string | null
+          is_active: boolean | null
+          last_executed_at: string | null
+          name: string
+          next_execution_date: string | null
+          note: string | null
+          to_account_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          account_id?: string | null
+          amount: number
+          automation_type: string
+          category_id?: string | null
+          created_at?: string | null
+          currency?: string
+          execution_day: number
+          id?: string
+          interval_type: string
+          investment_id?: string | null
+          is_active?: boolean | null
+          last_executed_at?: string | null
+          name: string
+          next_execution_date?: string | null
+          note?: string | null
+          to_account_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          account_id?: string | null
+          amount?: number
+          automation_type?: string
+          category_id?: string | null
+          created_at?: string | null
+          currency?: string
+          execution_day?: number
+          id?: string
+          interval_type?: string
+          investment_id?: string | null
+          is_active?: boolean | null
+          last_executed_at?: string | null
+          name?: string
+          next_execution_date?: string | null
+          note?: string | null
+          to_account_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "v2_automations_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "v2_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "v2_automations_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "v2_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "v2_automations_investment_id_fkey"
+            columns: ["investment_id"]
+            isOneToOne: false
+            referencedRelation: "v2_investments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "v2_automations_to_account_id_fkey"
+            columns: ["to_account_id"]
+            isOneToOne: false
+            referencedRelation: "v2_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v2_cash_denominations: {
+        Row: {
+          account_id: string
+          created_at: string | null
+          denomination: number
+          id: string
+          quantity: number
+          updated_at: string | null
+        }
+        Insert: {
+          account_id: string
+          created_at?: string | null
+          denomination: number
+          id?: string
+          quantity?: number
+          updated_at?: string | null
+        }
+        Update: {
+          account_id?: string
+          created_at?: string | null
+          denomination?: number
+          id?: string
+          quantity?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "v2_cash_denominations_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "v2_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v2_categories: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          is_default: boolean | null
+          name: string
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          name: string
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       v2_course_feed: {
         Row: {
           course_id: string
@@ -3171,6 +3373,51 @@ export type Database = {
           },
         ]
       }
+      v2_daily_snapshots: {
+        Row: {
+          account_balances: Json
+          created_at: string | null
+          date: string
+          eur_usd_rate: number | null
+          expenses_eur: number
+          id: string
+          income_eur: number
+          net_worth_eur: number
+          total_accounts_eur: number
+          total_investments_eur: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          account_balances?: Json
+          created_at?: string | null
+          date: string
+          eur_usd_rate?: number | null
+          expenses_eur?: number
+          id?: string
+          income_eur?: number
+          net_worth_eur?: number
+          total_accounts_eur?: number
+          total_investments_eur?: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          account_balances?: Json
+          created_at?: string | null
+          date?: string
+          eur_usd_rate?: number | null
+          expenses_eur?: number
+          id?: string
+          income_eur?: number
+          net_worth_eur?: number
+          total_accounts_eur?: number
+          total_investments_eur?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       v2_grades: {
         Row: {
           course_id: string
@@ -3255,6 +3502,93 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      v2_investments: {
+        Row: {
+          asset_type: string
+          avg_purchase_price: number
+          created_at: string | null
+          currency: string
+          current_price: number | null
+          current_price_updated_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          quantity: number
+          symbol: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          asset_type: string
+          avg_purchase_price?: number
+          created_at?: string | null
+          currency?: string
+          current_price?: number | null
+          current_price_updated_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          quantity?: number
+          symbol?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          asset_type?: string
+          avg_purchase_price?: number
+          created_at?: string | null
+          currency?: string
+          current_price?: number | null
+          current_price_updated_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          quantity?: number
+          symbol?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      v2_material_assets: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          current_value: number | null
+          id: string
+          name: string
+          note: string | null
+          purchase_date: string | null
+          purchase_price: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          current_value?: number | null
+          id?: string
+          name: string
+          note?: string | null
+          purchase_date?: string | null
+          purchase_price?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          current_value?: number | null
+          id?: string
+          name?: string
+          note?: string | null
+          purchase_date?: string | null
+          purchase_price?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       v2_school_memberships: {
         Row: {
@@ -3358,6 +3692,89 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "v2_courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v2_transactions: {
+        Row: {
+          account_id: string | null
+          amount: number
+          automation_id: string | null
+          category_id: string | null
+          created_at: string | null
+          currency: string
+          date: string
+          execution_id: string | null
+          id: string
+          investment_id: string | null
+          note: string | null
+          time: string | null
+          to_account_id: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Insert: {
+          account_id?: string | null
+          amount: number
+          automation_id?: string | null
+          category_id?: string | null
+          created_at?: string | null
+          currency?: string
+          date?: string
+          execution_id?: string | null
+          id?: string
+          investment_id?: string | null
+          note?: string | null
+          time?: string | null
+          to_account_id?: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Update: {
+          account_id?: string | null
+          amount?: number
+          automation_id?: string | null
+          category_id?: string | null
+          created_at?: string | null
+          currency?: string
+          date?: string
+          execution_id?: string | null
+          id?: string
+          investment_id?: string | null
+          note?: string | null
+          time?: string | null
+          to_account_id?: string | null
+          transaction_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "v2_transactions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "v2_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "v2_transactions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "v2_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "v2_transactions_investment_id_fkey"
+            columns: ["investment_id"]
+            isOneToOne: false
+            referencedRelation: "v2_investments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "v2_transactions_to_account_id_fkey"
+            columns: ["to_account_id"]
+            isOneToOne: false
+            referencedRelation: "v2_accounts"
             referencedColumns: ["id"]
           },
         ]
