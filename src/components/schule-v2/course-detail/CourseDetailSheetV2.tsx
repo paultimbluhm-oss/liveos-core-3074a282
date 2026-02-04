@@ -11,7 +11,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Slider } from '@/components/ui/slider';
-import { Plus, ClipboardList, GraduationCap, Clock } from 'lucide-react';
+import { Plus, ClipboardList, GraduationCap, Clock, Settings } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { TimetableSlotManagerV2 } from './TimetableSlotManagerV2';
@@ -31,7 +32,10 @@ export function CourseDetailSheetV2({ open, onOpenChange, course, onTimetableCha
   
   const [grades, setGrades] = useState<V2Grade[]>([]);
   const [addGradeOpen, setAddGradeOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const isCreator = course?.created_by === user?.id;
 
   // Load grades when course changes
   useEffect(() => {
@@ -115,8 +119,18 @@ export function CourseDetailSheetV2({ open, onOpenChange, course, onTimetableCha
               >
                 {course.short_name || course.name.substring(0, 2)}
               </div>
-              <div>
-                <SheetTitle>{course.name}</SheetTitle>
+              <div className="flex-1 min-w-0">
+                <SheetTitle className="flex items-center gap-2">
+                  {course.name}
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-6 w-6"
+                    onClick={() => setSettingsOpen(true)}
+                  >
+                    <Settings className="w-4 h-4" strokeWidth={1.5} />
+                  </Button>
+                </SheetTitle>
                 <p className="text-sm text-muted-foreground">
                   {course.teacher_name || 'Kein Lehrer'} · {course.room || 'Kein Raum'}
                 </p>
@@ -220,7 +234,305 @@ export function CourseDetailSheetV2({ open, onOpenChange, course, onTimetableCha
         currentSemester={scope.semester}
         onAdded={(grade) => setGrades(prev => [grade, ...prev])}
       />
+
+      <CourseSettingsDialogV2
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        course={course}
+        isCreator={isCreator}
+        onUpdated={() => {
+          onTimetableChange?.();
+        }}
+      />
     </>
+  );
+}
+
+// Course Settings Dialog
+const COURSE_COLORS = [
+  '#ef4444', '#f97316', '#f59e0b', '#eab308',
+  '#84cc16', '#22c55e', '#10b981', '#14b8a6',
+  '#06b6d4', '#0ea5e9', '#3b82f6', '#64748b',
+];
+
+interface CourseSettingsDialogV2Props {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  course: V2Course;
+  isCreator: boolean;
+  onUpdated: () => void;
+}
+
+function CourseSettingsDialogV2({ open, onOpenChange, course, isCreator, onUpdated }: CourseSettingsDialogV2Props) {
+  const { scope } = useSchoolV2();
+  
+  const [name, setName] = useState(course.name);
+  const [shortName, setShortName] = useState(course.short_name || '');
+  const [room, setRoom] = useState(course.room || '');
+  const [teacher, setTeacher] = useState(course.teacher_name || '');
+  const [color, setColor] = useState(course.color || '#6366f1');
+  const [isClassCourse, setIsClassCourse] = useState(!!course.class_name);
+  const [oralWeight, setOralWeight] = useState(course.oral_weight);
+  const [writtenWeight, setWrittenWeight] = useState(course.written_weight);
+  const [hasPractical, setHasPractical] = useState(course.has_practical);
+  const [practicalWeight, setPracticalWeight] = useState(course.practical_weight);
+  const [saving, setSaving] = useState(false);
+
+  // Reset form when course changes
+  useEffect(() => {
+    setName(course.name);
+    setShortName(course.short_name || '');
+    setRoom(course.room || '');
+    setTeacher(course.teacher_name || '');
+    setColor(course.color || '#6366f1');
+    setIsClassCourse(!!course.class_name);
+    setOralWeight(course.oral_weight);
+    setWrittenWeight(course.written_weight);
+    setHasPractical(course.has_practical);
+    setPracticalWeight(course.practical_weight);
+  }, [course]);
+
+  // Adjust weights when practical is toggled
+  useEffect(() => {
+    if (hasPractical) {
+      const newOral = Math.round(oralWeight * 0.8);
+      const newWritten = Math.round(writtenWeight * 0.8);
+      const newPractical = 100 - newOral - newWritten;
+      setOralWeight(newOral);
+      setWrittenWeight(newWritten);
+      setPracticalWeight(newPractical);
+    } else {
+      const total = oralWeight + writtenWeight;
+      setOralWeight(Math.round((oralWeight / total) * 100));
+      setWrittenWeight(Math.round((writtenWeight / total) * 100));
+      setPracticalWeight(0);
+    }
+  }, [hasPractical]);
+
+  const handleOralChange = (value: number[]) => {
+    const newOral = value[0];
+    const remaining = 100 - newOral;
+    if (hasPractical) {
+      const ratio = writtenWeight / (writtenWeight + practicalWeight) || 0.5;
+      setWrittenWeight(Math.round(remaining * ratio));
+      setPracticalWeight(remaining - Math.round(remaining * ratio));
+    } else {
+      setWrittenWeight(remaining);
+    }
+    setOralWeight(newOral);
+  };
+
+  const handleWrittenChange = (value: number[]) => {
+    const newWritten = value[0];
+    const remaining = 100 - newWritten;
+    if (hasPractical) {
+      const ratio = oralWeight / (oralWeight + practicalWeight) || 0.5;
+      setOralWeight(Math.round(remaining * ratio));
+      setPracticalWeight(remaining - Math.round(remaining * ratio));
+    } else {
+      setOralWeight(remaining);
+    }
+    setWrittenWeight(newWritten);
+  };
+
+  const handlePracticalChange = (value: number[]) => {
+    const newPractical = value[0];
+    const remaining = 100 - newPractical;
+    const ratio = oralWeight / (oralWeight + writtenWeight) || 0.5;
+    setOralWeight(Math.round(remaining * ratio));
+    setWrittenWeight(remaining - Math.round(remaining * ratio));
+    setPracticalWeight(newPractical);
+  };
+
+  const handleSave = async () => {
+    if (!isCreator) return;
+    setSaving(true);
+
+    const { error } = await supabase
+      .from('v2_courses')
+      .update({
+        name: name.trim(),
+        short_name: shortName.trim() || null,
+        room: room.trim() || null,
+        teacher_name: teacher.trim() || null,
+        color,
+        class_name: isClassCourse ? scope.className : null,
+        oral_weight: oralWeight,
+        written_weight: writtenWeight,
+        practical_weight: hasPractical ? practicalWeight : 0,
+        has_practical: hasPractical,
+      })
+      .eq('id', course.id);
+
+    if (!error) {
+      onUpdated();
+      onOpenChange(false);
+    }
+    setSaving(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-sm max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Kurseinstellungen</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          {/* Basic Info */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>Kursname</Label>
+              <Input 
+                value={name} 
+                onChange={(e) => setName(e.target.value)}
+                disabled={!isCreator}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Kürzel</Label>
+              <Input 
+                value={shortName} 
+                onChange={(e) => setShortName(e.target.value)}
+                placeholder="z.B. Phy"
+                maxLength={4}
+                disabled={!isCreator}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>Raum</Label>
+              <Input 
+                value={room} 
+                onChange={(e) => setRoom(e.target.value)}
+                placeholder="z.B. R204"
+                disabled={!isCreator}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Lehrer</Label>
+              <Input 
+                value={teacher} 
+                onChange={(e) => setTeacher(e.target.value)}
+                placeholder="z.B. Hr. Müller"
+                disabled={!isCreator}
+              />
+            </div>
+          </div>
+
+          {/* Color */}
+          <div className="space-y-2">
+            <Label>Farbe</Label>
+            <div className="flex flex-wrap gap-2">
+              {COURSE_COLORS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => isCreator && setColor(c)}
+                  className={`w-7 h-7 rounded-full transition-transform ${
+                    color === c ? 'ring-2 ring-offset-2 ring-primary scale-110' : ''
+                  } ${!isCreator ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  style={{ backgroundColor: c }}
+                  disabled={!isCreator}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Class Scope */}
+          <div className="flex items-center justify-between">
+            <div>
+              <Label>Nur meine Klasse</Label>
+              <p className="text-xs text-muted-foreground">
+                {isClassCourse ? `Nur Klasse ${scope.className}` : 'Für den ganzen Jahrgang'}
+              </p>
+            </div>
+            <Switch 
+              checked={isClassCourse} 
+              onCheckedChange={setIsClassCourse}
+              disabled={!isCreator}
+            />
+          </div>
+
+          {/* Weights */}
+          <div className="space-y-3 pt-2 border-t">
+            <Label>Notengewichtung</Label>
+            
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Mündlich</span>
+                <span className="font-medium">{oralWeight}%</span>
+              </div>
+              <Slider
+                value={[oralWeight]}
+                onValueChange={handleOralChange}
+                min={0}
+                max={100}
+                step={5}
+                disabled={!isCreator}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Schriftlich</span>
+                <span className="font-medium">{writtenWeight}%</span>
+              </div>
+              <Slider
+                value={[writtenWeight]}
+                onValueChange={handleWrittenChange}
+                min={0}
+                max={100}
+                step={5}
+                disabled={!isCreator}
+              />
+            </div>
+
+            <div className="flex items-center justify-between pt-2">
+              <Label>Praxis-Note</Label>
+              <Switch 
+                checked={hasPractical} 
+                onCheckedChange={setHasPractical}
+                disabled={!isCreator}
+              />
+            </div>
+
+            {hasPractical && (
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Praxis</span>
+                  <span className="font-medium">{practicalWeight}%</span>
+                </div>
+                <Slider
+                  value={[practicalWeight]}
+                  onValueChange={handlePracticalChange}
+                  min={0}
+                  max={100}
+                  step={5}
+                  disabled={!isCreator}
+                />
+              </div>
+            )}
+
+            <p className="text-xs text-muted-foreground">
+              Gesamt: {oralWeight + writtenWeight + (hasPractical ? practicalWeight : 0)}%
+            </p>
+          </div>
+
+          {isCreator ? (
+            <Button onClick={handleSave} disabled={saving || !name.trim()} className="w-full">
+              Speichern
+            </Button>
+          ) : (
+            <p className="text-xs text-center text-muted-foreground py-2">
+              Nur der Ersteller kann diesen Kurs bearbeiten
+            </p>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
