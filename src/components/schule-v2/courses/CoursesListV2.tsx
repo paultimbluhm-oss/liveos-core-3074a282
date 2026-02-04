@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useImperativeHandle, forwardRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useSchoolV2 } from '../context/SchoolV2Context';
@@ -13,7 +13,12 @@ interface CoursesListV2Props {
   onCoursesLoaded?: (courses: V2Course[]) => void;
 }
 
-export function CoursesListV2({ onCourseSelect, onCreateCourse, onCoursesLoaded }: CoursesListV2Props) {
+export interface CoursesListV2Ref {
+  refresh: () => void;
+}
+
+export const CoursesListV2 = forwardRef<CoursesListV2Ref, CoursesListV2Props>(
+  function CoursesListV2({ onCourseSelect, onCreateCourse, onCoursesLoaded }, ref) {
   const { user } = useAuth();
   const { scope } = useSchoolV2();
   
@@ -22,50 +27,55 @@ export function CoursesListV2({ onCourseSelect, onCreateCourse, onCoursesLoaded 
   const [loading, setLoading] = useState(true);
 
   // Load courses for current scope
-  useEffect(() => {
-    const loadCourses = async () => {
-      if (!user || !scope.school) {
-        setCourses([]);
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-
-      // Hole alle Kurse im aktuellen Scope
-      // Jahrgangskurse (class_name = null) + Klassenkurse für aktuelle Klasse
-      const { data: coursesData } = await supabase
-        .from('v2_courses')
-        .select('*')
-        .eq('school_id', scope.school.id)
-        .eq('grade_level', scope.gradeLevel)
-        .eq('semester', scope.semester)
-        .or(`class_name.is.null,class_name.eq.${scope.className}`)
-        .order('name');
-
-      // Hole Mitgliedschaften des Users
-      const { data: memberships } = await supabase
-        .from('v2_course_members')
-        .select('course_id')
-        .eq('user_id', user.id);
-
-      const memberIds = new Set((memberships || []).map(m => m.course_id));
-      setMemberCourseIds(memberIds);
-
-      const enrichedCourses = (coursesData || []).map(c => ({
-        ...c,
-        semester: c.semester as 1 | 2,
-        class_name: c.class_name as 'A' | 'B' | 'C' | 'D' | null,
-        is_member: memberIds.has(c.id),
-      }));
-
-      setCourses(enrichedCourses);
-      onCoursesLoaded?.(enrichedCourses);
+  const loadCourses = useCallback(async () => {
+    if (!user || !scope.school) {
+      setCourses([]);
       setLoading(false);
-    };
+      return;
+    }
 
+    setLoading(true);
+
+    // Hole alle Kurse im aktuellen Scope
+    // Jahrgangskurse (class_name = null) + Klassenkurse für aktuelle Klasse
+    const { data: coursesData } = await supabase
+      .from('v2_courses')
+      .select('*')
+      .eq('school_id', scope.school.id)
+      .eq('grade_level', scope.gradeLevel)
+      .eq('semester', scope.semester)
+      .or(`class_name.is.null,class_name.eq.${scope.className}`)
+      .order('name');
+
+    // Hole Mitgliedschaften des Users
+    const { data: memberships } = await supabase
+      .from('v2_course_members')
+      .select('course_id')
+      .eq('user_id', user.id);
+
+    const memberIds = new Set((memberships || []).map(m => m.course_id));
+    setMemberCourseIds(memberIds);
+
+    const enrichedCourses = (coursesData || []).map(c => ({
+      ...c,
+      semester: c.semester as 1 | 2,
+      class_name: c.class_name as 'A' | 'B' | 'C' | 'D' | null,
+      is_member: memberIds.has(c.id),
+    }));
+
+    setCourses(enrichedCourses);
+    onCoursesLoaded?.(enrichedCourses);
+    setLoading(false);
+  }, [user, scope.school?.id, scope.gradeLevel, scope.semester, scope.className, onCoursesLoaded]);
+
+  // Expose refresh to parent
+  useImperativeHandle(ref, () => ({
+    refresh: loadCourses,
+  }), [loadCourses]);
+
+  useEffect(() => {
     loadCourses();
-  }, [user, scope.school?.id, scope.gradeLevel, scope.semester, scope.className]);
+  }, [loadCourses]);
 
   const handleJoinCourse = async (courseId: string) => {
     if (!user) return;
@@ -200,4 +210,4 @@ export function CoursesListV2({ onCourseSelect, onCreateCourse, onCoursesLoaded 
       )}
     </div>
   );
-}
+});

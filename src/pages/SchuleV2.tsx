@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { SchoolV2Provider, useSchoolV2 } from '@/components/schule-v2/context/SchoolV2Context';
@@ -7,7 +7,7 @@ import { SchoolSetupV2 } from '@/components/schule-v2/setup/SchoolSetupV2';
 import { ScopeSelectorV2 } from '@/components/schule-v2/header/ScopeSelectorV2';
 import { StatsHeaderV2 } from '@/components/schule-v2/header/StatsHeaderV2';
 import { WeekTimetableV2 } from '@/components/schule-v2/timetable/WeekTimetableV2';
-import { CoursesListV2 } from '@/components/schule-v2/courses/CoursesListV2';
+import { CoursesListV2, CoursesListV2Ref } from '@/components/schule-v2/courses/CoursesListV2';
 import { CreateCourseDialogV2 } from '@/components/schule-v2/courses/CreateCourseDialogV2';
 import { CourseDetailSheetV2 } from '@/components/schule-v2/course-detail/CourseDetailSheetV2';
 import { V2Course, V2TimetableSlot } from '@/components/schule-v2/types';
@@ -16,6 +16,8 @@ function SchuleV2Content() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { hasSchool, loading: schoolLoading, refresh } = useSchoolV2();
+
+  const coursesListRef = useRef<CoursesListV2Ref>(null);
 
   const [createCourseOpen, setCreateCourseOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<V2Course | null>(null);
@@ -39,17 +41,20 @@ function SchuleV2Content() {
     setCourseDetailOpen(true);
   };
 
-  const handleCourseCreated = () => {
+  const handleCourseCreated = useCallback(() => {
     refresh();
-  };
-
-  const handleTimetableChange = () => {
+    coursesListRef.current?.refresh();
     setTimetableKey(prev => prev + 1);
-  };
+  }, [refresh]);
 
-  const handleHomeworkChange = () => {
+  const handleTimetableChange = useCallback(() => {
     setTimetableKey(prev => prev + 1);
-  };
+    coursesListRef.current?.refresh();
+  }, []);
+
+  const handleHomeworkChange = useCallback(() => {
+    setTimetableKey(prev => prev + 1);
+  }, []);
 
   if (authLoading || !user) return null;
 
@@ -86,6 +91,7 @@ function SchuleV2Content() {
 
         {/* Courses List */}
         <CoursesListV2 
+          ref={coursesListRef}
           onCourseSelect={handleCourseSelect}
           onCreateCourse={() => setCreateCourseOpen(true)}
           onCoursesLoaded={(courses) => {
