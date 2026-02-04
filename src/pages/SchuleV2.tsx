@@ -24,6 +24,7 @@ function SchuleV2Content() {
   const [courseDetailOpen, setCourseDetailOpen] = useState(false);
   const [totalLessons, setTotalLessons] = useState(0);
   const [timetableKey, setTimetableKey] = useState(0);
+  const [coursesCollapsed, setCoursesCollapsed] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -79,25 +80,36 @@ function SchuleV2Content() {
 
   return (
     <AppLayout>
-      <div className="p-4 pb-24 max-w-lg mx-auto space-y-4">
-        {/* Header with Scope Selector */}
-        <div className="space-y-3">
-          <ScopeSelectorV2 />
-          <StatsHeaderV2 totalLessons={totalLessons} />
+      <div className="p-4 pb-24">
+        {/* Desktop: Flex-Layout mit Sidebar für Kurse */}
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="space-y-3 mb-4">
+            <ScopeSelectorV2 />
+            <StatsHeaderV2 totalLessons={totalLessons} />
+          </div>
+
+          {/* Main Content: Desktop = nebeneinander, Mobile = untereinander */}
+          <div className="flex flex-col lg:flex-row gap-4">
+            {/* Timetable - expandiert wenn Kurse eingeklappt */}
+            <div className={`transition-all duration-300 ${coursesCollapsed ? 'lg:flex-1' : 'lg:flex-1'}`}>
+              <WeekTimetableV2 key={timetableKey} onSlotClick={handleSlotClick} />
+            </div>
+
+            {/* Courses Sidebar - auf Desktop rechts, auf Mobile unten */}
+            <div className={`transition-all duration-300 ${coursesCollapsed ? 'lg:w-64' : 'lg:w-80'}`}>
+              <CoursesListV2 
+                ref={coursesListRef}
+                onCourseSelect={handleCourseSelect}
+                onCreateCourse={() => setCreateCourseOpen(true)}
+                onCoursesLoaded={(courses) => {
+                  // Count lessons would need timetable slots - simplified for now
+                }}
+                onCollapseChange={setCoursesCollapsed}
+              />
+            </div>
+          </div>
         </div>
-
-        {/* Timetable */}
-        <WeekTimetableV2 key={timetableKey} onSlotClick={handleSlotClick} />
-
-        {/* Courses List */}
-        <CoursesListV2 
-          ref={coursesListRef}
-          onCourseSelect={handleCourseSelect}
-          onCreateCourse={() => setCreateCourseOpen(true)}
-          onCoursesLoaded={(courses) => {
-            // Count lessons would need timetable slots - simplified for now
-          }}
-        />
       </div>
 
       {/* Create Course Dialog */}
