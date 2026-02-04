@@ -132,25 +132,32 @@ export function DashboardTab() {
         ))}
       </div>
 
-      {/* Net Worth Card - Clean Blue Gradient */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 p-6">
-        <div className="absolute -top-20 -right-20 w-40 h-40 bg-white/10 rounded-full blur-3xl" />
-        
-        <div className="relative z-10 text-center">
-          <p className="text-white/70 text-xs font-medium mb-1">Gesamtvermögen</p>
-          <p className="text-4xl font-bold text-white tracking-tight">{formatCurrency(netWorthEur)}</p>
-          
-          <div className="flex justify-center gap-4 mt-4">
-            <div className="text-center">
-              <p className="text-white/60 text-[10px]">Konten</p>
-              <p className="text-white font-semibold text-sm">{formatCurrency(totalAccountsEur)}</p>
+      {/* Net Worth - Clean Minimal Header */}
+      <div className="text-center py-4">
+        <p className="text-xs text-muted-foreground font-medium mb-1">Gesamtvermögen</p>
+        <p className="text-4xl font-bold text-foreground tracking-tight">{formatCurrency(netWorthEur)}</p>
+      </div>
+
+      {/* Accounts / Investments Split - Minimal Cards */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="rounded-2xl bg-card border border-border p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-7 h-7 rounded-lg bg-blue-500/10 flex items-center justify-center">
+              <Wallet className="w-3.5 h-3.5 text-blue-400" />
             </div>
-            <div className="w-px bg-white/20" />
-            <div className="text-center">
-              <p className="text-white/60 text-[10px]">Investments</p>
-              <p className="text-white font-semibold text-sm">{formatCurrency(totalInvestmentsEur)}</p>
-            </div>
+            <span className="text-xs text-muted-foreground">Konten</span>
           </div>
+          <p className="text-xl font-bold text-foreground">{formatCurrency(totalAccountsEur)}</p>
+        </div>
+        
+        <div className="rounded-2xl bg-card border border-border p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+              <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+            </div>
+            <span className="text-xs text-muted-foreground">Investments</span>
+          </div>
+          <p className="text-xl font-bold text-foreground">{formatCurrency(totalInvestmentsEur)}</p>
         </div>
       </div>
 

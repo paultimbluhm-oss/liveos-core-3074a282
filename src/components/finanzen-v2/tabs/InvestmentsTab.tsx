@@ -100,22 +100,16 @@ export function InvestmentsTab() {
 
   return (
     <div className="space-y-6">
-      {/* Hero Card */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 p-8 shadow-2xl">
-        <div className="absolute inset-0 bg-white/10 backdrop-blur-3xl" />
-        <div className="absolute -top-32 -right-32 w-64 h-64 bg-white/20 rounded-full blur-3xl" />
-        <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-white/10 rounded-full blur-2xl" />
+      {/* Portfolio Header - Clean Minimal */}
+      <div className="text-center py-4">
+        <p className="text-xs text-muted-foreground font-medium mb-1">Portfolio-Wert</p>
+        <p className="text-4xl font-bold text-foreground tracking-tight">{formatCurrency(totalInvestmentsEur)}</p>
         
-        <div className="relative z-10 text-center">
-          <p className="text-white/70 text-sm font-medium mb-2">Portfolio-Wert</p>
-          <p className="text-4xl font-bold text-white tracking-tight mb-3">{formatCurrency(totalInvestmentsEur)}</p>
-          
-          <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${totalStats.profit >= 0 ? 'bg-white/20' : 'bg-rose-500/30'}`}>
-            {totalStats.profit >= 0 ? <TrendingUp className="w-4 h-4 text-white" /> : <TrendingDown className="w-4 h-4 text-white" />}
-            <span className="font-semibold text-white">
-              {totalStats.profit >= 0 ? '+' : ''}{formatCurrency(totalStats.profit)} ({totalStats.profitPercent.toFixed(1)}%)
-            </span>
-          </div>
+        <div className={`inline-flex items-center gap-2 mt-3 px-4 py-2 rounded-full ${totalStats.profit >= 0 ? 'bg-emerald-500/10' : 'bg-destructive/10'}`}>
+          {totalStats.profit >= 0 ? <TrendingUp className="w-4 h-4 text-emerald-500" /> : <TrendingDown className="w-4 h-4 text-destructive" />}
+          <span className={`font-semibold ${totalStats.profit >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>
+            {totalStats.profit >= 0 ? '+' : ''}{formatCurrency(totalStats.profit)} ({totalStats.profitPercent.toFixed(1)}%)
+          </span>
         </div>
       </div>
 
