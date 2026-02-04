@@ -3,14 +3,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useSchoolV2 } from '../context/SchoolV2Context';
 import { V2Course } from '../types';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Users, Check } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Plus, Users, ChevronDown, ChevronRight } from 'lucide-react';
 
 interface CoursesListV2Props {
   onCourseSelect?: (course: V2Course) => void;
   onCreateCourse?: () => void;
   onCoursesLoaded?: (courses: V2Course[]) => void;
+  onCollapseChange?: (collapsed: boolean) => void;
 }
 
 export interface CoursesListV2Ref {
@@ -18,13 +19,21 @@ export interface CoursesListV2Ref {
 }
 
 export const CoursesListV2 = forwardRef<CoursesListV2Ref, CoursesListV2Props>(
-  function CoursesListV2({ onCourseSelect, onCreateCourse, onCoursesLoaded }, ref) {
+  function CoursesListV2({ onCourseSelect, onCreateCourse, onCoursesLoaded, onCollapseChange }, ref) {
   const { user } = useAuth();
   const { scope } = useSchoolV2();
   
   const [courses, setCourses] = useState<V2Course[]>([]);
   const [memberCourseIds, setMemberCourseIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [myCoursesOpen, setMyCoursesOpen] = useState(true);
+  const [availableCoursesOpen, setAvailableCoursesOpen] = useState(false);
+
+  // Notify parent when collapse state changes
+  useEffect(() => {
+    const allCollapsed = !myCoursesOpen && !availableCoursesOpen;
+    onCollapseChange?.(allCollapsed);
+  }, [myCoursesOpen, availableCoursesOpen, onCollapseChange]);
 
   // Load courses for current scope
   const loadCourses = useCallback(async () => {
@@ -95,94 +104,88 @@ export const CoursesListV2 = forwardRef<CoursesListV2Ref, CoursesListV2Props>(
     ));
   };
 
-  const handleLeaveCourse = async (courseId: string) => {
-    if (!user) return;
-
-    await supabase
-      .from('v2_course_members')
-      .delete()
-      .eq('course_id', courseId)
-      .eq('user_id', user.id);
-
-    // Update local state
-    setMemberCourseIds(prev => {
-      const next = new Set(prev);
-      next.delete(courseId);
-      return next;
-    });
-    setCourses(prev => prev.map(c => 
-      c.id === courseId ? { ...c, is_member: false } : c
-    ));
-  };
-
   // Separate into my courses and available courses
   const myCourses = courses.filter(c => c.is_member);
   const availableCourses = courses.filter(c => !c.is_member);
 
   return (
-    <div className="space-y-4">
-      {/* Meine Kurse */}
-      <Card>
-        <CardHeader className="pb-2 px-4 pt-4">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base font-medium">Meine Kurse</CardTitle>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onCreateCourse}>
-              <Plus className="w-4 h-4" strokeWidth={1.5} />
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="px-2 pb-2">
-          {loading ? (
-            <div className="flex items-center justify-center py-4">
-              <div className="animate-spin rounded-full h-5 w-5 border-2 border-primary border-t-transparent" />
-            </div>
-          ) : myCourses.length === 0 ? (
-            <div className="text-center py-6 text-sm text-muted-foreground">
-              Noch keine Kurse beigetreten
-            </div>
-          ) : (
-            <div className="space-y-1">
-              {myCourses.map(course => (
-                <button
-                  key={course.id}
-                  onClick={() => onCourseSelect?.(course)}
-                  className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors text-left"
-                >
-                  <div 
-                    className="w-10 h-10 rounded-lg flex items-center justify-center text-white text-xs font-medium"
-                    style={{ backgroundColor: course.color || '#6366f1' }}
+    <div className="space-y-2">
+      {/* Meine Kurse - Collapsible */}
+      <Collapsible open={myCoursesOpen} onOpenChange={setMyCoursesOpen}>
+        <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-card border">
+          <CollapsibleTrigger className="flex items-center gap-2 flex-1 text-left">
+            {myCoursesOpen ? (
+              <ChevronDown className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+            ) : (
+              <ChevronRight className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+            )}
+            <span className="text-sm font-medium">Meine Kurse</span>
+            <span className="text-xs text-muted-foreground">({myCourses.length})</span>
+          </CollapsibleTrigger>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onCreateCourse}>
+            <Plus className="w-4 h-4" strokeWidth={1.5} />
+          </Button>
+        </div>
+        <CollapsibleContent className="pt-1">
+          <div className="rounded-lg bg-card border p-2">
+            {loading ? (
+              <div className="flex items-center justify-center py-4">
+                <div className="animate-spin rounded-full h-5 w-5 border-2 border-primary border-t-transparent" />
+              </div>
+            ) : myCourses.length === 0 ? (
+              <div className="text-center py-4 text-sm text-muted-foreground">
+                Noch keine Kurse beigetreten
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {myCourses.map(course => (
+                  <button
+                    key={course.id}
+                    onClick={() => onCourseSelect?.(course)}
+                    className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors text-left"
                   >
-                    {course.short_name || course.name.substring(0, 2)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm truncate">{course.name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {course.teacher_name || 'Kein Lehrer'}
-                      {course.class_name ? ` · ${scope.gradeLevel}${course.class_name}` : ' · Jahrgang'}
+                    <div 
+                      className="w-9 h-9 rounded-lg flex items-center justify-center text-white text-xs font-medium"
+                      style={{ backgroundColor: course.color || '#6366f1' }}
+                    >
+                      {course.short_name || course.name.substring(0, 2)}
                     </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm truncate">{course.name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {course.teacher_name || 'Kein Lehrer'}
+                        {course.class_name ? ` · ${scope.gradeLevel}${course.class_name}` : ' · Jahrgang'}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
 
-      {/* Verfügbare Kurse */}
+      {/* Verfügbare Kurse - Collapsible */}
       {availableCourses.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2 px-4 pt-4">
-            <CardTitle className="text-base font-medium">Verfügbare Kurse</CardTitle>
-          </CardHeader>
-          <CardContent className="px-2 pb-2">
-            <div className="space-y-1">
+        <Collapsible open={availableCoursesOpen} onOpenChange={setAvailableCoursesOpen}>
+          <CollapsibleTrigger className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-card border w-full text-left">
+            {availableCoursesOpen ? (
+              <ChevronDown className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+            ) : (
+              <ChevronRight className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
+            )}
+            <span className="text-sm font-medium">Verfügbare Kurse</span>
+            <span className="text-xs text-muted-foreground">({availableCourses.length})</span>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="pt-1">
+            <div className="rounded-lg bg-card border p-2 space-y-1">
               {availableCourses.map(course => (
                 <div
                   key={course.id}
                   className="flex items-center gap-3 p-2 rounded-lg"
                 >
                   <div 
-                    className="w-10 h-10 rounded-lg flex items-center justify-center text-white text-xs font-medium opacity-60"
+                    className="w-9 h-9 rounded-lg flex items-center justify-center text-white text-xs font-medium opacity-60"
                     style={{ backgroundColor: course.color || '#6366f1' }}
                   >
                     {course.short_name || course.name.substring(0, 2)}
@@ -205,8 +208,8 @@ export const CoursesListV2 = forwardRef<CoursesListV2Ref, CoursesListV2Props>(
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
+          </CollapsibleContent>
+        </Collapsible>
       )}
     </div>
   );

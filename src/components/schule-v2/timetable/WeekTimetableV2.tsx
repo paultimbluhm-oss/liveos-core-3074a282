@@ -331,7 +331,24 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
                       const slot = gridData.grid[period]?.[day];
                       const date = addDays(currentWeek, day - 1);
                       const dateKey = format(date, 'yyyy-MM-dd');
-                      const isPast = date < new Date() && !isToday(date);
+                      const now = new Date();
+                      
+                      // Vergangene Tage ausgrauen
+                      const isPastDay = date < new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                      
+                      // Am aktuellen Tag: Stunden ausgrauen basierend auf Endzeit
+                      let isPastToday = false;
+                      if (isToday(date) && slot) {
+                        const periodEnd = PERIOD_TIMES[slot.is_double_lesson ? slot.period + 1 : slot.period]?.end;
+                        if (periodEnd) {
+                          const [endHour, endMin] = periodEnd.split(':').map(Number);
+                          const endTime = new Date();
+                          endTime.setHours(endHour, endMin, 0, 0);
+                          isPastToday = now > endTime;
+                        }
+                      }
+                      
+                      const isPast = isPastDay || isPastToday;
                       const isDouble = slot?.is_double_lesson;
 
                       if (!slot) {
