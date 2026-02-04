@@ -223,16 +223,14 @@ export function SlotActionSheet({
               <div className="flex-1 min-w-0">
                 <SheetTitle className="flex items-center gap-2">
                   {course.name}
-                  {isCreator && (
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-6 w-6"
-                      onClick={() => setSettingsOpen(true)}
-                    >
-                      <Settings className="w-4 h-4" strokeWidth={1.5} />
-                    </Button>
-                  )}
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-6 w-6"
+                    onClick={() => setSettingsOpen(true)}
+                  >
+                    <Settings className="w-4 h-4" strokeWidth={1.5} />
+                  </Button>
                 </SheetTitle>
                 <p className="text-sm text-muted-foreground">
                   {WEEKDAYS[slot.day_of_week - 1]}, {format(slotDate, 'd. MMMM', { locale: de })} · {slot.period}. Stunde
@@ -490,11 +488,12 @@ export function SlotActionSheet({
       )}
 
       {/* Course Settings Dialog */}
-      {course && isCreator && (
+      {course && (
         <CourseSettingsDialog
           open={settingsOpen}
           onOpenChange={setSettingsOpen}
           course={course}
+          isCreator={isCreator}
           onUpdated={() => {
             onAbsenceChange?.();
           }}
@@ -639,6 +638,7 @@ interface CourseSettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   course: V2Course;
+  isCreator: boolean;
   onUpdated: () => void;
 }
 
@@ -649,7 +649,7 @@ const COURSE_COLORS = [
   '#06b6d4', '#0ea5e9', '#3b82f6', '#64748b',
 ];
 
-function CourseSettingsDialog({ open, onOpenChange, course, onUpdated }: CourseSettingsDialogProps) {
+function CourseSettingsDialog({ open, onOpenChange, course, isCreator, onUpdated }: CourseSettingsDialogProps) {
   const { scope } = useSchoolV2();
   
   const [name, setName] = useState(course.name);
@@ -850,9 +850,15 @@ function CourseSettingsDialog({ open, onOpenChange, course, onUpdated }: CourseS
             </p>
           </div>
 
-          <Button onClick={handleSave} disabled={saving || !name.trim()} className="w-full">
-            Speichern
-          </Button>
+          {isCreator ? (
+            <Button onClick={handleSave} disabled={saving || !name.trim()} className="w-full">
+              Speichern
+            </Button>
+          ) : (
+            <p className="text-xs text-center text-muted-foreground py-2">
+              Nur der Ersteller kann diesen Kurs bearbeiten
+            </p>
+          )}
         </div>
       </DialogContent>
     </Dialog>
