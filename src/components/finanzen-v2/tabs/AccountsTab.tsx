@@ -1,15 +1,19 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Wallet, Banknote, PiggyBank, HelpCircle, Coins, ChevronRight, Users, Check } from 'lucide-react';
-import { useFinanceV2, V2Account, V2ExternalSaving } from '../context/FinanceV2Context';
+import { Plus, Wallet, Banknote, PiggyBank, HelpCircle, Coins, ChevronRight, Users, Check, Package, TrendingDown, TrendingUp } from 'lucide-react';
+import { useFinanceV2, V2Account, V2ExternalSaving, V2MaterialAsset } from '../context/FinanceV2Context';
 import { AddAccountDialog } from '../dialogs/AddAccountDialog';
 import { AccountDetailSheet } from '../sheets/AccountDetailSheet';
 import { CashDenominationSheet } from '../sheets/CashDenominationSheet';
 import { AddExternalSavingDialog } from '../dialogs/AddExternalSavingDialog';
 import { ExternalSavingDetailSheet } from '../sheets/ExternalSavingDetailSheet';
+import { AddMaterialAssetDialog } from '../dialogs/AddMaterialAssetDialog';
+import { MaterialAssetDetailSheet } from '../sheets/MaterialAssetDetailSheet';
 import { getSupabase } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
+import { de } from 'date-fns/locale';
 
 const accountTypeIcons: Record<string, React.ReactNode> = {
   giro: <Wallet className="w-4 h-4" />,
@@ -26,7 +30,7 @@ const accountTypeLabels: Record<string, string> = {
 };
 
 export function AccountsTab() {
-  const { accounts, externalSavings, totalAccountsEur, totalExternalSavingsEur, loading, refreshAccounts, refreshExternalSavings } = useFinanceV2();
+  const { accounts, externalSavings, materialAssets, totalAccountsEur, totalExternalSavingsEur, loading, refreshAccounts, refreshExternalSavings } = useFinanceV2();
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<V2Account | null>(null);
   const [showCashSheet, setShowCashSheet] = useState(false);
@@ -36,12 +40,16 @@ export function AccountsTab() {
   const [showAddExternalDialog, setShowAddExternalDialog] = useState(false);
   const [selectedExternalSaving, setSelectedExternalSaving] = useState<V2ExternalSaving | null>(null);
   
+  // Material assets state
+  const [showAddMaterialDialog, setShowAddMaterialDialog] = useState(false);
+  const [selectedMaterialAsset, setSelectedMaterialAsset] = useState<V2MaterialAsset | null>(null);
+  
   // Quick cash input state
   const [quickCashAmount, setQuickCashAmount] = useState('');
   const [savingCash, setSavingCash] = useState(false);
 
   const formatCurrency = (value: number, currency: string = 'EUR') => 
-    value.toLocaleString('de-DE', { style: 'currency', currency, maximumFractionDigits: 2 });
+    value.toLocaleString('de-DE', { style: 'currency', currency, maximumFractionDigits: 0 });
 
   // Group accounts by type
   const groupedAccounts = accounts.reduce((acc, account) => {
@@ -52,6 +60,17 @@ export function AccountsTab() {
 
   // Get first cash account for quick input
   const cashAccount = accounts.find(a => a.account_type === 'cash');
+
+  // Calculate material assets totals
+  const materialTotals = useMemo(() => {
+    const purchaseTotal = materialAssets.reduce((sum, a) => sum + (a.purchase_price || 0), 0);
+    const currentTotal = materialAssets.reduce((sum, a) => sum + (a.current_value || a.purchase_price || 0), 0);
+    return {
+      purchase: purchaseTotal,
+      current: currentTotal,
+      delta: currentTotal - purchaseTotal,
+    };
+  }, [materialAssets]);
 
   const handleAccountClick = (account: V2Account) => {
     if (account.account_type === 'cash') {
@@ -244,11 +263,90 @@ export function AccountsTab() {
         )}
       </div>
 
+      {/* Material Assets Section */}
+      <div className="space-y-2 pt-4 border-t border-border">
+        <div className="flex items-center justify-between px-1">
+          <div className="flex items-center gap-2">
+            <Package className="w-4 h-4 text-muted-foreground" />
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Materieller Besitz
+            </span>
+          </div>
+          <div className="text-right">
+            <span className="text-sm font-semibold">{formatCurrency(materialTotals.current)}</span>
+            {materialTotals.delta !== 0 && (
+              <span className={`text-[10px] ml-1 ${materialTotals.delta >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>
+                ({materialTotals.delta >= 0 ? '+' : ''}{formatCurrency(materialTotals.delta)})
+              </span>
+            )}
+          </div>
+        </div>
+        
+        <p className="text-[10px] text-muted-foreground px-1">
+          Nicht im Vermögen enthalten
+        </p>
+        
+        <Button 
+          onClick={() => setShowAddMaterialDialog(true)} 
+          variant="ghost"
+          className="w-full h-10 rounded-xl bg-card border border-border hover:bg-secondary text-sm"
+        >
+          <Plus className="w-4 h-4 mr-2 text-primary" />
+          Neuer Gegenstand
+        </Button>
+
+        {materialAssets.length > 0 && (
+          <div className="rounded-2xl bg-card border border-border overflow-hidden">
+            {materialAssets.map((asset, index) => {
+              const delta = (asset.current_value || 0) - (asset.purchase_price || 0);
+              
+              return (
+                <div 
+                  key={asset.id} 
+                  className={`
+                    flex items-center gap-3 p-3 cursor-pointer hover:bg-secondary/50 transition-colors
+                    ${index !== materialAssets.length - 1 ? 'border-b border-border' : ''}
+                  `}
+                  onClick={() => setSelectedMaterialAsset(asset)}
+                >
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                    <Package className="w-5 h-5 text-amber-500" />
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{asset.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {asset.category || 'Ohne Kategorie'}
+                      {asset.purchase_date && ` · ${format(new Date(asset.purchase_date), 'dd.MM.yyyy', { locale: de })}`}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <div className="text-right">
+                      <span className="font-semibold text-sm block">
+                        {formatCurrency(asset.current_value || asset.purchase_price || 0)}
+                      </span>
+                      {asset.purchase_price && asset.current_value && delta !== 0 && (
+                        <span className={`text-[10px] flex items-center justify-end gap-0.5 ${delta >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>
+                          {delta >= 0 ? <TrendingUp className="w-2.5 h-2.5" /> : <TrendingDown className="w-2.5 h-2.5" />}
+                          {delta >= 0 ? '+' : ''}{formatCurrency(delta)}
+                        </span>
+                      )}
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       {/* Empty State */}
       {accounts.length === 0 && (
         <div className="rounded-2xl bg-card border border-border p-8 text-center">
-          <div className="w-16 h-16 rounded-full bg-blue-500/10 flex items-center justify-center mx-auto mb-4">
-            <Wallet className="w-8 h-8 text-blue-500" />
+          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+            <Wallet className="w-8 h-8 text-primary" />
           </div>
           <p className="font-semibold mb-1">Noch keine Konten</p>
           <p className="text-sm text-muted-foreground">Erstelle dein erstes Konto</p>
@@ -282,6 +380,17 @@ export function AccountsTab() {
         saving={selectedExternalSaving}
         open={!!selectedExternalSaving}
         onOpenChange={(open) => !open && setSelectedExternalSaving(null)}
+      />
+      
+      <AddMaterialAssetDialog
+        open={showAddMaterialDialog}
+        onOpenChange={setShowAddMaterialDialog}
+      />
+      
+      <MaterialAssetDetailSheet
+        asset={selectedMaterialAsset}
+        open={!!selectedMaterialAsset}
+        onOpenChange={(open) => !open && setSelectedMaterialAsset(null)}
       />
     </div>
   );
