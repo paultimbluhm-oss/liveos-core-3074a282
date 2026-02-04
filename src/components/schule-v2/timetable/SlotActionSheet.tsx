@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useGradeColors } from '@/hooks/useGradeColors';
+import { useSchoolV2 } from '../context/SchoolV2Context';
 import { V2Course, V2TimetableSlot, V2Grade, PERIOD_TIMES, WEEKDAYS } from '../types';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
@@ -641,11 +642,22 @@ interface CourseSettingsDialogProps {
   onUpdated: () => void;
 }
 
+const COURSE_COLORS = [
+  '#6366f1', '#8b5cf6', '#a855f7', '#d946ef',
+  '#ec4899', '#f43f5e', '#ef4444', '#f97316',
+  '#eab308', '#84cc16', '#22c55e', '#14b8a6',
+  '#06b6d4', '#0ea5e9', '#3b82f6', '#64748b',
+];
+
 function CourseSettingsDialog({ open, onOpenChange, course, onUpdated }: CourseSettingsDialogProps) {
+  const { scope } = useSchoolV2();
+  
   const [name, setName] = useState(course.name);
   const [shortName, setShortName] = useState(course.short_name || '');
   const [teacherName, setTeacherName] = useState(course.teacher_name || '');
   const [room, setRoom] = useState(course.room || '');
+  const [color, setColor] = useState(course.color || COURSE_COLORS[0]);
+  const [isClassCourse, setIsClassCourse] = useState(course.class_name !== null);
   const [oralWeight, setOralWeight] = useState(course.oral_weight);
   const [writtenWeight, setWrittenWeight] = useState(course.written_weight);
   const [practicalWeight, setPracticalWeight] = useState(course.practical_weight);
@@ -658,12 +670,27 @@ function CourseSettingsDialog({ open, onOpenChange, course, onUpdated }: CourseS
       setShortName(course.short_name || '');
       setTeacherName(course.teacher_name || '');
       setRoom(course.room || '');
+      setColor(course.color || COURSE_COLORS[0]);
+      setIsClassCourse(course.class_name !== null);
       setOralWeight(course.oral_weight);
       setWrittenWeight(course.written_weight);
       setPracticalWeight(course.practical_weight);
       setHasPractical(course.has_practical);
     }
   }, [open, course]);
+
+  const handlePracticalToggle = (enabled: boolean) => {
+    setHasPractical(enabled);
+    if (enabled) {
+      setOralWeight(30);
+      setWrittenWeight(50);
+      setPracticalWeight(20);
+    } else {
+      setOralWeight(40);
+      setWrittenWeight(60);
+      setPracticalWeight(0);
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -675,9 +702,11 @@ function CourseSettingsDialog({ open, onOpenChange, course, onUpdated }: CourseS
         short_name: shortName.trim() || null,
         teacher_name: teacherName.trim() || null,
         room: room.trim() || null,
+        color,
+        class_name: isClassCourse ? scope.className : null,
         oral_weight: oralWeight,
         written_weight: writtenWeight,
-        practical_weight: practicalWeight,
+        practical_weight: hasPractical ? practicalWeight : 0,
         has_practical: hasPractical,
       })
       .eq('id', course.id);
@@ -701,15 +730,16 @@ function CourseSettingsDialog({ open, onOpenChange, course, onUpdated }: CourseS
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Name */}
           <div className="space-y-2">
-            <Label className="text-xs">Name</Label>
+            <Label className="text-xs">Kursname</Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} className="h-9" />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label className="text-xs">Kurzel</Label>
-              <Input value={shortName} onChange={(e) => setShortName(e.target.value)} placeholder="z.B. Ma" className="h-9" />
+              <Label className="text-xs">Kürzel</Label>
+              <Input value={shortName} onChange={(e) => setShortName(e.target.value)} placeholder="z.B. Ma" className="h-9" maxLength={4} />
             </div>
             <div className="space-y-2">
               <Label className="text-xs">Raum</Label>
@@ -719,18 +749,62 @@ function CourseSettingsDialog({ open, onOpenChange, course, onUpdated }: CourseS
 
           <div className="space-y-2">
             <Label className="text-xs">Lehrer</Label>
-            <Input value={teacherName} onChange={(e) => setTeacherName(e.target.value)} placeholder="z.B. Herr Muller" className="h-9" />
+            <Input value={teacherName} onChange={(e) => setTeacherName(e.target.value)} placeholder="z.B. Herr Müller" className="h-9" />
           </div>
 
+          {/* Color */}
+          <div className="space-y-2">
+            <Label className="text-xs">Farbe</Label>
+            <div className="flex flex-wrap gap-1.5">
+              {COURSE_COLORS.map(c => (
+                <button
+                  key={c}
+                  onClick={() => setColor(c)}
+                  className={`w-6 h-6 rounded-full transition-all ${
+                    color === c ? 'ring-2 ring-offset-2 ring-primary scale-110' : ''
+                  }`}
+                  style={{ backgroundColor: c }}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Course Type */}
+          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+            <div>
+              <div className="font-medium text-xs">Klassenkurs</div>
+              <div className="text-[10px] text-muted-foreground">
+                {isClassCourse ? `Nur für Klasse ${scope.className}` : 'Für gesamten Jahrgang'}
+              </div>
+            </div>
+            <Switch checked={isClassCourse} onCheckedChange={setIsClassCourse} />
+          </div>
+
+          {/* Grading Weights */}
           <div className="border-t pt-4 space-y-3">
             <div className="text-xs font-medium">Gewichtung</div>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs">
-                <span>Mundlich</span>
+                <span>Mündlich</span>
                 <span className="font-medium">{oralWeight}%</span>
               </div>
-              <Slider value={[oralWeight]} onValueChange={(v) => setOralWeight(v[0])} min={0} max={100} step={5} />
+              <Slider 
+                value={[oralWeight]} 
+                onValueChange={([v]) => {
+                  setOralWeight(v);
+                  if (hasPractical) {
+                    const remaining = 100 - v;
+                    setWrittenWeight(Math.round(remaining * 0.7));
+                    setPracticalWeight(remaining - Math.round(remaining * 0.7));
+                  } else {
+                    setWrittenWeight(100 - v);
+                  }
+                }} 
+                min={10} 
+                max={80} 
+                step={5} 
+              />
             </div>
 
             <div className="space-y-2">
@@ -738,12 +812,27 @@ function CourseSettingsDialog({ open, onOpenChange, course, onUpdated }: CourseS
                 <span>Schriftlich</span>
                 <span className="font-medium">{writtenWeight}%</span>
               </div>
-              <Slider value={[writtenWeight]} onValueChange={(v) => setWrittenWeight(v[0])} min={0} max={100} step={5} />
+              <Slider 
+                value={[writtenWeight]} 
+                onValueChange={([v]) => {
+                  setWrittenWeight(v);
+                  if (hasPractical) {
+                    const remaining = 100 - v;
+                    setOralWeight(Math.round(remaining * 0.7));
+                    setPracticalWeight(remaining - Math.round(remaining * 0.7));
+                  } else {
+                    setOralWeight(100 - v);
+                  }
+                }} 
+                min={10} 
+                max={80} 
+                step={5} 
+              />
             </div>
 
             <div className="flex items-center justify-between py-2">
               <Label className="text-xs">Praxis-Noten</Label>
-              <Switch checked={hasPractical} onCheckedChange={setHasPractical} />
+              <Switch checked={hasPractical} onCheckedChange={handlePracticalToggle} />
             </div>
 
             {hasPractical && (
@@ -752,7 +841,7 @@ function CourseSettingsDialog({ open, onOpenChange, course, onUpdated }: CourseS
                   <span>Praxis</span>
                   <span className="font-medium">{practicalWeight}%</span>
                 </div>
-                <Slider value={[practicalWeight]} onValueChange={(v) => setPracticalWeight(v[0])} min={0} max={100} step={5} />
+                <Slider value={[practicalWeight]} onValueChange={(v) => setPracticalWeight(v[0])} min={0} max={50} step={5} />
               </div>
             )}
 
