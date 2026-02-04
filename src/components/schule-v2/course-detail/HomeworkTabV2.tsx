@@ -12,6 +12,10 @@ import { Plus, Calendar, Trash2 } from 'lucide-react';
 import { format, isPast, isToday } from 'date-fns';
 import { de } from 'date-fns/locale';
 
+interface HomeworkWithCompletion extends V2Homework {
+  isCompletedByUser: boolean;
+}
+
 interface HomeworkTabV2Props {
   course: V2Course;
   onHomeworkChange?: () => void;
@@ -19,20 +23,34 @@ interface HomeworkTabV2Props {
 
 export function HomeworkTabV2({ course, onHomeworkChange }: HomeworkTabV2Props) {
   const { user } = useAuth();
-  const [homework, setHomework] = useState<V2Homework[]>([]);
+  const [homework, setHomework] = useState<HomeworkWithCompletion[]>([]);
   const [loading, setLoading] = useState(true);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
 
   const loadHomework = async () => {
     if (!user) return;
 
-    const { data } = await supabase
+    // Lade alle Hausaufgaben des Kurses
+    const { data: hwData } = await supabase
       .from('v2_homework')
       .select('*')
       .eq('course_id', course.id)
       .order('due_date', { ascending: true });
 
-    setHomework((data || []) as V2Homework[]);
+    // Lade die Completions des aktuellen Users
+    const { data: completions } = await supabase
+      .from('v2_homework_completions')
+      .select('homework_id')
+      .eq('user_id', user.id);
+
+    const completedIds = new Set((completions || []).map(c => c.homework_id));
+
+    const enrichedHomework: HomeworkWithCompletion[] = (hwData || []).map(hw => ({
+      ...hw,
+      isCompletedByUser: completedIds.has(hw.id),
+    })) as HomeworkWithCompletion[];
+
+    setHomework(enrichedHomework);
     setLoading(false);
   };
 
@@ -40,14 +58,28 @@ export function HomeworkTabV2({ course, onHomeworkChange }: HomeworkTabV2Props) 
     loadHomework();
   }, [course.id, user]);
 
-  const toggleComplete = async (hw: V2Homework) => {
-    await supabase
-      .from('v2_homework')
-      .update({ completed: !hw.completed })
-      .eq('id', hw.id);
+  const toggleComplete = async (hw: HomeworkWithCompletion) => {
+    if (!user) return;
+
+    if (hw.isCompletedByUser) {
+      // Entferne die Completion
+      await supabase
+        .from('v2_homework_completions')
+        .delete()
+        .eq('homework_id', hw.id)
+        .eq('user_id', user.id);
+    } else {
+      // Füge Completion hinzu
+      await supabase
+        .from('v2_homework_completions')
+        .insert({
+          homework_id: hw.id,
+          user_id: user.id,
+        });
+    }
 
     setHomework(prev => 
-      prev.map(h => h.id === hw.id ? { ...h, completed: !h.completed } : h)
+      prev.map(h => h.id === hw.id ? { ...h, isCompletedByUser: !h.isCompletedByUser } : h)
     );
     onHomeworkChange?.();
   };
@@ -59,15 +91,16 @@ export function HomeworkTabV2({ course, onHomeworkChange }: HomeworkTabV2Props) 
   };
 
   const handleAdded = (newHw: V2Homework) => {
-    setHomework(prev => [...prev, newHw].sort((a, b) => 
+    const enriched: HomeworkWithCompletion = { ...newHw, isCompletedByUser: false };
+    setHomework(prev => [...prev, enriched].sort((a, b) => 
       new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
     ));
     setAddDialogOpen(false);
     onHomeworkChange?.();
   };
 
-  const pendingHomework = homework.filter(h => !h.completed);
-  const completedHomework = homework.filter(h => h.completed);
+  const pendingHomework = homework.filter(h => !h.isCompletedByUser);
+  const completedHomework = homework.filter(h => h.isCompletedByUser);
 
   if (loading) {
     return (
@@ -110,7 +143,7 @@ export function HomeworkTabV2({ course, onHomeworkChange }: HomeworkTabV2Props) 
                     }`}
                   >
                     <Checkbox
-                      checked={hw.completed}
+                      checked={hw.isCompletedByUser}
                       onCheckedChange={() => toggleComplete(hw)}
                       className="mt-0.5"
                     />
@@ -155,7 +188,7 @@ export function HomeworkTabV2({ course, onHomeworkChange }: HomeworkTabV2Props) 
                   className="flex items-start gap-3 p-3 rounded-lg bg-muted/30"
                 >
                   <Checkbox
-                    checked={hw.completed}
+                    checked={hw.isCompletedByUser}
                     onCheckedChange={() => toggleComplete(hw)}
                     className="mt-0.5"
                   />
