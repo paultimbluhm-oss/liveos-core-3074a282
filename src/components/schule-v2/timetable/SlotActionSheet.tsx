@@ -14,7 +14,7 @@ import { Slider } from '@/components/ui/slider';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
   BookOpen, UserX, Stethoscope, Calendar, Building2, AlertCircle, 
-  Check, X, Settings, GraduationCap, Plus, ChevronDown, ChevronUp 
+  Check, X, Settings, GraduationCap, Plus, ChevronDown, ChevronUp, LogOut 
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -39,6 +39,7 @@ interface SlotActionSheetProps {
   slotDate: Date | null;
   onOpenCourseDetail: () => void;
   onAbsenceChange?: () => void;
+  onCourseLeft?: () => void;
 }
 
 const ABSENCE_REASONS = [
@@ -55,7 +56,8 @@ export function SlotActionSheet({
   course, 
   slotDate,
   onOpenCourseDetail,
-  onAbsenceChange 
+  onAbsenceChange,
+  onCourseLeft
 }: SlotActionSheetProps) {
   const { user } = useAuth();
   const { settings: gradeColorSettings } = useGradeColors();
@@ -447,6 +449,30 @@ export function SlotActionSheet({
                 <BookOpen className="w-4 h-4" strokeWidth={1.5} />
                 Alle Kurs-Details
               </Button>
+
+              {/* Leave Course Button */}
+              {!isCreator && (
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start gap-3 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={async () => {
+                    if (!user || !course) return;
+                    
+                    await supabase
+                      .from('v2_course_members')
+                      .delete()
+                      .eq('course_id', course.id)
+                      .eq('user_id', user.id);
+                    
+                    toast.success('Kurs verlassen');
+                    onOpenChange(false);
+                    onCourseLeft?.();
+                  }}
+                >
+                  <LogOut className="w-4 h-4" strokeWidth={1.5} />
+                  Kurs verlassen
+                </Button>
+              )}
             </div>
           )}
         </SheetContent>

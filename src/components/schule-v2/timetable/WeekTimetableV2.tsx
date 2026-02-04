@@ -25,6 +25,7 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
   const [slots, setSlots] = useState<(V2TimetableSlot & { course: V2Course })[]>([]);
   const [courseAverages, setCourseAverages] = useState<Record<string, number | null>>({});
   const [homeworkByDate, setHomeworkByDate] = useState<Record<string, V2Homework[]>>({});
+  const [absenceMap, setAbsenceMap] = useState<Record<string, { is_eva: boolean; status: string }>>({});
   const [loading, setLoading] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -166,6 +167,28 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
       });
       setHomeworkByDate(hwByDate);
 
+      // Hole Fehlzeiten/EVA für diese Woche
+      const weekStart = format(currentWeek, 'yyyy-MM-dd');
+      const weekEnd = format(addDays(currentWeek, 6), 'yyyy-MM-dd');
+      
+      const { data: absencesData } = await supabase
+        .from('v2_absences')
+        .select('*')
+        .eq('user_id', user.id)
+        .in('course_id', scopeCourseIds)
+        .gte('date', weekStart)
+        .lte('date', weekEnd);
+
+      // Baue Map: "slotId-date" -> absence info
+      const absMap: Record<string, { is_eva: boolean; status: string }> = {};
+      (absencesData || []).forEach(abs => {
+        if (abs.timetable_slot_id) {
+          const key = `${abs.timetable_slot_id}-${abs.date}`;
+          absMap[key] = { is_eva: abs.is_eva, status: abs.status };
+        }
+      });
+      setAbsenceMap(absMap);
+
       if (slotsData) {
         const enrichedSlots = slotsData.map(slot => ({
           ...slot,
@@ -180,7 +203,7 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
     };
 
     loadSlots();
-  }, [user, scope.school?.id, scope.gradeLevel, scope.semester, scope.className, refreshKey]);
+  }, [user, scope.school?.id, scope.gradeLevel, scope.semester, scope.className, refreshKey, currentWeek]);
 
   // Determine week type (A/B) based on week number
   const weekType = useMemo(() => {
@@ -327,11 +350,16 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
                       );
                       const hwCount = hwForSlot.length;
 
+                      // Check für Fehlzeit/EVA an diesem Slot und Datum
+                      const absenceKey = `${slot.id}-${dateKey}`;
+                      const absenceInfo = absenceMap[absenceKey];
+                      const hasEva = absenceInfo?.is_eva;
+                      const hasMissed = absenceInfo && !absenceInfo.is_eva;
+
                         return (
                           <td key={day} className="p-0.5" rowSpan={isDouble ? 2 : 1}>
                             <button
                               onClick={() => {
-                                // Open action sheet instead of directly opening course detail
                                 setSelectedSlot(slot);
                                 setSelectedCourse(slot.course);
                                 setSelectedDate(date);
@@ -346,7 +374,21 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
                               `}
                               style={{ backgroundColor: slot.course.color || '#6366f1' }}
                             >
-                              <span>{slot.course.short_name || slot.course.name.substring(0, 3)}</span>
+                              <span className={hasMissed || hasEva ? 'line-through opacity-70' : ''}>
+                                {slot.course.short_name || slot.course.name.substring(0, 3)}
+                              </span>
+                              {/* EVA Badge */}
+                              {hasEva && (
+                                <span className="absolute bottom-0.5 text-[8px] font-bold bg-blue-600/90 px-1 rounded">
+                                  EVA
+                                </span>
+                              )}
+                              {/* Gefehlt Badge */}
+                              {hasMissed && (
+                                <span className="absolute bottom-0.5 text-[8px] font-bold bg-rose-600/90 px-1 rounded">
+                                  X
+                                </span>
+                              )}
                               {/* Hausaufgaben Badge links oben */}
                               {hwCount > 0 && (
                                 <span 
@@ -394,6 +436,7 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
         }
       }}
       onAbsenceChange={() => setRefreshKey(prev => prev + 1)}
+      onCourseLeft={() => setRefreshKey(prev => prev + 1)}
     />
     </>
   );
