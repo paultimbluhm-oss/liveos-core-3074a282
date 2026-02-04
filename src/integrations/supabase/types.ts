@@ -3559,6 +3559,35 @@ export type Database = {
           },
         ]
       }
+      v2_homework_completions: {
+        Row: {
+          completed_at: string
+          homework_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string
+          homework_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string
+          homework_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "v2_homework_completions_homework_id_fkey"
+            columns: ["homework_id"]
+            isOneToOne: false
+            referencedRelation: "v2_homework"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v2_investments: {
         Row: {
           asset_type: string

@@ -133,16 +133,26 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
       });
       setCourseAverages(averages);
 
-      // Hole Hausaufgaben für diese Kurse
+      // Hole alle Hausaufgaben für diese Kurse
       const { data: homeworkData } = await supabase
         .from('v2_homework')
         .select('*')
-        .in('course_id', scopeCourseIds)
-        .eq('completed', false);
+        .in('course_id', scopeCourseIds);
 
-      // Gruppiere nach Fälligkeitsdatum
+      // Hole die Completions des aktuellen Users
+      const { data: completions } = await supabase
+        .from('v2_homework_completions')
+        .select('homework_id')
+        .eq('user_id', user.id);
+
+      const completedIds = new Set((completions || []).map(c => c.homework_id));
+
+      // Gruppiere nach Fälligkeitsdatum - nur nicht abgehakte
       const hwByDate: Record<string, V2Homework[]> = {};
       (homeworkData || []).forEach(hw => {
+        // Nur Hausaufgaben anzeigen, die der User noch nicht abgehakt hat
+        if (completedIds.has(hw.id)) return;
+        
         const dateKey = hw.due_date;
         if (!hwByDate[dateKey]) hwByDate[dateKey] = [];
         hwByDate[dateKey].push(hw as V2Homework);
