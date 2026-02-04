@@ -362,14 +362,19 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
     await refreshSnapshots();
   }, [user, accounts, investments, transactions, eurUsdRate, refreshSnapshots]);
 
-  // Initial load + create snapshot
+  // Initial load
   useEffect(() => {
     if (user) {
-      refreshData().then(() => {
-        createSnapshot();
-      });
+      refreshData();
     }
   }, [user]);
+
+  // Create/update snapshot when data changes (after initial load)
+  useEffect(() => {
+    if (user && !loading && accounts.length > 0) {
+      createSnapshot();
+    }
+  }, [user, loading, accounts.length, investments.length]);
 
   // Computed values
   const totalAccountsEur = accounts.reduce((sum, acc) => {
