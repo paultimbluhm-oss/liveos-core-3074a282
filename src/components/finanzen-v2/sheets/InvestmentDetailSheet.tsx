@@ -26,7 +26,7 @@ export function InvestmentDetailSheet({ investment, open, onOpenChange }: Invest
   const { refreshInvestments, transactions } = useFinanceV2();
   const [isEditing, setIsEditing] = useState(false);
   const [editQuantity, setEditQuantity] = useState('');
-  const [editAvgPrice, setEditAvgPrice] = useState('');
+  const [editTotalCost, setEditTotalCost] = useState('');
   const [editName, setEditName] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -48,7 +48,9 @@ export function InvestmentDetailSheet({ investment, open, onOpenChange }: Invest
 
   const startEditing = () => {
     setEditQuantity(investment.quantity.toString());
-    setEditAvgPrice(investment.avg_purchase_price.toString());
+    // Calculate total cost for editing
+    const totalCostValue = investment.quantity * investment.avg_purchase_price;
+    setEditTotalCost(totalCostValue.toFixed(2));
     setEditName(investment.name);
     setIsEditing(true);
   };
@@ -59,20 +61,23 @@ export function InvestmentDetailSheet({ investment, open, onOpenChange }: Invest
 
   const handleSave = async () => {
     const newQuantity = parseFloat(editQuantity.replace(',', '.'));
-    const newAvgPrice = parseFloat(editAvgPrice.replace(',', '.'));
+    const newTotalCost = parseFloat(editTotalCost.replace(',', '.'));
 
-    if (isNaN(newQuantity) || newQuantity < 0) {
+    if (isNaN(newQuantity) || newQuantity <= 0) {
       toast.error('Ungültige Anzahl');
       return;
     }
-    if (isNaN(newAvgPrice) || newAvgPrice < 0) {
-      toast.error('Ungültiger Durchschnittspreis');
+    if (isNaN(newTotalCost) || newTotalCost < 0) {
+      toast.error('Ungültiger Kaufwert');
       return;
     }
     if (!editName.trim()) {
       toast.error('Name darf nicht leer sein');
       return;
     }
+
+    // Calculate avg_purchase_price from total cost / quantity
+    const newAvgPrice = newTotalCost / newQuantity;
 
     setSaving(true);
     const supabase = getSupabase();
@@ -179,17 +184,17 @@ export function InvestmentDetailSheet({ investment, open, onOpenChange }: Invest
               )}
             </div>
             <div className="bg-muted/30 rounded-lg p-3">
-              <p className="text-xs text-muted-foreground mb-1">Ø Kaufpreis</p>
+              <p className="text-xs text-muted-foreground mb-1">Kaufwert gesamt</p>
               {isEditing ? (
                 <Input
                   type="text"
                   inputMode="decimal"
-                  value={editAvgPrice}
-                  onChange={(e) => setEditAvgPrice(e.target.value)}
+                  value={editTotalCost}
+                  onChange={(e) => setEditTotalCost(e.target.value)}
                   className="h-8 text-sm font-semibold"
                 />
               ) : (
-                <p className="font-semibold">{formatCurrency(investment.avg_purchase_price, investment.currency)}</p>
+                <p className="font-semibold">{formatCurrency(totalCost, investment.currency)}</p>
               )}
             </div>
             <div className="bg-muted/30 rounded-lg p-3">
