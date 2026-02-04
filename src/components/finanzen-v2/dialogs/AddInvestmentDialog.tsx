@@ -43,7 +43,7 @@ export function AddInvestmentDialog({ open, onOpenChange }: AddInvestmentDialogP
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [selectedAsset, setSelectedAsset] = useState<SearchResult | null>(null);
   const [quantity, setQuantity] = useState('');
-  const [avgPrice, setAvgPrice] = useState('');
+  const [totalCost, setTotalCost] = useState('');
   const [searching, setSearching] = useState(false);
   const [manualMode, setManualMode] = useState(false);
   const [manualName, setManualName] = useState('');
@@ -58,7 +58,7 @@ export function AddInvestmentDialog({ open, onOpenChange }: AddInvestmentDialogP
       setSearchResults([]);
       setSelectedAsset(null);
       setQuantity('');
-      setAvgPrice('');
+      setTotalCost('');
       setManualMode(false);
       setManualName('');
       setManualSymbol('');
@@ -110,7 +110,7 @@ export function AddInvestmentDialog({ open, onOpenChange }: AddInvestmentDialogP
     return () => clearTimeout(debounce);
   }, [searchQuery, assetType, manualMode]);
 
-  // Fetch current price when asset is selected
+  // Fetch current price when asset is selected (for reference only)
   useEffect(() => {
     if (!selectedAsset) return;
 
@@ -125,7 +125,7 @@ export function AddInvestmentDialog({ open, onOpenChange }: AddInvestmentDialogP
           const price = data[selectedAsset.symbol]?.[vsCurrency];
           if (price) {
             setSelectedAsset((prev) => prev ? { ...prev, price } : null);
-            setAvgPrice(price.toString());
+            // Don't auto-fill totalCost - user enters their actual purchase amount
           }
         } else if (assetType === 'etf' || assetType === 'stock') {
           const supabaseClient = getSupabase();
@@ -134,7 +134,7 @@ export function AddInvestmentDialog({ open, onOpenChange }: AddInvestmentDialogP
           });
           if (!error && data?.price) {
             setSelectedAsset((prev) => prev ? { ...prev, price: data.price } : null);
-            setAvgPrice(data.price.toString());
+            // Don't auto-fill totalCost - user enters their actual purchase amount
           }
         }
       } catch (error) {
@@ -163,6 +163,12 @@ export function AddInvestmentDialog({ open, onOpenChange }: AddInvestmentDialogP
       return;
     }
 
+    const parsedQuantity = parseFloat(quantity.replace(',', '.')) || 0;
+    const parsedTotalCost = parseFloat(totalCost.replace(',', '.')) || 0;
+    
+    // Calculate avg_purchase_price from total cost / quantity
+    const avgPurchasePrice = parsedQuantity > 0 ? parsedTotalCost / parsedQuantity : 0;
+
     setLoading(true);
     const supabase = getSupabase();
 
@@ -172,9 +178,9 @@ export function AddInvestmentDialog({ open, onOpenChange }: AddInvestmentDialogP
       symbol: symbol,
       asset_type: assetType,
       currency,
-      quantity: parseFloat(quantity) || 0,
-      avg_purchase_price: parseFloat(avgPrice) || 0,
-      current_price: parseFloat(avgPrice) || null,
+      quantity: parsedQuantity,
+      avg_purchase_price: avgPurchasePrice,
+      current_price: selectedAsset?.price || null,
     });
 
     setLoading(false);
@@ -357,14 +363,14 @@ export function AddInvestmentDialog({ open, onOpenChange }: AddInvestmentDialogP
             </Select>
           </div>
 
-          {/* Quantity and Price */}
+          {/* Quantity and Total Cost */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="quantity">Anzahl</Label>
               <Input
                 id="quantity"
-                type="number"
-                step="0.0001"
+                type="text"
+                inputMode="decimal"
                 value={quantity}
                 onChange={(e) => setQuantity(e.target.value)}
                 placeholder="0"
@@ -372,25 +378,34 @@ export function AddInvestmentDialog({ open, onOpenChange }: AddInvestmentDialogP
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="avgPrice">Ø Kaufpreis ({currencySymbol})</Label>
+              <Label htmlFor="totalCost">Kaufpreis ({currencySymbol})</Label>
               <Input
-                id="avgPrice"
-                type="number"
-                step="0.01"
-                value={avgPrice}
-                onChange={(e) => setAvgPrice(e.target.value)}
+                id="totalCost"
+                type="text"
+                inputMode="decimal"
+                value={totalCost}
+                onChange={(e) => setTotalCost(e.target.value)}
                 placeholder="0.00"
               />
             </div>
           </div>
 
-          {/* Total Value Preview */}
-          {quantity && avgPrice && (
-            <div className="p-3 rounded-xl bg-muted/50 border">
+          {/* Current Price Reference */}
+          {selectedAsset?.price && quantity && (
+            <div className="p-3 rounded-xl bg-muted/50 border space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Gesamtwert</span>
+                <span className="text-muted-foreground">Aktueller Kurs</span>
                 <span className="font-medium">
-                  {(parseFloat(quantity) * parseFloat(avgPrice)).toLocaleString('de-DE', {
+                  {selectedAsset.price.toLocaleString('de-DE', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 6,
+                  })} {currencySymbol}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Aktueller Wert</span>
+                <span className="font-medium">
+                  {(parseFloat(quantity.replace(',', '.')) * selectedAsset.price).toLocaleString('de-DE', {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
                   })} {currencySymbol}
