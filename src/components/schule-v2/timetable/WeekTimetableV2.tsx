@@ -10,6 +10,7 @@ import { ChevronLeft, ChevronRight, Settings } from 'lucide-react';
 import { format, addWeeks, subWeeks, startOfWeek, addDays, isToday, isSameDay } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { GradeColorSettingsV2 } from '../settings/GradeColorSettingsV2';
+import { SlotActionSheet } from './SlotActionSheet';
 
 interface WeekTimetableV2Props {
   onSlotClick?: (slot: V2TimetableSlot, course: V2Course) => void;
@@ -27,6 +28,12 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
   const [loading, setLoading] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // Slot action sheet state
+  const [actionSheetOpen, setActionSheetOpen] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState<V2TimetableSlot | null>(null);
+  const [selectedCourse, setSelectedCourse] = useState<V2Course | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   // Load timetable slots for user's courses in current scope
   useEffect(() => {
@@ -320,39 +327,45 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
                       );
                       const hwCount = hwForSlot.length;
 
-                      return (
-                        <td key={day} className="p-0.5" rowSpan={isDouble ? 2 : 1}>
-                          <button
-                            onClick={() => onSlotClick?.(slot, slot.course)}
-                            className={`
-                              w-full rounded text-[10px] font-medium text-white relative
-                              flex flex-col items-center justify-center
-                              transition-all hover:scale-[1.02] active:scale-[0.98]
-                              ${isPast ? 'opacity-40' : ''}
-                              ${isDouble ? 'h-[84px]' : 'h-10'}
-                            `}
-                            style={{ backgroundColor: slot.course.color || '#6366f1' }}
-                          >
-                            <span>{slot.course.short_name || slot.course.name.substring(0, 3)}</span>
-                            {/* Hausaufgaben Badge links oben */}
-                            {hwCount > 0 && (
-                              <span 
-                                className="absolute -top-2 -left-2 w-5 h-5 text-[9px] font-bold rounded-full flex items-center justify-center shadow-sm bg-rose-500 text-white"
-                              >
-                                {hwCount}
-                              </span>
-                            )}
-                            {/* Noten Badge rechts oben */}
-                            {avg !== null && (
-                              <span 
-                                className={`absolute -top-2 -right-2 w-6 h-6 text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm ${getGradeBgClass(avg)}`}
-                              >
-                                {avg}
-                              </span>
-                            )}
-                          </button>
-                        </td>
-                      );
+                        return (
+                          <td key={day} className="p-0.5" rowSpan={isDouble ? 2 : 1}>
+                            <button
+                              onClick={() => {
+                                // Open action sheet instead of directly opening course detail
+                                setSelectedSlot(slot);
+                                setSelectedCourse(slot.course);
+                                setSelectedDate(date);
+                                setActionSheetOpen(true);
+                              }}
+                              className={`
+                                w-full rounded text-[10px] font-medium text-white relative
+                                flex flex-col items-center justify-center
+                                transition-all hover:scale-[1.02] active:scale-[0.98]
+                                ${isPast ? 'opacity-40' : ''}
+                                ${isDouble ? 'h-[84px]' : 'h-10'}
+                              `}
+                              style={{ backgroundColor: slot.course.color || '#6366f1' }}
+                            >
+                              <span>{slot.course.short_name || slot.course.name.substring(0, 3)}</span>
+                              {/* Hausaufgaben Badge links oben */}
+                              {hwCount > 0 && (
+                                <span 
+                                  className="absolute -top-2 -left-2 w-5 h-5 text-[9px] font-bold rounded-full flex items-center justify-center shadow-sm bg-rose-500 text-white"
+                                >
+                                  {hwCount}
+                                </span>
+                              )}
+                              {/* Noten Badge rechts oben */}
+                              {avg !== null && (
+                                <span 
+                                  className={`absolute -top-2 -right-2 w-6 h-6 text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm ${getGradeBgClass(avg)}`}
+                                >
+                                  {avg}
+                                </span>
+                              )}
+                            </button>
+                          </td>
+                        );
                     })}
                   </tr>
                 )})}
@@ -367,6 +380,20 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
       open={settingsOpen} 
       onOpenChange={setSettingsOpen}
       onSettingsChange={() => setRefreshKey(prev => prev + 1)}
+    />
+
+    <SlotActionSheet
+      open={actionSheetOpen}
+      onOpenChange={setActionSheetOpen}
+      slot={selectedSlot}
+      course={selectedCourse}
+      slotDate={selectedDate}
+      onOpenCourseDetail={() => {
+        if (selectedSlot && selectedCourse) {
+          onSlotClick?.(selectedSlot, selectedCourse);
+        }
+      }}
+      onAbsenceChange={() => setRefreshKey(prev => prev + 1)}
     />
     </>
   );
