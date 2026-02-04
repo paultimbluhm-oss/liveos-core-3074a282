@@ -57,7 +57,7 @@ export function AddAutomationDialog({ open, onOpenChange }: AddAutomationDialogP
       account_id: accountId,
       to_account_id: type === 'transfer' ? toAccountId : null,
       investment_id: type === 'investment' ? investmentId : null,
-      category_id: type !== 'transfer' && type !== 'investment' ? categoryId || null : null,
+      category_id: type !== 'transfer' && type !== 'investment' ? (categoryId && categoryId !== 'none' ? categoryId : null) : null,
       note: note.trim() || null,
       is_active: isActive,
     });
@@ -235,7 +235,7 @@ export function AddAutomationDialog({ open, onOpenChange }: AddAutomationDialogP
                   <SelectValue placeholder="Optional" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Keine Kategorie</SelectItem>
+                  <SelectItem value="none">Keine Kategorie</SelectItem>
                   {categories.map(cat => (
                     <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
                   ))}

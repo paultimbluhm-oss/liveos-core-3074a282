@@ -57,7 +57,7 @@ export function AddTransactionDialog({ open, onOpenChange, defaultType = 'expens
       date,
       account_id: accountId,
       to_account_id: type === 'transfer' ? toAccountId : null,
-      category_id: categoryId || null,
+      category_id: categoryId && categoryId !== 'none' ? categoryId : null,
       note: note.trim() || null,
     });
 
@@ -191,7 +191,7 @@ export function AddTransactionDialog({ open, onOpenChange, defaultType = 'expens
                   <SelectValue placeholder="Optional" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Keine Kategorie</SelectItem>
+                  <SelectItem value="none">Keine Kategorie</SelectItem>
                   {categories.map(cat => (
                     <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
                   ))}
