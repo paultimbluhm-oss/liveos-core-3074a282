@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { Trash2, TrendingUp, TrendingDown } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Trash2, TrendingUp, TrendingDown, Pencil, Check, X } from 'lucide-react';
 import { V2Investment, useFinanceV2 } from '../context/FinanceV2Context';
 import { getSupabase } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -22,6 +24,11 @@ const assetTypeLabels: Record<string, string> = {
 
 export function InvestmentDetailSheet({ investment, open, onOpenChange }: InvestmentDetailSheetProps) {
   const { refreshInvestments, transactions } = useFinanceV2();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editQuantity, setEditQuantity] = useState('');
+  const [editAvgPrice, setEditAvgPrice] = useState('');
+  const [editName, setEditName] = useState('');
+  const [saving, setSaving] = useState(false);
 
   if (!investment) return null;
 
@@ -38,6 +45,56 @@ export function InvestmentDetailSheet({ investment, open, onOpenChange }: Invest
   const investmentTransactions = transactions
     .filter(tx => tx.investment_id === investment.id)
     .slice(0, 10);
+
+  const startEditing = () => {
+    setEditQuantity(investment.quantity.toString());
+    setEditAvgPrice(investment.avg_purchase_price.toString());
+    setEditName(investment.name);
+    setIsEditing(true);
+  };
+
+  const cancelEditing = () => {
+    setIsEditing(false);
+  };
+
+  const handleSave = async () => {
+    const newQuantity = parseFloat(editQuantity.replace(',', '.'));
+    const newAvgPrice = parseFloat(editAvgPrice.replace(',', '.'));
+
+    if (isNaN(newQuantity) || newQuantity < 0) {
+      toast.error('Ungültige Anzahl');
+      return;
+    }
+    if (isNaN(newAvgPrice) || newAvgPrice < 0) {
+      toast.error('Ungültiger Durchschnittspreis');
+      return;
+    }
+    if (!editName.trim()) {
+      toast.error('Name darf nicht leer sein');
+      return;
+    }
+
+    setSaving(true);
+    const supabase = getSupabase();
+    
+    const { error } = await supabase
+      .from('v2_investments')
+      .update({
+        quantity: newQuantity,
+        avg_purchase_price: newAvgPrice,
+        name: editName.trim(),
+      })
+      .eq('id', investment.id);
+
+    if (error) {
+      toast.error('Fehler beim Speichern');
+    } else {
+      toast.success('Investment aktualisiert');
+      await refreshInvestments();
+      setIsEditing(false);
+    }
+    setSaving(false);
+  };
 
   const handleDelete = async () => {
     if (!confirm('Investment wirklich löschen?')) return;
@@ -56,14 +113,40 @@ export function InvestmentDetailSheet({ investment, open, onOpenChange }: Invest
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="h-[80vh] rounded-t-2xl">
+      <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl overflow-y-auto">
         <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
-            {investment.name}
-            {investment.symbol && (
-              <span className="text-sm text-muted-foreground font-normal">({investment.symbol})</span>
+          <div className="flex items-center justify-between">
+            <SheetTitle className="flex items-center gap-2">
+              {isEditing ? (
+                <Input
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="text-lg font-semibold h-8 w-48"
+                />
+              ) : (
+                <>
+                  {investment.name}
+                  {investment.symbol && (
+                    <span className="text-sm text-muted-foreground font-normal">({investment.symbol})</span>
+                  )}
+                </>
+              )}
+            </SheetTitle>
+            {!isEditing ? (
+              <Button variant="ghost" size="icon" onClick={startEditing}>
+                <Pencil className="w-4 h-4" />
+              </Button>
+            ) : (
+              <div className="flex gap-1">
+                <Button variant="ghost" size="icon" onClick={cancelEditing} disabled={saving}>
+                  <X className="w-4 h-4" />
+                </Button>
+                <Button variant="ghost" size="icon" onClick={handleSave} disabled={saving}>
+                  <Check className="w-4 h-4 text-emerald-500" />
+                </Button>
+              </div>
             )}
-          </SheetTitle>
+          </div>
         </SheetHeader>
         
         <div className="mt-6 space-y-6">
@@ -82,12 +165,32 @@ export function InvestmentDetailSheet({ investment, open, onOpenChange }: Invest
           {/* Details */}
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-muted/30 rounded-lg p-3">
-              <p className="text-xs text-muted-foreground">Anzahl</p>
-              <p className="font-semibold">{investment.quantity.toLocaleString('de-DE', { maximumFractionDigits: 4 })}</p>
+              <p className="text-xs text-muted-foreground mb-1">Anzahl</p>
+              {isEditing ? (
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  value={editQuantity}
+                  onChange={(e) => setEditQuantity(e.target.value)}
+                  className="h-8 text-sm font-semibold"
+                />
+              ) : (
+                <p className="font-semibold">{investment.quantity.toLocaleString('de-DE', { maximumFractionDigits: 4 })}</p>
+              )}
             </div>
             <div className="bg-muted/30 rounded-lg p-3">
-              <p className="text-xs text-muted-foreground">Ø Kaufpreis</p>
-              <p className="font-semibold">{formatCurrency(investment.avg_purchase_price, investment.currency)}</p>
+              <p className="text-xs text-muted-foreground mb-1">Ø Kaufpreis</p>
+              {isEditing ? (
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  value={editAvgPrice}
+                  onChange={(e) => setEditAvgPrice(e.target.value)}
+                  className="h-8 text-sm font-semibold"
+                />
+              ) : (
+                <p className="font-semibold">{formatCurrency(investment.avg_purchase_price, investment.currency)}</p>
+              )}
             </div>
             <div className="bg-muted/30 rounded-lg p-3">
               <p className="text-xs text-muted-foreground">Aktueller Kurs</p>
@@ -118,10 +221,12 @@ export function InvestmentDetailSheet({ investment, open, onOpenChange }: Invest
           )}
 
           {/* Delete button */}
-          <Button variant="destructive" className="w-full" onClick={handleDelete}>
-            <Trash2 className="w-4 h-4 mr-2" />
-            Investment löschen
-          </Button>
+          {!isEditing && (
+            <Button variant="destructive" className="w-full" onClick={handleDelete}>
+              <Trash2 className="w-4 h-4 mr-2" />
+              Investment löschen
+            </Button>
+          )}
         </div>
       </SheetContent>
     </Sheet>
