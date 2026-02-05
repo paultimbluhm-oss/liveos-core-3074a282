@@ -414,18 +414,18 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
                                   X
                                 </span>
                               )}
-                              {/* Hausaufgaben Badge links oben */}
+                              {/* Hausaufgaben Badge links oben - innerhalb der Kachel */}
                               {hwCount > 0 && !isPast && (
                                 <span 
-                                  className="absolute -top-2 -left-2 w-5 h-5 text-[9px] font-bold rounded-full flex items-center justify-center shadow-lg bg-rose-500 text-white ring-2 ring-white"
+                                  className="absolute top-0.5 left-0.5 w-4 h-4 text-[8px] font-bold rounded-full flex items-center justify-center shadow-lg bg-rose-500 text-white ring-1 ring-white"
                                 >
                                   {hwCount}
                                 </span>
                               )}
-                              {/* Noten Badge rechts oben */}
+                              {/* Noten Badge rechts oben - innerhalb der Kachel */}
                               {avg !== null && !isPast && (
                                 <span 
-                                  className={`absolute -top-2 -right-2 w-6 h-6 text-[10px] font-bold rounded-full flex items-center justify-center shadow-lg ring-2 ring-white ${getGradeBgClass(avg)}`}
+                                  className={`absolute top-0.5 right-0.5 w-5 h-5 text-[9px] font-bold rounded-full flex items-center justify-center shadow-lg ring-1 ring-white ${getGradeBgClass(avg)}`}
                                 >
                                   {avg}
                                 </span>
