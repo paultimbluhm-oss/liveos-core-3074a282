@@ -386,21 +386,26 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
                                 w-full rounded text-[10px] font-medium text-white relative
                                 flex flex-col items-center justify-center
                                 transition-all hover:scale-[1.02] active:scale-[0.98]
+                                ring-2 ring-white/30
                                 ${isPast ? 'opacity-25 grayscale' : ''}
+                                ${hasEva ? 'opacity-40 ring-blue-400 ring-2' : ''}
                                 ${isDouble ? 'h-[84px]' : 'h-10'}
                               `}
                               style={{ backgroundColor: slot.course.color || '#6366f1' }}
                             >
                               <span className={`
-                                ${hasMissed || hasEva ? 'line-through opacity-70' : ''}
+                                ${hasMissed ? 'line-through opacity-70' : ''}
+                                ${hasEva ? 'line-through' : ''}
                                 ${isPast ? 'line-through' : ''}
                               `}>
                                 {slot.course.short_name || slot.course.name.substring(0, 3)}
                               </span>
-                              {/* EVA Badge */}
+                              {/* EVA Badge - größer und deutlicher */}
                               {hasEva && (
-                                <span className="absolute bottom-0.5 text-[8px] font-bold bg-blue-600/90 px-1 rounded">
-                                  EVA
+                                <span className="absolute inset-0 flex items-center justify-center">
+                                  <span className="text-[11px] font-black bg-blue-500 text-white px-2 py-0.5 rounded shadow-lg">
+                                    EVA
+                                  </span>
                                 </span>
                               )}
                               {/* Gefehlt Badge */}
@@ -412,7 +417,7 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
                               {/* Hausaufgaben Badge links oben */}
                               {hwCount > 0 && !isPast && (
                                 <span 
-                                  className="absolute -top-2 -left-2 w-5 h-5 text-[9px] font-bold rounded-full flex items-center justify-center shadow-sm bg-rose-500 text-white"
+                                  className="absolute -top-2 -left-2 w-5 h-5 text-[9px] font-bold rounded-full flex items-center justify-center shadow-lg bg-rose-500 text-white ring-2 ring-white"
                                 >
                                   {hwCount}
                                 </span>
@@ -420,7 +425,7 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
                               {/* Noten Badge rechts oben */}
                               {avg !== null && !isPast && (
                                 <span 
-                                  className={`absolute -top-2 -right-2 w-6 h-6 text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm ${getGradeBgClass(avg)}`}
+                                  className={`absolute -top-2 -right-2 w-6 h-6 text-[10px] font-bold rounded-full flex items-center justify-center shadow-lg ring-2 ring-white ${getGradeBgClass(avg)}`}
                                 >
                                   {avg}
                                 </span>
