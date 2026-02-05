@@ -386,12 +386,15 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
                                 w-full rounded text-[10px] font-medium text-white relative
                                 flex flex-col items-center justify-center
                                 transition-all hover:scale-[1.02] active:scale-[0.98]
-                                ${isPast ? 'opacity-40' : ''}
+                                ${isPast ? 'opacity-25 grayscale' : ''}
                                 ${isDouble ? 'h-[84px]' : 'h-10'}
                               `}
                               style={{ backgroundColor: slot.course.color || '#6366f1' }}
                             >
-                              <span className={hasMissed || hasEva ? 'line-through opacity-70' : ''}>
+                              <span className={`
+                                ${hasMissed || hasEva ? 'line-through opacity-70' : ''}
+                                ${isPast ? 'line-through' : ''}
+                              `}>
                                 {slot.course.short_name || slot.course.name.substring(0, 3)}
                               </span>
                               {/* EVA Badge */}
@@ -407,7 +410,7 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
                                 </span>
                               )}
                               {/* Hausaufgaben Badge links oben */}
-                              {hwCount > 0 && (
+                              {hwCount > 0 && !isPast && (
                                 <span 
                                   className="absolute -top-2 -left-2 w-5 h-5 text-[9px] font-bold rounded-full flex items-center justify-center shadow-sm bg-rose-500 text-white"
                                 >
@@ -415,7 +418,7 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
                                 </span>
                               )}
                               {/* Noten Badge rechts oben */}
-                              {avg !== null && (
+                              {avg !== null && !isPast && (
                                 <span 
                                   className={`absolute -top-2 -right-2 w-6 h-6 text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm ${getGradeBgClass(avg)}`}
                                 >
