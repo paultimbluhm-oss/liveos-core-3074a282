@@ -11,12 +11,13 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Slider } from '@/components/ui/slider';
-import { Plus, ClipboardList, GraduationCap, Clock, Settings } from 'lucide-react';
+import { Plus, ClipboardList, GraduationCap, Clock, Settings, UserX } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { TimetableSlotManagerV2 } from './TimetableSlotManagerV2';
 import { HomeworkTabV2 } from './HomeworkTabV2';
+import { AbsencesTabV2 } from './AbsencesTabV2';
 
 interface CourseDetailSheetV2Props {
   open: boolean;
@@ -24,9 +25,11 @@ interface CourseDetailSheetV2Props {
   course: V2Course | null;
   onTimetableChange?: () => void;
   onHomeworkChange?: () => void;
+  onAbsenceChange?: () => void;
+  initialTab?: string;
 }
 
-export function CourseDetailSheetV2({ open, onOpenChange, course, onTimetableChange, onHomeworkChange }: CourseDetailSheetV2Props) {
+export function CourseDetailSheetV2({ open, onOpenChange, course, onTimetableChange, onHomeworkChange, onAbsenceChange, initialTab = 'grades' }: CourseDetailSheetV2Props) {
   const { user } = useAuth();
   const { scope } = useSchoolV2();
   
@@ -144,19 +147,23 @@ export function CourseDetailSheetV2({ open, onOpenChange, course, onTimetableCha
             </div>
           </SheetHeader>
 
-          <Tabs defaultValue="grades" className="flex-1">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="grades" className="gap-1.5 text-xs">
+          <Tabs defaultValue={initialTab} className="flex-1">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="grades" className="gap-1 text-xs px-1">
                 <GraduationCap className="w-3.5 h-3.5" strokeWidth={1.5} />
                 Noten
               </TabsTrigger>
-              <TabsTrigger value="timetable" className="gap-1.5 text-xs">
+              <TabsTrigger value="timetable" className="gap-1 text-xs px-1">
                 <Clock className="w-3.5 h-3.5" strokeWidth={1.5} />
                 Stunden
               </TabsTrigger>
-              <TabsTrigger value="homework" className="gap-1.5 text-xs">
+              <TabsTrigger value="homework" className="gap-1 text-xs px-1">
                 <ClipboardList className="w-3.5 h-3.5" strokeWidth={1.5} />
-                Hausaufgaben
+                Aufgaben
+              </TabsTrigger>
+              <TabsTrigger value="absences" className="gap-1 text-xs px-1">
+                <UserX className="w-3.5 h-3.5" strokeWidth={1.5} />
+                Fehlzeit
               </TabsTrigger>
             </TabsList>
 
@@ -222,6 +229,10 @@ export function CourseDetailSheetV2({ open, onOpenChange, course, onTimetableCha
 
             <TabsContent value="homework" className="mt-4">
               <HomeworkTabV2 course={course} onHomeworkChange={onHomeworkChange} />
+            </TabsContent>
+
+            <TabsContent value="absences" className="mt-4">
+              <AbsencesTabV2 course={course} onAbsenceChange={onAbsenceChange} />
             </TabsContent>
           </Tabs>
         </SheetContent>

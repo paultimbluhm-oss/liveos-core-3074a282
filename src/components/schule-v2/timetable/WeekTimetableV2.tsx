@@ -25,7 +25,7 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
   const [slots, setSlots] = useState<(V2TimetableSlot & { course: V2Course })[]>([]);
   const [courseAverages, setCourseAverages] = useState<Record<string, number | null>>({});
   const [homeworkByDate, setHomeworkByDate] = useState<Record<string, V2Homework[]>>({});
-  const [absenceMap, setAbsenceMap] = useState<Record<string, { is_eva: boolean; status: string }>>({});
+  const [absenceMap, setAbsenceMap] = useState<Record<string, { is_eva: boolean; status: 'excused' | 'unexcused' }>>({});
   const [loading, setLoading] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -180,11 +180,11 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
         .lte('date', weekEnd);
 
       // Baue Map: "slotId-date" -> absence info
-      const absMap: Record<string, { is_eva: boolean; status: string }> = {};
+      const absMap: Record<string, { is_eva: boolean; status: 'excused' | 'unexcused' }> = {};
       (absencesData || []).forEach(abs => {
         if (abs.timetable_slot_id) {
           const key = `${abs.timetable_slot_id}-${abs.date}`;
-          absMap[key] = { is_eva: abs.is_eva, status: abs.status };
+          absMap[key] = { is_eva: abs.is_eva, status: abs.status as 'excused' | 'unexcused' };
         }
       });
       setAbsenceMap(absMap);
@@ -372,6 +372,8 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
                       const absenceInfo = absenceMap[absenceKey];
                       const hasEva = absenceInfo?.is_eva;
                       const hasMissed = absenceInfo && !absenceInfo.is_eva;
+                      const isExcused = hasMissed && absenceInfo?.status === 'excused';
+                      const isUnexcused = hasMissed && absenceInfo?.status === 'unexcused';
 
                         return (
                           <td key={day} className="p-0.5" rowSpan={isDouble ? 2 : 1}>
@@ -386,36 +388,47 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
                                 w-full rounded text-[10px] font-medium text-white relative
                                 flex flex-col items-center justify-center
                                 transition-all hover:scale-[1.02] active:scale-[0.98]
-                                ring-2 ring-white/30
-                                ${isPast ? 'opacity-25 grayscale' : ''}
-                                ${hasEva ? 'opacity-40 ring-blue-400 ring-2' : ''}
+                                ring-2
+                                ${isPast ? 'opacity-25 grayscale ring-white/30' : 'ring-white/30'}
+                                ${hasEva ? 'opacity-40 ring-sky-400 ring-2' : ''}
+                                ${isExcused ? 'opacity-50 ring-emerald-400 ring-2' : ''}
+                                ${isUnexcused ? 'opacity-60 ring-rose-400 ring-2' : ''}
                                 ${isDouble ? 'h-[84px]' : 'h-10'}
                               `}
                               style={{ backgroundColor: slot.course.color || '#6366f1' }}
                             >
                               <span className={`
-                                ${hasMissed ? 'line-through opacity-70' : ''}
-                                ${hasEva ? 'line-through' : ''}
-                                ${isPast ? 'line-through' : ''}
+                                ${hasMissed || hasEva || isPast ? 'line-through' : ''}
+                                ${hasMissed ? 'opacity-70' : ''}
                               `}>
                                 {slot.course.short_name || slot.course.name.substring(0, 3)}
                               </span>
-                              {/* EVA Badge - größer und deutlicher */}
+                              {/* EVA Badge - zentral und deutlich */}
                               {hasEva && (
                                 <span className="absolute inset-0 flex items-center justify-center">
-                                  <span className="text-[11px] font-black bg-blue-500 text-white px-2 py-0.5 rounded shadow-lg">
+                                  <span className="text-[11px] font-black bg-sky-500 text-white px-2 py-0.5 rounded shadow-lg">
                                     EVA
                                   </span>
                                 </span>
                               )}
-                              {/* Gefehlt Badge */}
-                              {hasMissed && (
-                                <span className="absolute bottom-0.5 text-[8px] font-bold bg-rose-600/90 px-1 rounded">
-                                  X
+                              {/* Entschuldigt Badge - grün */}
+                              {isExcused && (
+                                <span className="absolute inset-0 flex items-center justify-center">
+                                  <span className="text-[9px] font-bold bg-emerald-500 text-white px-1.5 py-0.5 rounded shadow-lg">
+                                    Entsch.
+                                  </span>
+                                </span>
+                              )}
+                              {/* Nicht entschuldigt Badge - rot */}
+                              {isUnexcused && (
+                                <span className="absolute inset-0 flex items-center justify-center">
+                                  <span className="text-[9px] font-bold bg-rose-500 text-white px-1.5 py-0.5 rounded shadow-lg">
+                                    Offen
+                                  </span>
                                 </span>
                               )}
                               {/* Hausaufgaben Badge links oben - innerhalb der Kachel */}
-                              {hwCount > 0 && !isPast && (
+                              {hwCount > 0 && !isPast && !hasMissed && !hasEva && (
                                 <span 
                                   className="absolute top-0.5 left-0.5 w-4 h-4 text-[8px] font-bold rounded-full flex items-center justify-center shadow-lg bg-rose-500 text-white ring-1 ring-white"
                                 >
@@ -423,7 +436,7 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
                                 </span>
                               )}
                               {/* Noten Badge rechts oben - innerhalb der Kachel */}
-                              {avg !== null && !isPast && (
+                              {avg !== null && !isPast && !hasMissed && !hasEva && (
                                 <span 
                                   className={`absolute top-0.5 right-0.5 w-5 h-5 text-[9px] font-bold rounded-full flex items-center justify-center shadow-lg ring-1 ring-white ${getGradeBgClass(avg)}`}
                                 >
