@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useAuth, getSupabase } from '@/hooks/useAuth';
-import { format } from 'date-fns';
+import { format, parseISO, eachDayOfInterval, isBefore, startOfDay } from 'date-fns';
 
 // Types
 export interface V2Account {
@@ -157,6 +157,7 @@ interface FinanceV2ContextType {
   refreshSnapshots: () => Promise<void>;
   refreshExternalSavings: () => Promise<void>;
   createSnapshot: () => Promise<void>;
+  recalculateSnapshotsFromDate: (fromDate: string) => Promise<void>;
   
   // EUR/USD rate
   eurUsdRate: number;
@@ -362,6 +363,85 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
     await refreshSnapshots();
   }, [user, accounts, investments, transactions, eurUsdRate, refreshSnapshots]);
 
+  // Recalculate snapshots from a specific date to today
+  const recalculateSnapshotsFromDate = useCallback(async (fromDate: string) => {
+    if (!user) return;
+    const supabase = getSupabase();
+    const today = startOfDay(new Date());
+    const startDate = startOfDay(parseISO(fromDate));
+    
+    // Don't recalculate if the date is in the future
+    if (isBefore(today, startDate)) return;
+    
+    // Get all days from fromDate to today
+    const daysToRecalculate = eachDayOfInterval({ start: startDate, end: today });
+    
+    // Get all transactions for the user
+    const { data: allTransactions } = await supabase
+      .from('v2_transactions')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('date', { ascending: true });
+    
+    if (!allTransactions) return;
+    
+    // For each day, calculate and upsert the snapshot
+    for (const day of daysToRecalculate) {
+      const dayStr = format(day, 'yyyy-MM-dd');
+      
+      // Calculate income/expenses for this specific day
+      const dayTx = allTransactions.filter(tx => tx.date === dayStr);
+      let incomeEur = 0;
+      let expensesEur = 0;
+      
+      dayTx.forEach(tx => {
+        const amt = tx.currency === 'USD' ? tx.amount / eurUsdRate : tx.amount;
+        if (tx.transaction_type === 'income' || tx.transaction_type === 'investment_sell') {
+          incomeEur += amt;
+        } else if (tx.transaction_type === 'expense' || tx.transaction_type === 'investment_buy') {
+          expensesEur += amt;
+        }
+      });
+      
+      // For account balances and net worth, we use current values
+      const accountBalances: Record<string, number> = {};
+      let totalAccountsEurCalc = 0;
+      
+      accounts.forEach(acc => {
+        accountBalances[acc.id] = acc.balance;
+        if (acc.currency === 'USD') {
+          totalAccountsEurCalc += acc.balance / eurUsdRate;
+        } else {
+          totalAccountsEurCalc += acc.balance;
+        }
+      });
+      
+      let totalInvestmentsEurCalc = 0;
+      investments.forEach(inv => {
+        const value = inv.quantity * (inv.current_price || inv.avg_purchase_price);
+        if (inv.currency === 'USD') {
+          totalInvestmentsEurCalc += value / eurUsdRate;
+        } else {
+          totalInvestmentsEurCalc += value;
+        }
+      });
+      
+      await supabase.from('v2_daily_snapshots').upsert({
+        user_id: user.id,
+        date: dayStr,
+        account_balances: accountBalances,
+        total_accounts_eur: totalAccountsEurCalc,
+        total_investments_eur: totalInvestmentsEurCalc,
+        net_worth_eur: totalAccountsEurCalc + totalInvestmentsEurCalc,
+        income_eur: incomeEur,
+        expenses_eur: expensesEur,
+        eur_usd_rate: eurUsdRate,
+      }, { onConflict: 'user_id,date' });
+    }
+    
+    await refreshSnapshots();
+  }, [user, accounts, investments, eurUsdRate, refreshSnapshots]);
+
   // Initial load
   useEffect(() => {
     if (user) {
@@ -429,6 +509,7 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
       refreshSnapshots,
       refreshExternalSavings,
       createSnapshot,
+      recalculateSnapshotsFromDate,
       eurUsdRate,
     }}>
       {children}
