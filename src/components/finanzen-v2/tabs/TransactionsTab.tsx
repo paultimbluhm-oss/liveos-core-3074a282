@@ -1,9 +1,10 @@
 import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, ArrowUpRight, ArrowDownRight, ArrowLeftRight, RefreshCw, TrendingUp, Calendar, Filter, Trash2 } from 'lucide-react';
+import { Plus, ArrowUpRight, ArrowDownRight, ArrowLeftRight, RefreshCw, TrendingUp, Calendar, Filter, Trash2, Pencil } from 'lucide-react';
 import { useFinanceV2, V2Automation, V2Transaction } from '../context/FinanceV2Context';
 import { AddAutomationDialog } from '../dialogs/AddAutomationDialog';
 import { AddTransactionDialog } from '../dialogs/AddTransactionDialog';
+import { TransactionDetailSheet } from '../sheets/TransactionDetailSheet';
 import { format, addDays, addMonths, addYears, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { useAuth, getSupabase } from '@/hooks/useAuth';
@@ -65,6 +66,7 @@ export function TransactionsTab() {
   const [deleteType, setDeleteType] = useState<'automation' | 'transaction' | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [filterMonth, setFilterMonth] = useState<Date>(new Date());
+  const [selectedTransaction, setSelectedTransaction] = useState<V2Transaction | null>(null);
 
   const formatCurrency = (value: number, currency: string = 'EUR') => 
     value.toLocaleString('de-DE', { style: 'currency', currency, maximumFractionDigits: 2 });
@@ -278,9 +280,10 @@ export function TransactionsTab() {
                     const categoryColor = getCategoryColor(tx.category_id);
                     
                     return (
-                      <div 
+                      <button 
                         key={tx.id}
-                        className={`flex items-center gap-3 p-3 ${index !== txs.length - 1 ? 'border-b border-border' : ''}`}
+                        onClick={() => setSelectedTransaction(tx)}
+                        className={`w-full flex items-center gap-3 p-3 text-left hover:bg-muted/50 transition-colors ${index !== txs.length - 1 ? 'border-b border-border' : ''}`}
                       >
                         <div className={`w-10 h-10 rounded-xl ${config.bg} flex items-center justify-center`}>
                           <span className={config.color}>{config.icon}</span>
@@ -304,19 +307,11 @@ export function TransactionsTab() {
                             {tx.to_account_id && ` → ${getAccountName(tx.to_account_id)}`}
                           </p>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className={`font-semibold ${config.color}`}>
-                            {tx.transaction_type === 'income' ? '+' : tx.transaction_type === 'expense' ? '-' : ''}
-                            {formatCurrency(tx.amount, tx.currency)}
-                          </span>
-                          <button
-                            onClick={() => { setDeleteItem(tx); setDeleteType('transaction'); }}
-                            className="w-7 h-7 rounded-lg bg-rose-500/10 flex items-center justify-center hover:bg-rose-500/20 opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <Trash2 className="w-3 h-3 text-rose-400" />
-                          </button>
-                        </div>
-                      </div>
+                        <span className={`font-semibold ${config.color}`}>
+                          {tx.transaction_type === 'income' ? '+' : tx.transaction_type === 'expense' ? '-' : ''}
+                          {formatCurrency(tx.amount, tx.currency)}
+                        </span>
+                      </button>
                     );
                   })}
                 </div>
@@ -418,6 +413,12 @@ export function TransactionsTab() {
       {/* Dialogs */}
       <AddAutomationDialog open={showAddAutomation} onOpenChange={setShowAddAutomation} />
       <AddTransactionDialog open={showAddTransaction} onOpenChange={setShowAddTransaction} />
+
+      <TransactionDetailSheet
+        transaction={selectedTransaction}
+        open={!!selectedTransaction}
+        onOpenChange={(open) => !open && setSelectedTransaction(null)}
+      />
 
       <AlertDialog open={!!deleteItem} onOpenChange={(open) => !open && setDeleteItem(null)}>
         <AlertDialogContent className="rounded-2xl">
