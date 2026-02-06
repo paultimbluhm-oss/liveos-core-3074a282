@@ -385,7 +385,18 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
     
     if (!allTransactions) return;
     
-    // For each day, calculate and upsert the snapshot
+    // Get current account data (we need to work backwards from current balances)
+    const { data: currentAccounts } = await supabase
+      .from('v2_accounts')
+      .select('*')
+      .eq('user_id', user.id);
+    
+    if (!currentAccounts) return;
+    
+    const todayStr = format(today, 'yyyy-MM-dd');
+    
+    // Calculate historical balance for each account on each day
+    // Strategy: Start with current balance, then subtract transactions that happened after each day
     for (const day of daysToRecalculate) {
       const dayStr = format(day, 'yyyy-MM-dd');
       
@@ -403,19 +414,42 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
         }
       });
       
-      // For account balances and net worth, we use current values
+      // Calculate what the account balances were at the END of this day
+      // Start with current balance and subtract the effect of all transactions AFTER this day
       const accountBalances: Record<string, number> = {};
       let totalAccountsEurCalc = 0;
       
-      accounts.forEach(acc => {
-        accountBalances[acc.id] = acc.balance;
+      currentAccounts.forEach(acc => {
+        // Start with current balance
+        let historicalBalance = acc.balance;
+        
+        // Subtract the effect of all transactions that happened AFTER this day
+        allTransactions
+          .filter(tx => tx.date > dayStr)
+          .forEach(tx => {
+            if (tx.account_id === acc.id) {
+              if (tx.transaction_type === 'income') {
+                historicalBalance -= tx.amount; // This income hadn't happened yet
+              } else if (tx.transaction_type === 'expense') {
+                historicalBalance += tx.amount; // This expense hadn't happened yet
+              } else if (tx.transaction_type === 'transfer') {
+                historicalBalance += tx.amount; // This transfer out hadn't happened yet
+              }
+            }
+            if (tx.to_account_id === acc.id && tx.transaction_type === 'transfer') {
+              historicalBalance -= tx.amount; // This transfer in hadn't happened yet
+            }
+          });
+        
+        accountBalances[acc.id] = historicalBalance;
         if (acc.currency === 'USD') {
-          totalAccountsEurCalc += acc.balance / eurUsdRate;
+          totalAccountsEurCalc += historicalBalance / eurUsdRate;
         } else {
-          totalAccountsEurCalc += acc.balance;
+          totalAccountsEurCalc += historicalBalance;
         }
       });
       
+      // For investments, use current values (historical tracking would be more complex)
       let totalInvestmentsEurCalc = 0;
       investments.forEach(inv => {
         const value = inv.quantity * (inv.current_price || inv.avg_purchase_price);
@@ -440,7 +474,7 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
     }
     
     await refreshSnapshots();
-  }, [user, accounts, investments, eurUsdRate, refreshSnapshots]);
+  }, [user, investments, eurUsdRate, refreshSnapshots]);
 
   // Initial load
   useEffect(() => {
