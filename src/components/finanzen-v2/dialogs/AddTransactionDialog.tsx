@@ -19,7 +19,7 @@ interface AddTransactionDialogProps {
 
 export function AddTransactionDialog({ open, onOpenChange, defaultType = 'expense' }: AddTransactionDialogProps) {
   const { user } = useAuth();
-  const { accounts, categories, refreshTransactions, refreshAccounts } = useFinanceV2();
+  const { accounts, categories, refreshTransactions, refreshAccounts, recalculateSnapshotsFromDate } = useFinanceV2();
   const [loading, setLoading] = useState(false);
   const [type, setType] = useState(defaultType);
   const [amount, setAmount] = useState('');
@@ -93,6 +93,8 @@ export function AddTransactionDialog({ open, onOpenChange, defaultType = 'expens
     setLoading(false);
     toast.success('Transaktion erstellt');
     await Promise.all([refreshTransactions(), refreshAccounts()]);
+    // Recalculate snapshots from the transaction date
+    await recalculateSnapshotsFromDate(date);
     onOpenChange(false);
     setAmount('');
     setNote('');

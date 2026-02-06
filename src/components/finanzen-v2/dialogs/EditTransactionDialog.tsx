@@ -16,7 +16,7 @@ interface EditTransactionDialogProps {
 }
 
 export function EditTransactionDialog({ transaction, open, onOpenChange }: EditTransactionDialogProps) {
-  const { accounts, categories, refreshTransactions, refreshAccounts } = useFinanceV2();
+  const { accounts, categories, refreshTransactions, refreshAccounts, recalculateSnapshotsFromDate } = useFinanceV2();
   const [loading, setLoading] = useState(false);
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('EUR');
@@ -147,6 +147,9 @@ export function EditTransactionDialog({ transaction, open, onOpenChange }: EditT
     } else {
       toast.success('Transaktion aktualisiert');
       await Promise.all([refreshTransactions(), refreshAccounts()]);
+      // Recalculate snapshots from the earlier of old and new date
+      const earlierDate = transaction.date < date ? transaction.date : date;
+      await recalculateSnapshotsFromDate(earlierDate);
       onOpenChange(false);
     }
     setLoading(false);

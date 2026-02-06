@@ -24,7 +24,7 @@ const transactionTypeLabels: Record<string, string> = {
 };
 
 export function TransactionDetailSheet({ transaction, open, onOpenChange }: TransactionDetailSheetProps) {
-  const { refreshTransactions, refreshAccounts, accounts, categories } = useFinanceV2();
+  const { refreshTransactions, refreshAccounts, accounts, categories, recalculateSnapshotsFromDate } = useFinanceV2();
   const [showEdit, setShowEdit] = useState(false);
 
   if (!transaction) return null;
@@ -77,6 +77,8 @@ export function TransactionDetailSheet({ transaction, open, onOpenChange }: Tran
     } else {
       toast.success('Transaktion gelöscht');
       await Promise.all([refreshTransactions(), refreshAccounts()]);
+      // Recalculate snapshots from the transaction date
+      await recalculateSnapshotsFromDate(transaction.date);
       onOpenChange(false);
     }
   };
