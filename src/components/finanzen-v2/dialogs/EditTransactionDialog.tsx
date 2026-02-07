@@ -61,9 +61,9 @@ export function EditTransactionDialog({ transaction, open, onOpenChange }: EditT
     if (oldAccount && transaction.account_id !== accountId) {
       // Account changed - reverse old account
       let revertedBalance = oldAccount.balance;
-      if (type === 'income') {
+      if (type === 'income' || type === 'investment_sell') {
         revertedBalance -= oldAmount;
-      } else if (type === 'expense' || type === 'transfer') {
+      } else if (type === 'expense' || type === 'transfer' || type === 'investment_buy') {
         revertedBalance += oldAmount;
       }
       await supabase.from('v2_accounts').update({ balance: revertedBalance }).eq('id', oldAccount.id);
@@ -79,9 +79,9 @@ export function EditTransactionDialog({ transaction, open, onOpenChange }: EditT
       // Apply to new account
       if (newAccount) {
         let newBalance = newAccount.balance;
-        if (type === 'income') {
+        if (type === 'income' || type === 'investment_sell') {
           newBalance += newAmount;
-        } else if (type === 'expense' || type === 'transfer') {
+        } else if (type === 'expense' || type === 'transfer' || type === 'investment_buy') {
           newBalance -= newAmount;
         }
         await supabase.from('v2_accounts').update({ balance: newBalance }).eq('id', newAccount.id);
@@ -97,9 +97,9 @@ export function EditTransactionDialog({ transaction, open, onOpenChange }: EditT
     } else if (amountDiff !== 0 && oldAccount) {
       // Same account, just amount changed
       let balanceChange = 0;
-      if (type === 'income') {
+      if (type === 'income' || type === 'investment_sell') {
         balanceChange = amountDiff;
-      } else if (type === 'expense' || type === 'transfer') {
+      } else if (type === 'expense' || type === 'transfer' || type === 'investment_buy') {
         balanceChange = -amountDiff;
       }
       await supabase.from('v2_accounts').update({ balance: oldAccount.balance + balanceChange }).eq('id', oldAccount.id);
@@ -145,11 +145,12 @@ export function EditTransactionDialog({ transaction, open, onOpenChange }: EditT
       toast.error('Fehler beim Speichern');
       console.error(error);
     } else {
-      toast.success('Transaktion aktualisiert');
+      // Refresh data first, then recalculate snapshots
       await Promise.all([refreshTransactions(), refreshAccounts()]);
       // Recalculate snapshots from the earlier of old and new date
       const earlierDate = transaction.date < date ? transaction.date : date;
       await recalculateSnapshotsFromDate(earlierDate);
+      toast.success('Transaktion aktualisiert');
       onOpenChange(false);
     }
     setLoading(false);

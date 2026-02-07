@@ -76,7 +76,7 @@ serve(async (req) => {
         }
       }
 
-      // Calculate today's cashflow
+      // Calculate today's cashflow from ALL transactions on this date
       const { data: todayTransactions } = await supabase
         .from('v2_transactions')
         .select('transaction_type, amount, currency')
@@ -89,11 +89,14 @@ serve(async (req) => {
       if (todayTransactions) {
         for (const tx of todayTransactions) {
           const amountEur = tx.currency === 'USD' ? tx.amount / eurUsdRate : tx.amount;
+          // Income and investment_sell count as income
           if (tx.transaction_type === 'income' || tx.transaction_type === 'investment_sell') {
             incomeEur += amountEur;
+          // Expense and investment_buy count as expenses
           } else if (tx.transaction_type === 'expense' || tx.transaction_type === 'investment_buy') {
             expensesEur += amountEur;
           }
+          // Transfers are NOT counted as income/expense (internal movement)
         }
       }
 
