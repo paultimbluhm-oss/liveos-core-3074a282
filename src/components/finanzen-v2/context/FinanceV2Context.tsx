@@ -242,7 +242,72 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
       .select('*')
       .eq('user_id', user.id)
       .order('name');
-    if (data) setInvestments(data as V2Investment[]);
+    
+    if (!data) return;
+    
+    const investments = data as V2Investment[];
+    
+    // Fetch current prices for crypto investments (and optionally stocks/ETFs)
+    const updatedInvestments = await Promise.all(
+      investments.map(async (inv) => {
+        // Only update if no recent price (older than 1 hour) or no price at all
+        const lastUpdate = inv.current_price_updated_at ? new Date(inv.current_price_updated_at) : null;
+        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+        const needsUpdate = !lastUpdate || lastUpdate < oneHourAgo;
+        
+        if (!needsUpdate && inv.current_price) {
+          return inv;
+        }
+        
+        try {
+          if (inv.asset_type === 'crypto' && inv.symbol) {
+            // CoinGecko API for crypto - symbol is the coin id
+            const vsCurrency = inv.currency.toLowerCase();
+            const res = await fetch(
+              `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(inv.symbol)}&vs_currencies=${vsCurrency}`
+            );
+            const priceData = await res.json();
+            const newPrice = priceData[inv.symbol]?.[vsCurrency];
+            
+            if (newPrice) {
+              // Update price in database
+              await supabase
+                .from('v2_investments')
+                .update({
+                  current_price: newPrice,
+                  current_price_updated_at: new Date().toISOString(),
+                })
+                .eq('id', inv.id);
+              
+              return { ...inv, current_price: newPrice, current_price_updated_at: new Date().toISOString() };
+            }
+          } else if ((inv.asset_type === 'etf' || inv.asset_type === 'stock') && inv.symbol) {
+            // Yahoo Finance via Edge Function
+            const { data: priceData, error } = await supabase.functions.invoke('get-stock-price', {
+              body: { symbol: inv.symbol, targetCurrency: inv.currency },
+            });
+            
+            if (!error && priceData?.price) {
+              await supabase
+                .from('v2_investments')
+                .update({
+                  current_price: priceData.price,
+                  current_price_updated_at: new Date().toISOString(),
+                })
+                .eq('id', inv.id);
+              
+              return { ...inv, current_price: priceData.price, current_price_updated_at: new Date().toISOString() };
+            }
+          }
+        } catch (error) {
+          console.error(`Failed to fetch price for ${inv.name}:`, error);
+        }
+        
+        return inv;
+      })
+    );
+    
+    setInvestments(updatedInvestments as V2Investment[]);
   }, [user]);
 
   const refreshMaterialAssets = useCallback(async () => {
