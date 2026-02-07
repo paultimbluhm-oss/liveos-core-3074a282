@@ -48,21 +48,23 @@ export function TransactionDetailSheet({ transaction, open, onOpenChange }: Tran
     if (!confirm('Transaktion wirklich löschen?')) return;
 
     const supabase = getSupabase();
+    const txType = transaction.transaction_type;
     
-    // Reverse the account balance changes
+    // Reverse the account balance changes based on transaction type
     const account = accounts.find(a => a.id === transaction.account_id);
     if (account) {
       let newBalance = account.balance;
-      if (transaction.transaction_type === 'income') {
+      // Income and investment_sell added to account, so reverse by subtracting
+      if (txType === 'income' || txType === 'investment_sell') {
         newBalance -= transaction.amount;
-      } else if (transaction.transaction_type === 'expense') {
-        newBalance += transaction.amount;
-      } else if (transaction.transaction_type === 'transfer') {
+      // Expense, investment_buy, and transfer subtracted from account, so reverse by adding
+      } else if (txType === 'expense' || txType === 'investment_buy' || txType === 'transfer') {
         newBalance += transaction.amount;
       }
       await supabase.from('v2_accounts').update({ balance: newBalance }).eq('id', account.id);
 
-      if (transaction.transaction_type === 'transfer' && transaction.to_account_id) {
+      // For transfers, also reverse the target account
+      if (txType === 'transfer' && transaction.to_account_id) {
         const toAccount = accounts.find(a => a.id === transaction.to_account_id);
         if (toAccount) {
           await supabase.from('v2_accounts').update({ balance: toAccount.balance - transaction.amount }).eq('id', toAccount.id);
@@ -75,10 +77,11 @@ export function TransactionDetailSheet({ transaction, open, onOpenChange }: Tran
     if (error) {
       toast.error('Fehler beim Löschen');
     } else {
-      toast.success('Transaktion gelöscht');
+      // Refresh data first, then recalculate snapshots
       await Promise.all([refreshTransactions(), refreshAccounts()]);
-      // Recalculate snapshots from the transaction date
+      // Recalculate all snapshots from the transaction date
       await recalculateSnapshotsFromDate(transaction.date);
+      toast.success('Transaktion gelöscht');
       onOpenChange(false);
     }
   };

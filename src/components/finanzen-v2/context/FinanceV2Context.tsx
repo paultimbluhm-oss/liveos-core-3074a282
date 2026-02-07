@@ -225,12 +225,12 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
   const refreshTransactions = useCallback(async () => {
     if (!user) return;
     const supabase = getSupabase();
+    // Load ALL transactions for accurate historical calculations
     const { data } = await supabase
       .from('v2_transactions')
       .select('*')
       .eq('user_id', user.id)
-      .order('date', { ascending: false })
-      .limit(100);
+      .order('date', { ascending: false });
     if (data) setTransactions(data as V2Transaction[]);
   }, [user]);
 
@@ -441,7 +441,7 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
     // Get all days from fromDate to today
     const daysToRecalculate = eachDayOfInterval({ start: startDate, end: today });
     
-    // Get all transactions for the user
+    // Load ALL transactions without limit for accurate calculations
     const { data: allTransactions } = await supabase
       .from('v2_transactions')
       .select('*')
@@ -458,25 +458,33 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
     
     if (!currentAccounts) return;
     
-    const todayStr = format(today, 'yyyy-MM-dd');
+    // Get current investments for value calculation
+    const { data: currentInvestments } = await supabase
+      .from('v2_investments')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('is_active', true);
     
     // Calculate historical balance for each account on each day
     // Strategy: Start with current balance, then subtract transactions that happened after each day
     for (const day of daysToRecalculate) {
       const dayStr = format(day, 'yyyy-MM-dd');
       
-      // Calculate income/expenses for this specific day
+      // Calculate income/expenses for this specific day from transactions
       const dayTx = allTransactions.filter(tx => tx.date === dayStr);
       let incomeEur = 0;
       let expensesEur = 0;
       
       dayTx.forEach(tx => {
         const amt = tx.currency === 'USD' ? tx.amount / eurUsdRate : tx.amount;
+        // Income and investment sells count as income
         if (tx.transaction_type === 'income' || tx.transaction_type === 'investment_sell') {
           incomeEur += amt;
+        // Expenses and investment buys count as expenses
         } else if (tx.transaction_type === 'expense' || tx.transaction_type === 'investment_buy') {
           expensesEur += amt;
         }
+        // Transfers are NOT counted as income/expense (internal movement)
       });
       
       // Calculate what the account balances were at the END of this day
@@ -493,16 +501,17 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
           .filter(tx => tx.date > dayStr)
           .forEach(tx => {
             if (tx.account_id === acc.id) {
-              if (tx.transaction_type === 'income') {
-                historicalBalance -= tx.amount; // This income hadn't happened yet
-              } else if (tx.transaction_type === 'expense') {
-                historicalBalance += tx.amount; // This expense hadn't happened yet
-              } else if (tx.transaction_type === 'transfer') {
-                historicalBalance += tx.amount; // This transfer out hadn't happened yet
+              // Income and investment_sell add to account, so reverse by subtracting
+              if (tx.transaction_type === 'income' || tx.transaction_type === 'investment_sell') {
+                historicalBalance -= tx.amount;
+              // Expense, investment_buy, and transfer (out) subtract from account, so reverse by adding
+              } else if (tx.transaction_type === 'expense' || tx.transaction_type === 'investment_buy' || tx.transaction_type === 'transfer') {
+                historicalBalance += tx.amount;
               }
             }
+            // Transfer (in) adds to target account, so reverse by subtracting
             if (tx.to_account_id === acc.id && tx.transaction_type === 'transfer') {
-              historicalBalance -= tx.amount; // This transfer in hadn't happened yet
+              historicalBalance -= tx.amount;
             }
           });
         
@@ -514,16 +523,18 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
         }
       });
       
-      // For investments, use current values (historical tracking would be more complex)
+      // For investments, use current values (historical price tracking would require external data)
       let totalInvestmentsEurCalc = 0;
-      investments.forEach(inv => {
-        const value = inv.quantity * (inv.current_price || inv.avg_purchase_price);
-        if (inv.currency === 'USD') {
-          totalInvestmentsEurCalc += value / eurUsdRate;
-        } else {
-          totalInvestmentsEurCalc += value;
-        }
-      });
+      if (currentInvestments) {
+        currentInvestments.forEach((inv) => {
+          const value = inv.quantity * (inv.current_price || inv.avg_purchase_price);
+          if (inv.currency === 'USD') {
+            totalInvestmentsEurCalc += value / eurUsdRate;
+          } else {
+            totalInvestmentsEurCalc += value;
+          }
+        });
+      }
       
       await supabase.from('v2_daily_snapshots').upsert({
         user_id: user.id,
@@ -539,7 +550,7 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
     }
     
     await refreshSnapshots();
-  }, [user, investments, eurUsdRate, refreshSnapshots]);
+  }, [user, eurUsdRate, refreshSnapshots]);
 
   // Initial load
   useEffect(() => {
@@ -549,11 +560,27 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
   }, [user]);
 
   // Create/update snapshot when data changes (after initial load)
+  // Also repair historical snapshots if needed (one-time on load)
+  const [snapshotsRepaired, setSnapshotsRepaired] = useState(false);
+  
   useEffect(() => {
     if (user && !loading && accounts.length > 0) {
       createSnapshot();
     }
   }, [user, loading, accounts.length, investments.length]);
+
+  // One-time repair of all historical snapshots after initial load
+  useEffect(() => {
+    if (user && !loading && transactions.length > 0 && !snapshotsRepaired) {
+      setSnapshotsRepaired(true);
+      // Find oldest transaction date and recalculate from there
+      const oldestDate = transactions.reduce(
+        (min, tx) => (tx.date < min ? tx.date : min),
+        format(new Date(), 'yyyy-MM-dd')
+      );
+      recalculateSnapshotsFromDate(oldestDate);
+    }
+  }, [user, loading, transactions.length, snapshotsRepaired, recalculateSnapshotsFromDate]);
 
   // Computed values
   const totalAccountsEur = accounts.reduce((sum, acc) => {

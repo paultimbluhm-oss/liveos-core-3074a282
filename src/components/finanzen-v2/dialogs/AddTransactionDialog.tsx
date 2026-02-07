@@ -68,7 +68,7 @@ export function AddTransactionDialog({ open, onOpenChange, defaultType = 'expens
       return;
     }
 
-    // Update account balances
+    // Update account balances based on transaction type
     const account = accounts.find(a => a.id === accountId);
     if (account) {
       let newBalance = account.balance;
@@ -90,11 +90,13 @@ export function AddTransactionDialog({ open, onOpenChange, defaultType = 'expens
       }
     }
 
+    // Refresh data first, then recalculate snapshots
+    await Promise.all([refreshTransactions(), refreshAccounts()]);
+    // Recalculate all snapshots from the transaction date to ensure accuracy
+    await recalculateSnapshotsFromDate(date);
+    
     setLoading(false);
     toast.success('Transaktion erstellt');
-    await Promise.all([refreshTransactions(), refreshAccounts()]);
-    // Recalculate snapshots from the transaction date
-    await recalculateSnapshotsFromDate(date);
     onOpenChange(false);
     setAmount('');
     setNote('');
