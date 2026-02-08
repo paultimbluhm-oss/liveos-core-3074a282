@@ -32,7 +32,7 @@ const navItems = [
   { to: '/schule-v2', icon: GraduationCap, label: 'Schule' },
   { to: '/finanzen-v2', icon: Coins, label: 'Finanzen' },
   { to: '/privat', icon: User, label: 'Privat' },
-  { to: '/business', icon: Briefcase, label: 'Business' },
+  { to: '/business-v2', icon: Briefcase, label: 'Business' },
   { to: '/freunde', icon: Users, label: 'Freunde' },
 ];
 
@@ -41,7 +41,7 @@ const getPageTitle = (pathname: string): string => {
   if (pathname === '/schule-v2') return 'Schule';
   if (pathname === '/finanzen-v2') return 'Finanzen';
   if (pathname === '/privat') return 'Privat';
-  if (pathname === '/business') return 'Business';
+  if (pathname === '/business-v2') return 'Business';
   if (pathname === '/freunde') return 'Freunde';
   if (pathname === '/kalender') return 'Kalender';
   if (pathname === '/profil') return 'Profil';
