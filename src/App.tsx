@@ -13,6 +13,7 @@ import SchuleV2 from "./pages/SchuleV2";
 import FinanzenV2 from "./pages/FinanzenV2";
 import Privat from "./pages/Privat";
 import Business from "./pages/Business";
+import BusinessV2 from "./pages/BusinessV2";
 import Profile from "./pages/Profile";
 import Kalender from "./pages/Kalender";
 import Freunde from "./pages/Freunde";
@@ -38,6 +39,7 @@ const App = () => (
                 <Route path="/finanzen-v2" element={<FinanzenV2 />} />
                 <Route path="/privat" element={<Privat />} />
                 <Route path="/business" element={<Business />} />
+                <Route path="/business-v2" element={<BusinessV2 />} />
                 <Route path="/freunde" element={<Freunde />} />
                 <Route path="/profil" element={<Profile />} />
                 <Route path="*" element={<NotFound />} />

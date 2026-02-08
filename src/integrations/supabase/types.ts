@@ -3226,6 +3226,169 @@ export type Database = {
         }
         Relationships: []
       }
+      v2_companies: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          id: string
+          industry: string | null
+          name: string
+          notes: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          website: string | null
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          id?: string
+          industry?: string | null
+          name: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          website?: string | null
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          id?: string
+          industry?: string | null
+          name?: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "v2_companies_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "v2_company_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v2_company_categories: {
+        Row: {
+          color: string | null
+          created_at: string
+          id: string
+          name: string
+          order_index: number | null
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          order_index?: number | null
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          order_index?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      v2_company_contacts: {
+        Row: {
+          company_id: string
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          position: string | null
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          position?: string | null
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          position?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "v2_company_contacts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "v2_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v2_company_relations: {
+        Row: {
+          created_at: string
+          description: string | null
+          from_company_id: string
+          id: string
+          relation_type: string
+          to_company_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          from_company_id: string
+          id?: string
+          relation_type: string
+          to_company_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          from_company_id?: string
+          id?: string
+          relation_type?: string
+          to_company_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "v2_company_relations_from_company_id_fkey"
+            columns: ["from_company_id"]
+            isOneToOne: false
+            referencedRelation: "v2_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "v2_company_relations_to_company_id_fkey"
+            columns: ["to_company_id"]
+            isOneToOne: false
+            referencedRelation: "v2_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v2_course_feed: {
         Row: {
           course_id: string
