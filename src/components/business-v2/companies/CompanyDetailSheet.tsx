@@ -105,14 +105,14 @@ export function CompanyDetailSheet({ open, onOpenChange, company }: CompanyDetai
                 <div className="space-y-2">
                   <Label>Kategorie</Label>
                   <Select 
-                    value={company.category_id || ''} 
-                    onValueChange={(v) => handleUpdate('category_id', v || undefined)}
+                    value={company.category_id || 'none'} 
+                    onValueChange={(v) => handleUpdate('category_id', v === 'none' ? undefined : v)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Keine" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Keine</SelectItem>
+                      <SelectItem value="none">Keine</SelectItem>
                       {categories.map(cat => (
                         <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
                       ))}

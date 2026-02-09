@@ -31,7 +31,7 @@ export function AddCompanyDialog({ open, onOpenChange, defaultCategoryId }: AddC
     setLoading(true);
     await addCompany({
       name: name.trim(),
-      category_id: categoryId || undefined,
+      category_id: categoryId && categoryId !== 'none' ? categoryId : undefined,
       status,
       website: website.trim() || undefined,
       industry: industry.trim() || undefined,
@@ -74,7 +74,7 @@ export function AddCompanyDialog({ open, onOpenChange, defaultCategoryId }: AddC
                   <SelectValue placeholder="Keine" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Keine</SelectItem>
+                  <SelectItem value="none">Keine</SelectItem>
                   {categories.map(cat => (
                     <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
                   ))}
