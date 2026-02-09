@@ -4027,6 +4027,157 @@ export type Database = {
           },
         ]
       }
+      v2_vocab_languages: {
+        Row: {
+          created_at: string
+          id: string
+          source_lang: string
+          target_lang: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          source_lang?: string
+          target_lang: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          source_lang?: string
+          target_lang?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      v2_vocab_progress: {
+        Row: {
+          correct_count: number
+          created_at: string
+          id: string
+          last_reviewed: string | null
+          mastered: boolean
+          set_id: string
+          user_id: string
+          word_id: string
+          wrong_count: number
+        }
+        Insert: {
+          correct_count?: number
+          created_at?: string
+          id?: string
+          last_reviewed?: string | null
+          mastered?: boolean
+          set_id: string
+          user_id: string
+          word_id: string
+          wrong_count?: number
+        }
+        Update: {
+          correct_count?: number
+          created_at?: string
+          id?: string
+          last_reviewed?: string | null
+          mastered?: boolean
+          set_id?: string
+          user_id?: string
+          word_id?: string
+          wrong_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "v2_vocab_progress_set_id_fkey"
+            columns: ["set_id"]
+            isOneToOne: false
+            referencedRelation: "v2_vocab_sets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "v2_vocab_progress_word_id_fkey"
+            columns: ["word_id"]
+            isOneToOne: false
+            referencedRelation: "v2_vocab_words"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v2_vocab_sets: {
+        Row: {
+          created_at: string
+          high_score_mc: number
+          high_score_type: number
+          id: string
+          language_id: string
+          name: string
+          set_date: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          high_score_mc?: number
+          high_score_type?: number
+          id?: string
+          language_id: string
+          name: string
+          set_date?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          high_score_mc?: number
+          high_score_type?: number
+          id?: string
+          language_id?: string
+          name?: string
+          set_date?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "v2_vocab_sets_language_id_fkey"
+            columns: ["language_id"]
+            isOneToOne: false
+            referencedRelation: "v2_vocab_languages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v2_vocab_words: {
+        Row: {
+          created_at: string
+          id: string
+          set_id: string
+          source_word: string
+          target_word: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          set_id: string
+          source_word: string
+          target_word: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          set_id?: string
+          source_word?: string
+          target_word?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "v2_vocab_words_set_id_fkey"
+            columns: ["set_id"]
+            isOneToOne: false
+            referencedRelation: "v2_vocab_sets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       year_semesters: {
         Row: {
           created_at: string
