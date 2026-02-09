@@ -11,6 +11,7 @@ import { CoursesListV2, CoursesListV2Ref } from '@/components/schule-v2/courses/
 import { CreateCourseDialogV2 } from '@/components/schule-v2/courses/CreateCourseDialogV2';
 import { CourseDetailSheetV2 } from '@/components/schule-v2/course-detail/CourseDetailSheetV2';
 import { V2Course, V2TimetableSlot } from '@/components/schule-v2/types';
+import { VocabSection } from '@/components/schule-v2/vocab/VocabSection';
 
 function SchuleV2Content() {
   const { user, loading: authLoading } = useAuth();
@@ -95,9 +96,10 @@ function SchuleV2Content() {
 
           {/* Main Content: Desktop = nebeneinander, Mobile = untereinander */}
           <div className="flex flex-col lg:flex-row gap-4">
-            {/* Timetable - expandiert wenn Kurse eingeklappt */}
-            <div className={`transition-all duration-300 ${coursesCollapsed ? 'lg:flex-1' : 'lg:flex-1'}`}>
+            {/* Timetable + Vocab - links */}
+            <div className={`transition-all duration-300 lg:flex-1 space-y-4`}>
               <WeekTimetableV2 key={timetableKey} onSlotClick={handleSlotClick} />
+              <VocabSection />
             </div>
 
             {/* Courses Sidebar - auf Desktop rechts, auf Mobile unten */}
