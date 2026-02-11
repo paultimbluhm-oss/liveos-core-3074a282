@@ -1,0 +1,124 @@
+import { useState, useEffect } from 'react';
+import { Check, Plus } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { useGamification } from '@/contexts/GamificationContext';
+import { useNavigate } from 'react-router-dom';
+import { format } from 'date-fns';
+import { toast } from 'sonner';
+import type { WidgetSize } from '@/hooks/useDashboardV2';
+
+interface Habit { id: string; name: string; xp_reward: number; }
+
+export function HabitsChecklistWidget({ size }: { size: WidgetSize }) {
+  const { user } = useAuth();
+  const { addXP } = useGamification();
+  const navigate = useNavigate();
+  const [habits, setHabits] = useState<Habit[]>([]);
+  const [completions, setCompletions] = useState<string[]>([]);
+  const today = format(new Date(), 'yyyy-MM-dd');
+
+  const fetchData = async () => {
+    if (!user) return;
+    const [hRes, cRes] = await Promise.all([
+      supabase.from('habits').select('id, name, xp_reward').eq('user_id', user.id).eq('is_active', true),
+      supabase.from('habit_completions').select('habit_id').eq('user_id', user.id).eq('completed_date', today),
+    ]);
+    if (hRes.data) setHabits(hRes.data.sort((a, b) => (b.xp_reward || 0) - (a.xp_reward || 0)));
+    if (cRes.data) setCompletions(cRes.data.map(c => c.habit_id));
+  };
+
+  useEffect(() => { if (user) fetchData(); }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    const ch = supabase.channel('dv2-habits-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'habit_completions' }, fetchData)
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [user]);
+
+  const toggle = async (habit: Habit) => {
+    if (!user) return;
+    const done = completions.includes(habit.id);
+    if (done) {
+      await supabase.from('habit_completions').delete().eq('habit_id', habit.id).eq('completed_date', today);
+      setCompletions(prev => prev.filter(id => id !== habit.id));
+      await addXP(-habit.xp_reward, `${habit.name} rueckgaengig`);
+    } else {
+      await supabase.from('habit_completions').insert({ user_id: user.id, habit_id: habit.id, completed_date: today });
+      setCompletions(prev => [...prev, habit.id]);
+      await addXP(habit.xp_reward, habit.name);
+    }
+  };
+
+  const doneCount = completions.length;
+  const total = habits.length;
+  const pct = total > 0 ? Math.round((doneCount / total) * 100) : 0;
+  const allDone = total > 0 && doneCount === total;
+
+  if (habits.length === 0) {
+    return (
+      <div className="rounded-2xl bg-card border border-border/50 p-4 flex flex-col items-center justify-center gap-3">
+        <p className="text-sm text-muted-foreground">Noch keine Habits</p>
+        <Button variant="outline" size="sm" onClick={() => navigate('/privat?section=habits')}>
+          <Plus className="w-3.5 h-3.5 mr-1.5" /> Erstellen
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`rounded-2xl bg-card border border-border/50 p-4 space-y-3 ${allDone ? 'ring-1 ring-success/30' : ''}`}>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${allDone ? 'bg-success/20' : 'bg-primary/10'}`}>
+            <Check className={`w-4 h-4 ${allDone ? 'text-success' : 'text-primary'}`} strokeWidth={1.5} />
+          </div>
+          <span className="text-sm font-semibold">{doneCount}/{total}</span>
+        </div>
+        <span className={`text-xs font-bold font-mono ${allDone ? 'text-success' : 'text-primary'}`}>{pct}%</span>
+      </div>
+
+      {/* Progress bar */}
+      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all duration-700 ${allDone ? 'bg-success' : 'bg-primary'}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+
+      {/* List */}
+      <div className="space-y-1.5 max-h-48 overflow-y-auto scrollbar-hide">
+        {habits
+          .sort((a, b) => {
+            const aDone = completions.includes(a.id);
+            const bDone = completions.includes(b.id);
+            if (aDone === bDone) return 0;
+            return aDone ? 1 : -1;
+          })
+          .map(habit => {
+            const done = completions.includes(habit.id);
+            return (
+              <div
+                key={habit.id}
+                onClick={() => toggle(habit)}
+                className={`flex items-center gap-2.5 p-2 rounded-xl cursor-pointer transition-all ${
+                  done ? 'bg-success/5 opacity-60' : 'bg-muted/30 hover:bg-muted/60'
+                }`}
+              >
+                <Checkbox checked={done} className="pointer-events-none" />
+                <span className={`flex-1 text-sm ${done ? 'line-through text-muted-foreground' : ''}`}>
+                  {habit.name}
+                </span>
+                <span className="text-[10px] text-primary font-mono">+{habit.xp_reward}</span>
+              </div>
+            );
+          })}
+      </div>
+    </div>
+  );
+}
