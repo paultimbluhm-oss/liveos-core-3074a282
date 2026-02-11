@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { User, Shield, LayoutDashboard, Info } from 'lucide-react';
+import { User, Shield, LayoutDashboard, Info, Palette } from 'lucide-react';
 import { SecuritySettings } from '@/components/settings/SecuritySettings';
 import { DashboardSettings } from '@/components/settings/DashboardSettings';
 import { InfoSettings } from '@/components/settings/InfoSettings';
+import { ThemeSettings } from '@/components/settings/ThemeSettings';
 
 export default function Profile() {
   const { user, loading } = useAuth();
@@ -35,10 +36,14 @@ export default function Profile() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="w-full grid grid-cols-3 h-10">
+          <TabsList className="w-full grid grid-cols-4 h-10">
             <TabsTrigger value="dashboard" className="gap-1.5 text-xs">
               <LayoutDashboard className="w-3.5 h-3.5" strokeWidth={1.5} />
               Dashboard
+            </TabsTrigger>
+            <TabsTrigger value="theme" className="gap-1.5 text-xs">
+              <Palette className="w-3.5 h-3.5" strokeWidth={1.5} />
+              Design
             </TabsTrigger>
             <TabsTrigger value="security" className="gap-1.5 text-xs">
               <Shield className="w-3.5 h-3.5" strokeWidth={1.5} />
@@ -52,6 +57,10 @@ export default function Profile() {
 
           <TabsContent value="dashboard" className="mt-4">
             <DashboardSettings />
+          </TabsContent>
+
+          <TabsContent value="theme" className="mt-4">
+            <ThemeSettings />
           </TabsContent>
 
           <TabsContent value="security" className="mt-4">
