@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-export type ThemeName = 'industrial' | 'pastel-mint' | 'pastel-lavender';
+export type ThemeName = 'pastel-mint' | 'pastel-lavender' | 'warm-beige' | 'midnight' | 'industrial';
 
 interface ThemeContextType {
   theme: ThemeName;
@@ -28,8 +28,20 @@ export const THEMES: { id: ThemeName; name: string; description: string; preview
     preview: ['#faf5ff', '#d8b4fe', '#c084fc', '#a855f7'],
   },
   {
+    id: 'warm-beige',
+    name: 'Warm Beige',
+    description: 'Erdige, warme Sand- und Terracotta-Toene',
+    preview: ['#faf6f1', '#e8d5c4', '#c4956a', '#a67c52'],
+  },
+  {
+    id: 'midnight',
+    name: 'Midnight',
+    description: 'Moderner Dark Mode mit blauen Akzenten',
+    preview: ['#0f172a', '#1e293b', '#60a5fa', '#38bdf8'],
+  },
+  {
     id: 'industrial',
-    name: 'Industrial Dark',
+    name: 'Industrial',
     description: 'Dunkler Warehouse-Look mit Orange',
     preview: ['#131820', '#1c2333', '#f59e0b', '#14b8a6'],
   },
