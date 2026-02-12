@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
@@ -13,7 +13,11 @@ import { TimeScoreWidget } from '@/components/dashboard-v2/TimeScoreWidget';
 import { QuickStatsWidget } from '@/components/dashboard-v2/QuickStatsWidget';
 import { MotivationWidget } from '@/components/dashboard-v2/MotivationWidget';
 import { NextActionsWidget } from '@/components/dashboard-v2/NextActionsWidget';
+import { WIDGET_CATALOG } from '@/hooks/useDashboardV2';
+import { Settings2, X, Plus, Minus, EyeOff, ChevronUp, ChevronDown } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { DashboardWidget, WidgetSize } from '@/hooks/useDashboardV2';
 
 const WIDGET_COMPONENTS: Record<string, React.FC<{ size: WidgetSize }>> = {
@@ -39,8 +43,9 @@ function getGridClass(size: WidgetSize): string {
 export default function Index() {
   const { user, loading: authLoading } = useAuth();
   const { loading: profileLoading } = useProfile();
-  const { visibleWidgets, loading: configLoading } = useDashboardV2Config();
+  const { widgets, visibleWidgets, loading: configLoading, updateWidgetSize, toggleWidget, moveWidget, resetToDefault } = useDashboardV2Config();
   const navigate = useNavigate();
+  const [editMode, setEditMode] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) navigate('/auth');
@@ -56,21 +61,178 @@ export default function Index() {
 
   if (!user) return null;
 
+  const hiddenWidgets = widgets.filter(w => !w.visible);
+
+  const getInfo = (type: string) => WIDGET_CATALOG.find(w => w.type === type);
+
+  const cycleSizeUp = (widget: DashboardWidget) => {
+    const info = getInfo(widget.type);
+    if (!info) return;
+    const idx = info.sizes.indexOf(widget.size);
+    if (idx < info.sizes.length - 1) updateWidgetSize(widget.id, info.sizes[idx + 1]);
+  };
+
+  const cycleSizeDown = (widget: DashboardWidget) => {
+    const info = getInfo(widget.type);
+    if (!info) return;
+    const idx = info.sizes.indexOf(widget.size);
+    if (idx > 0) updateWidgetSize(widget.id, info.sizes[idx - 1]);
+  };
+
   return (
     <AppLayout>
       <div className="p-4 pb-24 max-w-lg mx-auto space-y-3">
+        {/* Edit mode toggle */}
+        <div className="flex justify-end">
+          <Button
+            variant={editMode ? 'default' : 'ghost'}
+            size="icon"
+            className="h-8 w-8 rounded-full"
+            onClick={() => setEditMode(!editMode)}
+          >
+            {editMode ? <X className="w-4 h-4" strokeWidth={1.5} /> : <Settings2 className="w-4 h-4" strokeWidth={1.5} />}
+          </Button>
+        </div>
+
         {/* Widget Grid */}
         <div className="grid grid-cols-2 gap-3">
-          {visibleWidgets.map((widget) => {
+          {visibleWidgets.map((widget, index) => {
             const Component = WIDGET_COMPONENTS[widget.type];
-            if (!Component) return null;
+            const info = getInfo(widget.type);
+            if (!Component || !info) return null;
+
+            const canSizeUp = info.sizes.indexOf(widget.size) < info.sizes.length - 1;
+            const canSizeDown = info.sizes.indexOf(widget.size) > 0;
+
             return (
-              <div key={widget.id} className={getGridClass(widget.size)}>
-                <Component size={widget.size} />
-              </div>
+              <motion.div
+                key={widget.id}
+                className={`${getGridClass(widget.size)} relative`}
+                animate={editMode ? {
+                  rotate: [0, -0.8, 0.8, -0.8, 0],
+                } : { rotate: 0 }}
+                transition={editMode ? {
+                  repeat: Infinity,
+                  duration: 0.4,
+                  ease: 'easeInOut',
+                  delay: index * 0.05,
+                } : { duration: 0.2 }}
+              >
+                {/* Widget content */}
+                <div className={editMode ? 'pointer-events-none opacity-80' : ''}>
+                  <Component size={widget.size} />
+                </div>
+
+                {/* Edit overlay controls */}
+                <AnimatePresence>
+                  {editMode && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      className="absolute inset-0 z-10"
+                    >
+                      {/* Remove button (top-left) */}
+                      <button
+                        className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow-md"
+                        onClick={() => toggleWidget(widget.id)}
+                      >
+                        <EyeOff className="w-3 h-3" strokeWidth={2} />
+                      </button>
+
+                      {/* Size controls (top-right) */}
+                      {info.sizes.length > 1 && (
+                        <div className="absolute -top-2 -right-2 flex gap-1">
+                          <button
+                            className="w-6 h-6 rounded-full bg-card border border-border shadow-md flex items-center justify-center disabled:opacity-30"
+                            disabled={!canSizeDown}
+                            onClick={() => cycleSizeDown(widget)}
+                          >
+                            <Minus className="w-3 h-3" strokeWidth={2} />
+                          </button>
+                          <button
+                            className="w-6 h-6 rounded-full bg-card border border-border shadow-md flex items-center justify-center disabled:opacity-30"
+                            disabled={!canSizeUp}
+                            onClick={() => cycleSizeUp(widget)}
+                          >
+                            <Plus className="w-3 h-3" strokeWidth={2} />
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Move controls (bottom-center) */}
+                      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                        <button
+                          className="w-6 h-6 rounded-full bg-card border border-border shadow-md flex items-center justify-center disabled:opacity-30"
+                          disabled={index <= 0}
+                          onClick={() => moveWidget(index, index - 1)}
+                        >
+                          <ChevronUp className="w-3 h-3" strokeWidth={2} />
+                        </button>
+                        <button
+                          className="w-6 h-6 rounded-full bg-card border border-border shadow-md flex items-center justify-center disabled:opacity-30"
+                          disabled={index >= visibleWidgets.length - 1}
+                          onClick={() => moveWidget(index, index + 1)}
+                        >
+                          <ChevronDown className="w-3 h-3" strokeWidth={2} />
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
             );
           })}
         </div>
+
+        {/* Hidden widgets (show in edit mode) */}
+        <AnimatePresence>
+          {editMode && hiddenWidgets.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="space-y-2"
+            >
+              <p className="text-xs text-muted-foreground font-medium px-1">Ausgeblendete Widgets</p>
+              <div className="grid grid-cols-2 gap-2">
+                {hiddenWidgets.map(widget => {
+                  const info = getInfo(widget.type);
+                  if (!info) return null;
+                  return (
+                    <button
+                      key={widget.id}
+                      onClick={() => toggleWidget(widget.id)}
+                      className="flex items-center gap-2 p-3 rounded-xl bg-muted/50 border border-dashed border-border hover:bg-muted transition-colors text-left"
+                    >
+                      <Plus className="w-4 h-4 text-primary shrink-0" strokeWidth={1.5} />
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium truncate">{info.name}</p>
+                        <p className="text-[10px] text-muted-foreground truncate">{info.description}</p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Edit mode footer */}
+        <AnimatePresence>
+          {editMode && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              className="flex justify-center pt-2"
+            >
+              <Button variant="outline" size="sm" onClick={resetToDefault} className="text-xs">
+                Zuruecksetzen
+              </Button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </AppLayout>
   );
