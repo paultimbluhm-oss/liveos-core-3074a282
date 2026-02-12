@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Check, Plus } from 'lucide-react';
+import { Check, Plus, Settings } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,6 +8,7 @@ import { useGamification } from '@/contexts/GamificationContext';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { HabitsManagementSheet } from './HabitsManagementSheet';
 import type { WidgetSize } from '@/hooks/useDashboardV2';
 
 interface Habit { id: string; name: string; xp_reward: number; }
@@ -18,6 +19,7 @@ export function HabitsChecklistWidget({ size }: { size: WidgetSize }) {
   const navigate = useNavigate();
   const [habits, setHabits] = useState<Habit[]>([]);
   const [completions, setCompletions] = useState<string[]>([]);
+  const [showManagement, setShowManagement] = useState(false);
   const today = format(new Date(), 'yyyy-MM-dd');
 
   const fetchData = async () => {
@@ -74,13 +76,18 @@ export function HabitsChecklistWidget({ size }: { size: WidgetSize }) {
     <div className={`rounded-2xl bg-card border border-border/50 p-4 space-y-3 ${allDone ? 'ring-1 ring-success/30' : ''}`}>
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <button onClick={() => setShowManagement(true)} className="flex items-center gap-2 hover:opacity-70 transition-opacity">
           <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${allDone ? 'bg-success/20' : 'bg-primary/10'}`}>
             <Check className={`w-4 h-4 ${allDone ? 'text-success' : 'text-primary'}`} strokeWidth={1.5} />
           </div>
           <span className="text-sm font-semibold">{doneCount}/{total}</span>
+        </button>
+        <div className="flex items-center gap-2">
+          <span className={`text-xs font-bold font-mono ${allDone ? 'text-success' : 'text-primary'}`}>{pct}%</span>
+          <button onClick={() => setShowManagement(true)} className="p-1 rounded-lg hover:bg-muted/50 transition-colors">
+            <Settings className="w-3.5 h-3.5 text-muted-foreground" />
+          </button>
         </div>
-        <span className={`text-xs font-bold font-mono ${allDone ? 'text-success' : 'text-primary'}`}>{pct}%</span>
       </div>
 
       {/* Progress bar */}
@@ -119,6 +126,8 @@ export function HabitsChecklistWidget({ size }: { size: WidgetSize }) {
             );
           })}
       </div>
+
+      <HabitsManagementSheet open={showManagement} onOpenChange={(o) => { setShowManagement(o); if (!o) fetchData(); }} />
     </div>
   );
 }

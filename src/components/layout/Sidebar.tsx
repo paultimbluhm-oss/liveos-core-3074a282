@@ -15,6 +15,7 @@ import {
   Users,
   Coins,
 } from 'lucide-react';
+import { FinanceSheetWrapper } from '@/components/dashboard-v2/FinanceSheetWrapper';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
@@ -30,7 +31,7 @@ import {
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/schule-v2', icon: GraduationCap, label: 'Schule' },
-  { to: '/finanzen-v2', icon: Coins, label: 'Finanzen' },
+  { to: '/finanzen-v2', icon: Coins, label: 'Finanzen', sheetMode: true },
   { to: '/privat', icon: User, label: 'Privat' },
   { to: '/business-v2', icon: Briefcase, label: 'Business' },
   { to: '/freunde', icon: Users, label: 'Freunde' },
@@ -52,6 +53,7 @@ const getPageTitle = (pathname: string): string => {
 export function Sidebar() {
   const [expanded, setExpanded] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [financeSheetOpen, setFinanceSheetOpen] = useState(false);
   const { signOut, user } = useAuth();
   const { profile } = useProfile();
   const { score, yesterdayScore, hasActiveTracker } = useTimeScore();
@@ -161,14 +163,23 @@ export function Sidebar() {
           {navItems.map((item) => {
             const isActive = location.pathname === item.to;
             const isMobileOrExpanded = mobileOpen || expanded;
+            const isSheet = (item as any).sheetMode;
+
+            const handleClick = isSheet ? (e: React.MouseEvent) => {
+              e.preventDefault();
+              setFinanceSheetOpen(true);
+              setMobileOpen(false);
+            } : undefined;
+
             const linkContent = (
               <NavLink
                 key={item.to}
                 to={item.to}
+                onClick={handleClick}
                 className={cn(
                   'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group',
                   isMobileOrExpanded ? '' : 'justify-center',
-                  isActive
+                  isActive && !isSheet
                     ? 'bg-primary/20 text-primary'
                     : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
                 )}
@@ -176,7 +187,7 @@ export function Sidebar() {
                 <item.icon
                   className={cn(
                     'w-5 h-5 shrink-0 transition-colors',
-                    isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
+                    isActive && !isSheet ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
                   )}
                 />
                 {isMobileOrExpanded && (
@@ -274,6 +285,8 @@ export function Sidebar() {
           </Tooltip>
         </div>
       </aside>
+
+      <FinanceSheetWrapper open={financeSheetOpen} onOpenChange={setFinanceSheetOpen} />
     </TooltipProvider>
   );
 }
