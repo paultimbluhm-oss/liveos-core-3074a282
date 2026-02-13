@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus, Trash2, Edit, Check } from 'lucide-react';
+import { Plus, Trash2, Edit, Check, RotateCcw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -32,6 +32,7 @@ export function HabitsManagementSheet({ open, onOpenChange }: HabitsManagementSh
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [xpReward, setXpReward] = useState(5);
+  const [manualDays, setManualDays] = useState<number | ''>('');
 
   const fetchHabits = async () => {
     if (!user) return;
@@ -44,7 +45,6 @@ export function HabitsManagementSheet({ open, onOpenChange }: HabitsManagementSh
 
     if (!habitsData) return;
 
-    // Fetch lifetime completion counts per habit
     const habitIds = habitsData.map(h => h.id);
     const counts: Record<string, number> = {};
 
@@ -73,14 +73,57 @@ export function HabitsManagementSheet({ open, onOpenChange }: HabitsManagementSh
     setName('');
     setDescription('');
     setXpReward(5);
+    setManualDays('');
     setEditingHabit(null);
     setDialogOpen(false);
   };
 
   const saveHabit = async () => {
     if (!name.trim() || !user) return;
+
     if (editingHabit) {
       await supabase.from('habits').update({ name, description: description || null, xp_reward: xpReward }).eq('id', editingHabit.id);
+
+      // Handle manual day count adjustment
+      if (manualDays !== '' && manualDays !== editingHabit.lifetime_count) {
+        const targetDays = Number(manualDays);
+        const currentDays = editingHabit.lifetime_count || 0;
+
+        if (targetDays === 0) {
+          // Delete all completions for this habit
+          await supabase.from('habit_completions').delete().eq('habit_id', editingHabit.id).eq('user_id', user.id);
+        } else if (targetDays < currentDays) {
+          // Need to remove some completions - delete oldest ones
+          const { data: allCompletions } = await supabase
+            .from('habit_completions')
+            .select('id, completed_date')
+            .eq('habit_id', editingHabit.id)
+            .eq('user_id', user.id)
+            .order('completed_date', { ascending: true });
+
+          if (allCompletions) {
+            const toDelete = allCompletions.slice(0, currentDays - targetDays);
+            if (toDelete.length > 0) {
+              await supabase.from('habit_completions').delete().in('id', toDelete.map(c => c.id));
+            }
+          }
+        } else if (targetDays > currentDays) {
+          // Add placeholder completions for past days
+          const toAdd = targetDays - currentDays;
+          const inserts = [];
+          for (let i = 0; i < toAdd; i++) {
+            const d = new Date();
+            d.setDate(d.getDate() - (currentDays + i + 1));
+            inserts.push({
+              user_id: user.id,
+              habit_id: editingHabit.id,
+              completed_date: d.toISOString().split('T')[0],
+            });
+          }
+          await supabase.from('habit_completions').insert(inserts);
+        }
+      }
+
       toast.success('Habit aktualisiert');
     } else {
       await supabase.from('habits').insert({ user_id: user.id, name, description: description || null, xp_reward: xpReward });
@@ -101,6 +144,7 @@ export function HabitsManagementSheet({ open, onOpenChange }: HabitsManagementSh
     setName(habit.name);
     setDescription(habit.description || '');
     setXpReward(habit.xp_reward);
+    setManualDays(habit.lifetime_count || 0);
     setDialogOpen(true);
   };
 
@@ -176,6 +220,34 @@ export function HabitsManagementSheet({ open, onOpenChange }: HabitsManagementSh
                 <Label>XP Belohnung</Label>
                 <Input type="number" value={xpReward} onChange={(e) => setXpReward(Number(e.target.value))} min={1} />
               </div>
+              {editingHabit && (
+                <div>
+                  <Label>Abgeschlossene Tage</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      value={manualDays}
+                      onChange={(e) => setManualDays(e.target.value === '' ? '' : Math.max(0, Number(e.target.value)))}
+                      min={0}
+                      max={999}
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="shrink-0"
+                      onClick={() => setManualDays(0)}
+                      title="Auf Null setzen"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    Aktuell: {editingHabit.lifetime_count || 0} Tage. Aendern passt den Fortschritt an.
+                  </p>
+                </div>
+              )}
               <Button onClick={saveHabit} className="w-full">
                 {editingHabit ? 'Speichern' : 'Erstellen'}
               </Button>
