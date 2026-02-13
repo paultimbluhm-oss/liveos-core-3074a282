@@ -47,9 +47,17 @@ const DEFAULT_WIDGETS: DashboardWidget[] = [
   { id: 'w9', type: 'next-actions', size: 'large', order: 8, visible: true },
 ];
 
+export interface DashboardSettings {
+  habitDisplayLimit: number; // 0 = all
+  showXpToast: boolean;
+}
+
+const DEFAULT_SETTINGS: DashboardSettings = { habitDisplayLimit: 0, showXpToast: true };
+
 export function useDashboardV2Config() {
   const { user } = useAuth();
   const [widgets, setWidgets] = useState<DashboardWidget[]>(DEFAULT_WIDGETS);
+  const [settings, setSettings] = useState<DashboardSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -64,6 +72,12 @@ export function useDashboardV2Config() {
         setWidgets(JSON.parse(saved));
       } catch { /* use defaults */ }
     }
+    const savedSettings = localStorage.getItem(`dashboard-v2-settings-${user?.id}`);
+    if (savedSettings) {
+      try {
+        setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(savedSettings) });
+      } catch { /* use defaults */ }
+    }
     setLoading(false);
   }, [user]);
 
@@ -71,6 +85,12 @@ export function useDashboardV2Config() {
     setWidgets(newWidgets);
     if (user) localStorage.setItem(`dashboard-v2-${user.id}`, JSON.stringify(newWidgets));
   }, [user]);
+
+  const updateSettings = useCallback((patch: Partial<DashboardSettings>) => {
+    const next = { ...settings, ...patch };
+    setSettings(next);
+    if (user) localStorage.setItem(`dashboard-v2-settings-${user.id}`, JSON.stringify(next));
+  }, [settings, user]);
 
   const updateWidgetSize = useCallback((widgetId: string, size: WidgetSize) => {
     saveConfig(widgets.map(w => w.id === widgetId ? { ...w, size } : w));
@@ -95,7 +115,7 @@ export function useDashboardV2Config() {
 
   const visibleWidgets = widgets.filter(w => w.visible).sort((a, b) => a.order - b.order);
 
-  return { widgets, visibleWidgets, loading, updateWidgetSize, toggleWidget, moveWidget, resetToDefault };
+  return { widgets, visibleWidgets, loading, updateWidgetSize, toggleWidget, moveWidget, resetToDefault, settings, updateSettings };
 }
 
 // === Live data hooks ===

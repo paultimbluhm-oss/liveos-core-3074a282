@@ -3,6 +3,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Plus, Trash2, Edit, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,6 +16,7 @@ interface Habit {
   description: string | null;
   xp_reward: number;
   is_active: boolean;
+  lifetime_count?: number;
 }
 
 interface HabitsManagementSheetProps {
@@ -33,13 +35,34 @@ export function HabitsManagementSheet({ open, onOpenChange }: HabitsManagementSh
 
   const fetchHabits = async () => {
     if (!user) return;
-    const { data } = await supabase
+    const { data: habitsData } = await supabase
       .from('habits')
       .select('id, name, description, xp_reward, is_active')
       .eq('user_id', user.id)
       .eq('is_active', true)
       .order('created_at');
-    if (data) setHabits(data);
+
+    if (!habitsData) return;
+
+    // Fetch lifetime completion counts per habit
+    const habitIds = habitsData.map(h => h.id);
+    const counts: Record<string, number> = {};
+
+    if (habitIds.length > 0) {
+      const { data: completions } = await supabase
+        .from('habit_completions')
+        .select('habit_id')
+        .eq('user_id', user.id)
+        .in('habit_id', habitIds);
+
+      if (completions) {
+        completions.forEach(c => {
+          counts[c.habit_id] = (counts[c.habit_id] || 0) + 1;
+        });
+      }
+    }
+
+    setHabits(habitsData.map(h => ({ ...h, lifetime_count: counts[h.id] || 0 })));
   };
 
   useEffect(() => {
@@ -97,26 +120,41 @@ export function HabitsManagementSheet({ open, onOpenChange }: HabitsManagementSh
               Noch keine Habits erstellt
             </div>
           ) : (
-            habits.map(habit => (
-              <div key={habit.id} className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 border border-border/50">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Check className="w-4 h-4 text-primary" strokeWidth={1.5} />
+            habits.map(habit => {
+              const count = habit.lifetime_count || 0;
+              const progressPct = Math.min(count, 100);
+              const adopted = count >= 100;
+
+              return (
+                <div key={habit.id} className={`p-3 rounded-xl border border-border/50 ${adopted ? 'bg-success/5' : 'bg-muted/30'}`}>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${adopted ? 'bg-success/20' : 'bg-primary/10'}`}>
+                      <Check className={`w-4 h-4 ${adopted ? 'text-success' : 'text-primary'}`} strokeWidth={1.5} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{habit.name}</p>
+                      {habit.description && (
+                        <p className="text-xs text-muted-foreground truncate">{habit.description}</p>
+                      )}
+                    </div>
+                    <span className="text-xs text-primary font-mono shrink-0">+{habit.xp_reward} XP</span>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => openEdit(habit)}>
+                      <Edit className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive shrink-0" onClick={() => deleteHabit(habit.id)}>
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                  {/* Lifetime progress */}
+                  <div className="mt-2 flex items-center gap-2">
+                    <Progress value={progressPct} variant={adopted ? 'success' : 'default'} className="h-1.5 flex-1" />
+                    <span className="text-[10px] text-muted-foreground font-mono whitespace-nowrap">
+                      {count}/100 {adopted ? 'Angenommen' : 'Tage'}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{habit.name}</p>
-                  {habit.description && (
-                    <p className="text-xs text-muted-foreground truncate">{habit.description}</p>
-                  )}
-                </div>
-                <span className="text-xs text-primary font-mono">+{habit.xp_reward} XP</span>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(habit)}>
-                  <Edit className="w-3.5 h-3.5" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteHabit(habit.id)}>
-                  <Trash2 className="w-3.5 h-3.5" />
-                </Button>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
 

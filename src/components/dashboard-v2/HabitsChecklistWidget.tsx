@@ -9,11 +9,16 @@ import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { HabitsManagementSheet } from './HabitsManagementSheet';
-import type { WidgetSize } from '@/hooks/useDashboardV2';
+import type { WidgetSize, DashboardSettings } from '@/hooks/useDashboardV2';
 
 interface Habit { id: string; name: string; xp_reward: number; }
 
-export function HabitsChecklistWidget({ size }: { size: WidgetSize }) {
+interface Props {
+  size: WidgetSize;
+  settings?: DashboardSettings;
+}
+
+export function HabitsChecklistWidget({ size, settings }: Props) {
   const { user } = useAuth();
   const { addXP } = useGamification();
   const navigate = useNavigate();
@@ -49,10 +54,16 @@ export function HabitsChecklistWidget({ size }: { size: WidgetSize }) {
       await supabase.from('habit_completions').delete().eq('habit_id', habit.id).eq('completed_date', today);
       setCompletions(prev => prev.filter(id => id !== habit.id));
       await addXP(-habit.xp_reward, `${habit.name} rueckgaengig`);
+      if (settings?.showXpToast !== false) {
+        toast.info(`-${habit.xp_reward} XP`);
+      }
     } else {
       await supabase.from('habit_completions').insert({ user_id: user.id, habit_id: habit.id, completed_date: today });
       setCompletions(prev => [...prev, habit.id]);
       await addXP(habit.xp_reward, habit.name);
+      if (settings?.showXpToast !== false) {
+        toast.success(`+${habit.xp_reward} XP`);
+      }
     }
   };
 
@@ -60,6 +71,17 @@ export function HabitsChecklistWidget({ size }: { size: WidgetSize }) {
   const total = habits.length;
   const pct = total > 0 ? Math.round((doneCount / total) * 100) : 0;
   const allDone = total > 0 && doneCount === total;
+
+  // Apply display limit
+  const limit = settings?.habitDisplayLimit || 0;
+  const sortedHabits = [...habits].sort((a, b) => {
+    const aDone = completions.includes(a.id);
+    const bDone = completions.includes(b.id);
+    if (aDone === bDone) return 0;
+    return aDone ? 1 : -1;
+  });
+  const displayHabits = limit > 0 ? sortedHabits.slice(0, limit) : sortedHabits;
+  const hiddenCount = limit > 0 ? Math.max(0, sortedHabits.length - limit) : 0;
 
   if (habits.length === 0) {
     return (
@@ -100,31 +122,32 @@ export function HabitsChecklistWidget({ size }: { size: WidgetSize }) {
 
       {/* List */}
       <div className="space-y-1.5 max-h-48 overflow-y-auto scrollbar-hide">
-        {habits
-          .sort((a, b) => {
-            const aDone = completions.includes(a.id);
-            const bDone = completions.includes(b.id);
-            if (aDone === bDone) return 0;
-            return aDone ? 1 : -1;
-          })
-          .map(habit => {
-            const done = completions.includes(habit.id);
-            return (
-              <div
-                key={habit.id}
-                onClick={() => toggle(habit)}
-                className={`flex items-center gap-2.5 p-2 rounded-xl cursor-pointer transition-all ${
-                  done ? 'bg-success/5 opacity-60' : 'bg-muted/30 hover:bg-muted/60'
-                }`}
-              >
-                <Checkbox checked={done} className="pointer-events-none" />
-                <span className={`flex-1 text-sm ${done ? 'line-through text-muted-foreground' : ''}`}>
-                  {habit.name}
-                </span>
-                <span className="text-[10px] text-primary font-mono">+{habit.xp_reward}</span>
-              </div>
-            );
-          })}
+        {displayHabits.map(habit => {
+          const done = completions.includes(habit.id);
+          return (
+            <div
+              key={habit.id}
+              onClick={() => toggle(habit)}
+              className={`flex items-center gap-2.5 p-2 rounded-xl cursor-pointer transition-all ${
+                done ? 'bg-success/5 opacity-60' : 'bg-muted/30 hover:bg-muted/60'
+              }`}
+            >
+              <Checkbox checked={done} className="pointer-events-none" />
+              <span className={`flex-1 text-sm ${done ? 'line-through text-muted-foreground' : ''}`}>
+                {habit.name}
+              </span>
+              <span className="text-[10px] text-primary font-mono">+{habit.xp_reward}</span>
+            </div>
+          );
+        })}
+        {hiddenCount > 0 && (
+          <button
+            onClick={() => setShowManagement(true)}
+            className="w-full text-center text-xs text-muted-foreground py-1.5 hover:text-foreground transition-colors"
+          >
+            +{hiddenCount} weitere
+          </button>
+        )}
       </div>
 
       <HabitsManagementSheet open={showManagement} onOpenChange={(o) => { setShowManagement(o); if (!o) fetchData(); }} />
