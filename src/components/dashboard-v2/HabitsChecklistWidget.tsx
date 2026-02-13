@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Check, Plus, Settings } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useGamification } from '@/contexts/GamificationContext';
@@ -24,6 +25,7 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
   const navigate = useNavigate();
   const [habits, setHabits] = useState<Habit[]>([]);
   const [completions, setCompletions] = useState<string[]>([]);
+  const [lifetimeCounts, setLifetimeCounts] = useState<Record<string, number>>({});
   const [showManagement, setShowManagement] = useState(false);
   const today = format(new Date(), 'yyyy-MM-dd');
 
@@ -33,7 +35,21 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
       supabase.from('habits').select('id, name, xp_reward').eq('user_id', user.id).eq('is_active', true),
       supabase.from('habit_completions').select('habit_id').eq('user_id', user.id).eq('completed_date', today),
     ]);
-    if (hRes.data) setHabits(hRes.data.sort((a, b) => (b.xp_reward || 0) - (a.xp_reward || 0)));
+    if (hRes.data) {
+      setHabits(hRes.data.sort((a, b) => (b.xp_reward || 0) - (a.xp_reward || 0)));
+      // Fetch lifetime counts
+      const ids = hRes.data.map(h => h.id);
+      if (ids.length > 0) {
+        const { data: allCompletions } = await supabase
+          .from('habit_completions')
+          .select('habit_id')
+          .eq('user_id', user.id)
+          .in('habit_id', ids);
+        const counts: Record<string, number> = {};
+        allCompletions?.forEach(c => { counts[c.habit_id] = (counts[c.habit_id] || 0) + 1; });
+        setLifetimeCounts(counts);
+      }
+    }
     if (cRes.data) setCompletions(cRes.data.map(c => c.habit_id));
   };
 
@@ -120,23 +136,37 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
         />
       </div>
 
-      {/* List */}
-      <div className="space-y-1.5 max-h-48 overflow-y-auto scrollbar-hide">
+      {/* List - no max-height when showing all */}
+      <div className={`space-y-1.5 ${limit > 0 ? 'max-h-48 overflow-y-auto scrollbar-hide' : ''}`}>
         {displayHabits.map(habit => {
           const done = completions.includes(habit.id);
+          const ltCount = lifetimeCounts[habit.id] || 0;
+          const ltPct = Math.min(ltCount, 100);
+
           return (
-            <div
-              key={habit.id}
-              onClick={() => toggle(habit)}
-              className={`flex items-center gap-2.5 p-2 rounded-xl cursor-pointer transition-all ${
-                done ? 'bg-success/5 opacity-60' : 'bg-muted/30 hover:bg-muted/60'
-              }`}
-            >
-              <Checkbox checked={done} className="pointer-events-none" />
-              <span className={`flex-1 text-sm ${done ? 'line-through text-muted-foreground' : ''}`}>
-                {habit.name}
-              </span>
-              <span className="text-[10px] text-primary font-mono">+{habit.xp_reward}</span>
+            <div key={habit.id} className="space-y-1">
+              <div
+                onClick={() => toggle(habit)}
+                className={`flex items-center gap-2.5 p-2 rounded-xl cursor-pointer transition-all ${
+                  done ? 'bg-success/5 opacity-60' : 'bg-muted/30 hover:bg-muted/60'
+                }`}
+              >
+                <Checkbox checked={done} className="pointer-events-none" />
+                <span className={`flex-1 text-sm ${done ? 'line-through text-muted-foreground' : ''}`}>
+                  {habit.name}
+                </span>
+                <span className="text-[10px] text-muted-foreground font-mono">{ltCount}/100</span>
+                <span className="text-[10px] text-primary font-mono">+{habit.xp_reward}</span>
+              </div>
+              {/* Mini lifetime progress bar */}
+              <div className="px-2">
+                <div className="h-0.5 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${ltCount >= 100 ? 'bg-success' : 'bg-primary/50'}`}
+                    style={{ width: `${ltPct}%` }}
+                  />
+                </div>
+              </div>
             </div>
           );
         })}
