@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { useDashboardV2Config } from '@/hooks/useDashboardV2';
+import { useDashboardV2Config, type DashboardSettings } from '@/hooks/useDashboardV2';
 import { StreakRingWidget } from '@/components/dashboard-v2/StreakRingWidget';
 import { HabitsChecklistWidget } from '@/components/dashboard-v2/HabitsChecklistWidget';
 import { TodayProgressWidget } from '@/components/dashboard-v2/TodayProgressWidget';
@@ -14,13 +14,13 @@ import { QuickStatsWidget } from '@/components/dashboard-v2/QuickStatsWidget';
 import { MotivationWidget } from '@/components/dashboard-v2/MotivationWidget';
 import { NextActionsWidget } from '@/components/dashboard-v2/NextActionsWidget';
 import { WIDGET_CATALOG } from '@/hooks/useDashboardV2';
-import { Settings2, X, Plus, Minus, EyeOff, ChevronUp, ChevronDown } from 'lucide-react';
+import { Settings2, X, Plus, Minus, EyeOff, ChevronUp, ChevronDown, Bell, BellOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { DashboardWidget, WidgetSize } from '@/hooks/useDashboardV2';
 
-const WIDGET_COMPONENTS: Record<string, React.FC<{ size: WidgetSize }>> = {
+const WIDGET_COMPONENTS: Record<string, React.FC<any>> = {
   'streak-ring': StreakRingWidget,
   'habits-checklist': HabitsChecklistWidget,
   'today-progress': TodayProgressWidget,
@@ -43,7 +43,7 @@ function getGridClass(size: WidgetSize): string {
 export default function Index() {
   const { user, loading: authLoading } = useAuth();
   const { loading: profileLoading } = useProfile();
-  const { widgets, visibleWidgets, loading: configLoading, updateWidgetSize, toggleWidget, moveWidget, resetToDefault } = useDashboardV2Config();
+  const { widgets, visibleWidgets, loading: configLoading, updateWidgetSize, toggleWidget, moveWidget, resetToDefault, settings, updateSettings } = useDashboardV2Config();
   const navigate = useNavigate();
   const [editMode, setEditMode] = useState(false);
 
@@ -120,7 +120,10 @@ export default function Index() {
               >
                 {/* Widget content */}
                 <div className={editMode ? 'pointer-events-none opacity-80' : ''}>
-                  <Component size={widget.size} />
+                  {widget.type === 'habits-checklist' 
+                    ? <Component size={widget.size} settings={settings} />
+                    : <Component size={widget.size} />
+                  }
                 </div>
 
                 {/* Edit overlay controls */}
@@ -225,11 +228,42 @@ export default function Index() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
-              className="flex justify-center pt-2"
+              className="space-y-3 pt-2"
             >
-              <Button variant="outline" size="sm" onClick={resetToDefault} className="text-xs">
-                Zuruecksetzen
-              </Button>
+              {/* Habit display limit */}
+              <div className="flex items-center justify-between p-3 rounded-xl bg-card border border-border/50">
+                <span className="text-xs font-medium">Sichtbare Habits</span>
+                <div className="flex items-center gap-2">
+                  {[0, 3, 5, 7].map(n => (
+                    <button
+                      key={n}
+                      onClick={() => updateSettings({ habitDisplayLimit: n })}
+                      className={`px-2 py-1 rounded-lg text-xs font-mono transition-colors ${
+                        settings.habitDisplayLimit === n ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'
+                      }`}
+                    >
+                      {n === 0 ? 'Alle' : n}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* XP toast toggle */}
+              <div className="flex items-center justify-between p-3 rounded-xl bg-card border border-border/50">
+                <span className="text-xs font-medium">XP-Benachrichtigungen</span>
+                <button
+                  onClick={() => updateSettings({ showXpToast: !settings.showXpToast })}
+                  className={`p-1.5 rounded-lg transition-colors ${settings.showXpToast ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}
+                >
+                  {settings.showXpToast ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
+                </button>
+              </div>
+
+              <div className="flex justify-center">
+                <Button variant="outline" size="sm" onClick={resetToDefault} className="text-xs">
+                  Zuruecksetzen
+                </Button>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
