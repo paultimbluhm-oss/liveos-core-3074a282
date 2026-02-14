@@ -5,7 +5,6 @@ import { useAuth, getSupabase } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useGamification } from '@/contexts/GamificationContext';
 import { TaskCard } from './TaskCard';
-import { HomeworkCard } from './HomeworkCard';
 import { TaskDialog } from './TaskDialog';
 import { format, isToday, isTomorrow, isPast, isThisWeek, parseISO } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -29,26 +28,6 @@ interface Task {
   type: 'task';
 }
 
-interface Homework {
-  id: string;
-  title: string;
-  description: string | null;
-  due_date: string;
-  completed: boolean;
-  subject_id: string;
-  subject_name?: string;
-  priority?: string;
-  xp_reward?: number;
-  type: 'homework';
-}
-
-interface Subject {
-  id: string;
-  name: string;
-}
-
-type TaskItem = Task | Homework;
-
 interface TaskSectionProps {
   onBack: () => void;
 }
@@ -58,8 +37,6 @@ export function TaskSection({ onBack }: TaskSectionProps) {
   const { toast } = useToast();
   const { addXP, celebrateTaskComplete } = useGamification();
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [homework, setHomework] = useState<Homework[]>([]);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [activeTab, setActiveTab] = useState('today');
@@ -69,40 +46,16 @@ export function TaskSection({ onBack }: TaskSectionProps) {
     if (!user) return;
     const supabase = getSupabase();
 
-    const [tasksRes, homeworkRes, subjectsRes] = await Promise.all([
-      supabase
-        .from('tasks')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('due_date', { ascending: true, nullsFirst: false }),
-      supabase
-        .from('homework')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('due_date', { ascending: true }),
-      supabase
-        .from('subjects')
-        .select('id, name')
-        .eq('user_id', user.id),
-    ]);
+    const { data, error } = await supabase
+      .from('tasks')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('due_date', { ascending: true, nullsFirst: false });
 
-    if (tasksRes.error) {
-      toast({ title: 'Fehler', description: tasksRes.error.message, variant: 'destructive' });
+    if (error) {
+      toast({ title: 'Fehler', description: error.message, variant: 'destructive' });
     } else {
-      setTasks((tasksRes.data || []).map(t => ({ ...t, type: 'task' as const })));
-    }
-
-    if (subjectsRes.data) {
-      setSubjects(subjectsRes.data);
-    }
-
-    if (homeworkRes.data && subjectsRes.data) {
-      const homeworkWithSubjects = homeworkRes.data.map(hw => ({
-        ...hw,
-        type: 'homework' as const,
-        subject_name: subjectsRes.data.find(s => s.id === hw.subject_id)?.name || 'Unbekannt',
-      }));
-      setHomework(homeworkWithSubjects);
+      setTasks((data || []).map(t => ({ ...t, type: 'task' as const })));
     }
 
     setLoading(false);
@@ -129,45 +82,16 @@ export function TaskSection({ onBack }: TaskSectionProps) {
     }
   };
 
-  const toggleHomeworkComplete = async (hw: Homework) => {
-    const supabase = getSupabase();
-    const newCompleted = !hw.completed;
-    const { error } = await supabase
-      .from('homework')
-      .update({ completed: newCompleted })
-      .eq('id', hw.id);
-
-    if (!error) {
-      setHomework(homework.map(h => h.id === hw.id ? { ...h, completed: newCompleted } : h));
-      if (newCompleted) {
-        const xpAmount = hw.xp_reward || 10;
-        celebrateTaskComplete();
-        await addXP(xpAmount, hw.title);
-      }
-    }
-  };
-
   const deleteTask = async (id: string) => {
     const supabase = getSupabase();
     const { error } = await supabase.from('tasks').delete().eq('id', id);
     if (!error) {
       setTasks(tasks.filter(t => t.id !== id));
-      toast({ title: 'Aufgabe gelöscht' });
+      toast({ title: 'Aufgabe geloescht' });
     }
   };
 
-  const deleteHomework = async (id: string) => {
-    const supabase = getSupabase();
-    const { error } = await supabase.from('homework').delete().eq('id', id);
-    if (!error) {
-      setHomework(homework.filter(h => h.id !== id));
-      toast({ title: 'Hausaufgabe gelöscht' });
-    }
-  };
-
-  const allItems: TaskItem[] = [...tasks, ...homework];
-  
-  const filterItems = (items: TaskItem[]) => {
+  const filterItems = (items: Task[]) => {
     let filtered = items;
     
     if (!showCompleted) {
@@ -179,7 +103,6 @@ export function TaskSection({ onBack }: TaskSectionProps) {
         filtered = filtered.filter(item => {
           if (!item.due_date) return false;
           const date = parseISO(item.due_date);
-          // Heute ODER überfällig (alle überfälligen Aufgaben anzeigen)
           if (isToday(date)) return true;
           if (isPast(date) && !item.completed) return true;
           return false;
@@ -195,9 +118,6 @@ export function TaskSection({ onBack }: TaskSectionProps) {
           item.due_date && isPast(parseISO(item.due_date)) && !item.completed
         );
         break;
-      case 'homework':
-        filtered = filtered.filter(item => item.type === 'homework');
-        break;
     }
 
     return filtered.sort((a, b) => {
@@ -207,39 +127,33 @@ export function TaskSection({ onBack }: TaskSectionProps) {
     });
   };
 
-  const filteredItems = filterItems(allItems);
+  const filteredItems = filterItems(tasks);
   
-  const overdueCount = allItems.filter(item => 
+  const overdueCount = tasks.filter(item => 
     item.due_date && isPast(parseISO(item.due_date)) && !item.completed
   ).length;
 
-  const todayCount = allItems.filter(item => 
+  const todayCount = tasks.filter(item => 
     item.due_date && isToday(parseISO(item.due_date)) && !item.completed
   ).length;
 
-  const groupByDate = (items: TaskItem[]) => {
-    const groups: { [key: string]: TaskItem[] } = {};
+  const groupByDate = (items: Task[]) => {
+    const groups: { [key: string]: Task[] } = {};
     
     items.forEach(item => {
       let key = 'Ohne Datum';
       if (item.due_date) {
         const date = parseISO(item.due_date);
-        if (isToday(date)) {
-          key = 'Heute';
-        } else if (isTomorrow(date)) {
-          key = 'Morgen';
-        } else if (isPast(date)) {
-          key = 'Überfällig';
-        } else {
-          key = format(date, 'EEEE, d. MMM', { locale: de });
-        }
+        if (isToday(date)) key = 'Heute';
+        else if (isTomorrow(date)) key = 'Morgen';
+        else if (isPast(date)) key = 'Ueberfaellig';
+        else key = format(date, 'EEEE, d. MMM', { locale: de });
       }
-      
       if (!groups[key]) groups[key] = [];
       groups[key].push(item);
     });
 
-    const order = ['Überfällig', 'Heute', 'Morgen'];
+    const order = ['Ueberfaellig', 'Heute', 'Morgen'];
     const sortedKeys = Object.keys(groups).sort((a, b) => {
       const aIndex = order.indexOf(a);
       const bIndex = order.indexOf(b);
@@ -259,16 +173,14 @@ export function TaskSection({ onBack }: TaskSectionProps) {
   const filterOptions = [
     { value: 'today', label: 'Heute', count: todayCount },
     { value: 'week', label: 'Diese Woche' },
-    { value: 'overdue', label: 'Überfällig', count: overdueCount, danger: overdueCount > 0 },
+    { value: 'overdue', label: 'Ueberfaellig', count: overdueCount, danger: overdueCount > 0 },
     { value: 'all', label: 'Alle' },
-    { value: 'homework', label: 'Hausaufgaben' },
   ];
 
   const currentFilter = filterOptions.find(f => f.value === activeTab);
 
   return (
     <div className="space-y-4 pb-20 md:pb-4">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onBack}>
@@ -282,7 +194,6 @@ export function TaskSection({ onBack }: TaskSectionProps) {
         </Button>
       </div>
 
-      {/* Quick Stats - Minimal */}
       <div className="grid grid-cols-3 gap-2">
         <div className="p-3 rounded-xl bg-secondary/40 text-center">
           <p className="text-xl font-bold">{todayCount}</p>
@@ -290,15 +201,14 @@ export function TaskSection({ onBack }: TaskSectionProps) {
         </div>
         <div className={`p-3 rounded-xl text-center ${overdueCount > 0 ? 'bg-rose-500/10' : 'bg-secondary/40'}`}>
           <p className={`text-xl font-bold ${overdueCount > 0 ? 'text-rose-500' : ''}`}>{overdueCount}</p>
-          <p className="text-[10px] text-muted-foreground">Überfällig</p>
+          <p className="text-[10px] text-muted-foreground">Ueberfaellig</p>
         </div>
         <div className="p-3 rounded-xl bg-secondary/40 text-center">
-          <p className="text-xl font-bold">{allItems.filter(i => i.completed).length}</p>
+          <p className="text-xl font-bold">{tasks.filter(i => i.completed).length}</p>
           <p className="text-[10px] text-muted-foreground">Erledigt</p>
         </div>
       </div>
 
-      {/* Filter Dropdown */}
       <div className="flex items-center gap-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -333,7 +243,6 @@ export function TaskSection({ onBack }: TaskSectionProps) {
         </Button>
       </div>
 
-      {/* Task List */}
       {loading ? (
         <div className="text-center py-8 text-muted-foreground text-sm">Laden...</div>
       ) : filteredItems.length === 0 ? (
@@ -346,7 +255,7 @@ export function TaskSection({ onBack }: TaskSectionProps) {
           {groupedItems.map(group => (
             <div key={group.key}>
               <h3 className={`text-xs font-medium mb-2 ${
-                group.key === 'Überfällig' ? 'text-rose-500' : 
+                group.key === 'Ueberfaellig' ? 'text-rose-500' : 
                 group.key === 'Heute' ? 'text-primary' : 
                 'text-muted-foreground'
               }`}>
@@ -354,23 +263,13 @@ export function TaskSection({ onBack }: TaskSectionProps) {
               </h3>
               <div className="space-y-1.5">
                 {group.items.map(item => (
-                  item.type === 'task' ? (
-                    <TaskCard
-                      key={item.id}
-                      task={item}
-                      onToggle={() => toggleTaskComplete(item)}
-                      onDelete={() => deleteTask(item.id)}
-                      onUpdate={fetchData}
-                    />
-                  ) : (
-                    <HomeworkCard
-                      key={item.id}
-                      homework={item}
-                      onToggle={() => toggleHomeworkComplete(item)}
-                      onDelete={() => deleteHomework(item.id)}
-                      onUpdate={fetchData}
-                    />
-                  )
+                  <TaskCard
+                    key={item.id}
+                    task={item}
+                    onToggle={() => toggleTaskComplete(item)}
+                    onDelete={() => deleteTask(item.id)}
+                    onUpdate={fetchData}
+                  />
                 ))}
               </div>
             </div>
@@ -378,7 +277,6 @@ export function TaskSection({ onBack }: TaskSectionProps) {
         </div>
       )}
 
-      {/* Floating Action Button - Mobile */}
       <Button 
         className="md:hidden fixed bottom-20 right-4 h-14 w-14 rounded-full shadow-lg z-40" 
         onClick={() => setShowAddDialog(true)}

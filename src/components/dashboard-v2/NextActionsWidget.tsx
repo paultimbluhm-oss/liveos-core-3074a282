@@ -26,17 +26,13 @@ export function NextActionsWidget({ size }: { size: WidgetSize }) {
 
   const fetchItems = async () => {
     if (!user) return;
-    const [tasksRes, hwRes] = await Promise.all([
-      supabase.from('tasks').select('id, title, due_date').eq('user_id', user.id).eq('completed', false).not('due_date', 'is', null).order('due_date').limit(5),
-      supabase.from('homework').select('id, title, due_date').eq('user_id', user.id).eq('completed', false).order('due_date').limit(5),
+    const [tasksRes] = await Promise.all([
+      supabase.from('tasks').select('id, title, due_date').eq('user_id', user.id).eq('completed', false).not('due_date', 'is', null).order('due_date').limit(10),
     ]);
 
     const actions: ActionItem[] = [];
     (tasksRes.data || []).forEach(t => {
       actions.push({ id: t.id, title: t.title, type: 'task', dueDate: t.due_date!, overdue: isPast(parseISO(t.due_date!)) && !isToday(parseISO(t.due_date!)) });
-    });
-    (hwRes.data || []).forEach(h => {
-      actions.push({ id: h.id, title: h.title, type: 'homework', dueDate: h.due_date, overdue: isPast(parseISO(h.due_date)) && !isToday(parseISO(h.due_date)) });
     });
 
     actions.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());

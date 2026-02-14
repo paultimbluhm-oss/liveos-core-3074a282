@@ -15,20 +15,9 @@ export function DataBackupButton() {
     
     setLoading(true);
     try {
-      // Fetch all data in parallel
       const [
-        subjectsRes,
-        timetableRes,
-        homeworkRes,
         gradesRes,
-        projectsRes,
-        schoolTasksRes,
-        absencesRes,
         habitsRes,
-        accountsRes,
-        transactionsRes,
-        investmentsRes,
-        loansRes,
         recipesRes,
         ingredientsRes,
         stepsRes,
@@ -47,18 +36,8 @@ export function DataBackupButton() {
         calendarsRes,
         eventsRes,
       ] = await Promise.all([
-        supabase.from('subjects').select('*').eq('user_id', user.id),
-        supabase.from('timetable_entries').select('*').eq('user_id', user.id),
-        supabase.from('homework').select('*').eq('user_id', user.id),
         supabase.from('grades').select('*').eq('user_id', user.id),
-        supabase.from('school_projects').select('*').eq('user_id', user.id),
-        supabase.from('school_tasks').select('*').eq('user_id', user.id),
-        supabase.from('absences').select('*').eq('user_id', user.id),
         supabase.from('habits').select('*').eq('user_id', user.id),
-        supabase.from('accounts').select('*').eq('user_id', user.id),
-        supabase.from('transactions').select('*').eq('user_id', user.id),
-        supabase.from('investments').select('*').eq('user_id', user.id),
-        supabase.from('loans').select('*').eq('user_id', user.id),
         supabase.from('recipes').select('*').eq('user_id', user.id),
         supabase.from('recipe_ingredients').select('*').eq('user_id', user.id),
         supabase.from('recipe_steps').select('*').eq('user_id', user.id),
@@ -85,10 +64,7 @@ export function DataBackupButton() {
       const lineHeight = 6;
 
       const addTitle = (title: string) => {
-        if (y > pageHeight - 30) {
-          pdf.addPage();
-          y = 20;
-        }
+        if (y > pageHeight - 30) { pdf.addPage(); y = 20; }
         pdf.setFontSize(14);
         pdf.setFont('helvetica', 'bold');
         pdf.text(title, margin, y);
@@ -98,16 +74,10 @@ export function DataBackupButton() {
       };
 
       const addLine = (text: string) => {
-        if (y > pageHeight) {
-          pdf.addPage();
-          y = 20;
-        }
+        if (y > pageHeight) { pdf.addPage(); y = 20; }
         const lines = pdf.splitTextToSize(text, 170);
         lines.forEach((line: string) => {
-          if (y > pageHeight) {
-            pdf.addPage();
-            y = 20;
-          }
+          if (y > pageHeight) { pdf.addPage(); y = 20; }
           pdf.text(line, margin, y);
           y += lineHeight;
         });
@@ -125,86 +95,14 @@ export function DataBackupButton() {
       pdf.text(`Erstellt am: ${new Date().toLocaleDateString('de-DE')} ${new Date().toLocaleTimeString('de-DE')}`, margin, y);
       y += 15;
 
-      // SCHULE
-      addTitle('SCHULE - Faecher');
-      if (subjectsRes.data?.length) {
-        subjectsRes.data.forEach(s => {
-          addLine(`- ${s.name}${s.short_name ? ` (${s.short_name})` : ''} | Lehrer: ${s.teacher_short || '-'} | Raum: ${s.room || '-'} | Jahr: ${s.grade_year}`);
-        });
-      } else {
-        addLine('Keine Faecher vorhanden');
-      }
-      addSpace();
-
-      addTitle('SCHULE - Stundenplan');
-      const weekdays = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag'];
-      if (timetableRes.data?.length) {
-        const byDay = timetableRes.data.reduce((acc, e) => {
-          if (!acc[e.day_of_week]) acc[e.day_of_week] = [];
-          acc[e.day_of_week].push(e);
-          return acc;
-        }, {} as Record<number, typeof timetableRes.data>);
-        
-        Object.entries(byDay).forEach(([day, entries]) => {
-          addLine(`${weekdays[parseInt(day) - 1]}:`);
-          entries.sort((a, b) => a.period - b.period).forEach(e => {
-            addLine(`  Stunde ${e.period}: ${e.is_free ? 'Frei' : e.subject_short || '-'} | ${e.room || '-'}`);
-          });
-        });
-      } else {
-        addLine('Kein Stundenplan vorhanden');
-      }
-      addSpace();
-
-      addTitle('SCHULE - Hausaufgaben');
-      if (homeworkRes.data?.length) {
-        homeworkRes.data.forEach(h => {
-          const subject = subjectsRes.data?.find(s => s.id === h.subject_id);
-          addLine(`- ${h.title} | Fach: ${subject?.name || '-'} | Faellig: ${h.due_date} | ${h.completed ? 'Erledigt' : 'Offen'}`);
-        });
-      } else {
-        addLine('Keine Hausaufgaben vorhanden');
-      }
-      addSpace();
-
-      addTitle('SCHULE - Noten');
+      // NOTEN
+      addTitle('NOTEN');
       if (gradesRes.data?.length) {
         gradesRes.data.forEach(g => {
-          const subject = subjectsRes.data?.find(s => s.id === g.subject_id);
-          addLine(`- ${subject?.name || '-'}: ${g.points} Punkte | Typ: ${g.grade_type} | ${g.date || '-'}`);
+          addLine(`- ${g.points} Punkte | Typ: ${g.grade_type} | ${g.date || '-'}`);
         });
       } else {
         addLine('Keine Noten vorhanden');
-      }
-      addSpace();
-
-      addTitle('SCHULE - Projekte');
-      if (projectsRes.data?.length) {
-        projectsRes.data.forEach(p => {
-          addLine(`- ${p.title} | Status: ${p.status || '-'} | Deadline: ${p.deadline || p.due_date || '-'}`);
-        });
-      } else {
-        addLine('Keine Projekte vorhanden');
-      }
-      addSpace();
-
-      addTitle('SCHULE - Aufgaben');
-      if (schoolTasksRes.data?.length) {
-        schoolTasksRes.data.forEach(t => {
-          addLine(`- ${t.title} | Typ: ${t.task_type || '-'} | ${t.completed ? 'Erledigt' : 'Offen'}`);
-        });
-      } else {
-        addLine('Keine Schulaufgaben vorhanden');
-      }
-      addSpace();
-
-      addTitle('SCHULE - Fehltage');
-      if (absencesRes.data?.length) {
-        absencesRes.data.forEach(a => {
-          addLine(`- ${a.date} | Stunden: ${a.periods?.join(', ') || 'Ganzer Tag'} | ${a.excused ? 'Entschuldigt' : 'Unentschuldigt'} | ${a.reason || '-'}`);
-        });
-      } else {
-        addLine('Keine Fehltage vorhanden');
       }
       addSpace();
 
@@ -216,50 +114,6 @@ export function DataBackupButton() {
         });
       } else {
         addLine('Keine Habits vorhanden');
-      }
-      addSpace();
-
-      // FINANZEN
-      addTitle('FINANZEN - Konten');
-      if (accountsRes.data?.length) {
-        accountsRes.data.forEach(a => {
-          addLine(`- ${a.name} | Typ: ${a.account_type} | Kontostand: ${a.balance?.toFixed(2) || '0.00'} EUR`);
-        });
-      } else {
-        addLine('Keine Konten vorhanden');
-      }
-      addSpace();
-
-      addTitle('FINANZEN - Transaktionen');
-      if (transactionsRes.data?.length) {
-        transactionsRes.data.slice(0, 50).forEach(t => {
-          addLine(`- ${t.date}: ${t.description || '-'} | ${t.amount} EUR | ${t.transaction_type} | ${t.category || '-'}`);
-        });
-        if (transactionsRes.data.length > 50) {
-          addLine(`... und ${transactionsRes.data.length - 50} weitere Transaktionen`);
-        }
-      } else {
-        addLine('Keine Transaktionen vorhanden');
-      }
-      addSpace();
-
-      addTitle('FINANZEN - Investments');
-      if (investmentsRes.data?.length) {
-        investmentsRes.data.forEach(i => {
-          addLine(`- ${i.name} | Typ: ${i.investment_type} | Menge: ${i.quantity} | Kaufpreis: ${i.purchase_price} EUR`);
-        });
-      } else {
-        addLine('Keine Investments vorhanden');
-      }
-      addSpace();
-
-      addTitle('FINANZEN - Darlehen');
-      if (loansRes.data?.length) {
-        loansRes.data.forEach(l => {
-          addLine(`- ${l.lender_name}: ${l.original_amount} EUR | Typ: ${l.loan_type || '-'} | ${l.is_paid ? 'Bezahlt' : `Rest: ${l.remaining_amount} EUR`}`);
-        });
-      } else {
-        addLine('Keine Darlehen vorhanden');
       }
       addSpace();
 
@@ -290,7 +144,6 @@ export function DataBackupButton() {
           addLine(`${cl.name}:`);
           const sections = checklistSectionsRes.data?.filter(s => s.checklist_id === cl.id) || [];
           const items = checklistItemsRes.data?.filter(i => i.checklist_id === cl.id) || [];
-          
           if (sections.length) {
             sections.forEach(sec => {
               addLine(`  [${sec.name}]`);
@@ -418,7 +271,6 @@ export function DataBackupButton() {
         addLine('Keine Kalender vorhanden');
       }
 
-      // Save PDF
       pdf.save(`LiveOS_Backup_${new Date().toISOString().split('T')[0]}.pdf`);
       toast.success('Backup erfolgreich erstellt');
     } catch (error) {
@@ -430,17 +282,8 @@ export function DataBackupButton() {
   };
 
   return (
-    <Button
-      onClick={generatePDF}
-      disabled={loading}
-      variant="outline"
-      className="w-full"
-    >
-      {loading ? (
-        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-      ) : (
-        <Download className="w-4 h-4 mr-2" />
-      )}
+    <Button onClick={generatePDF} disabled={loading} variant="outline" className="w-full">
+      {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
       Alle Daten sichern
     </Button>
   );

@@ -66,7 +66,6 @@ export function GiftsSection({ onBack }: GiftsSectionProps) {
     if (user) {
       fetchRecipients();
       fetchIdeas();
-      fetchAccounts();
     }
   }, [user]);
 
@@ -89,12 +88,7 @@ export function GiftsSection({ onBack }: GiftsSectionProps) {
   };
 
   const fetchAccounts = async () => {
-    const { data } = await supabase
-      .from('accounts')
-      .select('id, name, balance')
-      .eq('user_id', user!.id)
-      .order('name');
-    if (data) setAccounts(data);
+    // accounts table removed - no-op
   };
 
   const toggleRecipient = (id: string) => {
@@ -165,21 +159,6 @@ export function GiftsSection({ onBack }: GiftsSectionProps) {
 
     if (accountId && !idea.purchased && idea.price) {
       updates.account_id = accountId;
-      await supabase.from('transactions').insert({
-        user_id: user!.id,
-        account_id: accountId,
-        amount: idea.price,
-        transaction_type: 'expense',
-        category: 'Geschenke',
-        description: `Geschenk: ${idea.title}`,
-        date: format(new Date(), 'yyyy-MM-dd'),
-      });
-      const account = accounts.find(a => a.id === accountId);
-      if (account) {
-        await supabase.from('accounts').update({
-          balance: account.balance - idea.price,
-        }).eq('id', accountId);
-      }
     }
 
     const { error } = await supabase.from('gift_ideas').update(updates).eq('id', idea.id);

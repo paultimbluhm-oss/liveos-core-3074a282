@@ -2,23 +2,17 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { Wallet, ListChecks, Calendar, Check, Gift, BookHeart, Clock, Heart } from 'lucide-react';
-import { FinanceSection } from '@/components/privat/finance/FinanceSection';
+import { ListChecks, Calendar, Check, Gift, Heart } from 'lucide-react';
 import { ChecklistSection } from '@/components/privat/checklists';
 import { TaskSection } from '@/components/privat/tasks';
 import { HabitsSection } from '@/components/privat/habits';
 import { GiftsSection } from '@/components/privat/gifts';
-import { JournalSection } from '@/components/privat/journal';
-import { LifetimeSection } from '@/components/privat/lifetime';
 import { UnifiedHealthSection } from '@/components/privat/health';
 
 const sections = [
   { id: 'habits', icon: Check, label: 'Habits', color: 'text-emerald-500' },
-  { id: 'finanzen', icon: Wallet, label: 'Finanzen', color: 'text-amber-500' },
   { id: 'aufgaben', icon: Calendar, label: 'Aufgaben', color: 'text-sky-500' },
-  { id: 'lifetime', icon: Clock, label: 'Lifetime', color: 'text-indigo-500' },
   { id: 'gesundheit', icon: Heart, label: 'Gesundheit', color: 'text-rose-500' },
-  { id: 'journal', icon: BookHeart, label: 'Journal', color: 'text-cyan-500' },
   { id: 'checklisten', icon: ListChecks, label: 'Checklisten', color: 'text-blue-500' },
   { id: 'geschenke', icon: Gift, label: 'Geschenke', color: 'text-pink-500' },
 ];
@@ -61,26 +55,6 @@ export default function Privat() {
     );
   }
 
-  if (activeSection === 'journal') {
-    return (
-      <AppLayout>
-        <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
-          <JournalSection onBack={() => handleSetSection(null)} />
-        </div>
-      </AppLayout>
-    );
-  }
-
-  if (activeSection === 'finanzen') {
-    return (
-      <AppLayout>
-        <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
-          <FinanceSection onBack={() => handleSetSection(null)} />
-        </div>
-      </AppLayout>
-    );
-  }
-
   if (activeSection === 'checklisten') {
     return (
       <AppLayout>
@@ -96,16 +70,6 @@ export default function Privat() {
       <AppLayout>
         <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
           <TaskSection onBack={() => handleSetSection(null)} />
-        </div>
-      </AppLayout>
-    );
-  }
-
-  if (activeSection === 'lifetime') {
-    return (
-      <AppLayout>
-        <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
-          <LifetimeSection onBack={() => handleSetSection(null)} />
         </div>
       </AppLayout>
     );
@@ -134,7 +98,7 @@ export default function Privat() {
   return (
     <AppLayout>
       <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-8 gap-2 md:gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-3">
           {sections.map((s, i) => (
             <div
               key={s.id}
