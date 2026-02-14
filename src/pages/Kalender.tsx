@@ -52,10 +52,9 @@ export default function Kalender() {
 
   const fetchAllData = async () => {
     const supabase = getSupabase();
-    const [calendarsRes, eventsRes, timetableRes, tasksRes] = await Promise.all([
+    const [calendarsRes, eventsRes, tasksRes] = await Promise.all([
       supabase.from('calendars').select('*').order('created_at'),
       supabase.from('calendar_events').select('*').order('start_time'),
-      supabase.from('timetable_entries').select('*, subject:subjects(name, short_name)').order('period'),
       supabase.from('tasks').select('*').eq('completed', false),
     ]);
 
@@ -75,7 +74,6 @@ export default function Kalender() {
       }
     }
     if (eventsRes.data) setEvents(eventsRes.data);
-    if (timetableRes.data) setTimetableEntries(timetableRes.data);
     if (tasksRes.data) setTasks(tasksRes.data);
     setLoadingData(false);
   };

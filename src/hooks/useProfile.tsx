@@ -116,9 +116,8 @@ export function useProfile() {
     const supabase = getSupabase();
     
     // Calculate total XP from all completed activities
-    const [tasksRes, homeworkRes, gradesRes, skillsRes] = await Promise.all([
+    const [tasksRes, gradesRes, skillsRes] = await Promise.all([
       supabase.from('tasks').select('xp_reward').eq('user_id', user.id).eq('completed', true),
-      supabase.from('homework').select('xp_reward').eq('user_id', user.id).eq('completed', true),
       supabase.from('grades').select('id').eq('user_id', user.id),
       supabase.from('activity_skills').select('xp_reward').eq('user_id', user.id).eq('completed', true),
     ]);
@@ -128,8 +127,6 @@ export function useProfile() {
     // Tasks: default 10 XP each
     (tasksRes.data || []).forEach(t => { totalXP += (t.xp_reward || 10); });
     
-    // Homework: default 10 XP each  
-    (homeworkRes.data || []).forEach(h => { totalXP += (h.xp_reward || 10); });
     
     // Grades: 5 XP each
     totalXP += (gradesRes.data?.length || 0) * 5;
@@ -199,24 +196,6 @@ export function useProfile() {
       });
     });
     
-    // Fetch recent completed homework
-    const { data: homework } = await supabase
-      .from('homework')
-      .select('id, title, created_at, xp_reward')
-      .eq('user_id', user.id)
-      .eq('completed', true)
-      .order('created_at', { ascending: false })
-      .limit(5);
-    
-    homework?.forEach(h => {
-      activities.push({
-        id: `hw-${h.id}`,
-        type: 'homework_completed',
-        title: `Hausaufgabe erledigt: ${h.title}`,
-        timestamp: new Date(h.created_at),
-        xp: h.xp_reward || 10
-      });
-    });
     
     // Fetch recent grades
     const { data: grades } = await supabase

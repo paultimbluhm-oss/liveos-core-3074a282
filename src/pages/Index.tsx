@@ -9,7 +9,7 @@ import { HabitsChecklistWidget } from '@/components/dashboard-v2/HabitsChecklist
 import { TodayProgressWidget } from '@/components/dashboard-v2/TodayProgressWidget';
 import { HealthBarWidget } from '@/components/dashboard-v2/HealthBarWidget';
 import { XPLevelWidget } from '@/components/dashboard-v2/XPLevelWidget';
-import { TimeScoreWidget } from '@/components/dashboard-v2/TimeScoreWidget';
+
 import { QuickStatsWidget } from '@/components/dashboard-v2/QuickStatsWidget';
 import { MotivationWidget } from '@/components/dashboard-v2/MotivationWidget';
 import { NextActionsWidget } from '@/components/dashboard-v2/NextActionsWidget';
@@ -26,7 +26,7 @@ const WIDGET_COMPONENTS: Record<string, React.FC<any>> = {
   'today-progress': TodayProgressWidget,
   'health-bar': HealthBarWidget,
   'xp-level': XPLevelWidget,
-  'time-score': TimeScoreWidget,
+  
   'quick-stats': QuickStatsWidget,
   'motivation-quote': MotivationWidget,
   'next-actions': NextActionsWidget,

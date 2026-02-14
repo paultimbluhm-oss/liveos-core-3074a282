@@ -14,66 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      absences: {
-        Row: {
-          created_at: string
-          date: string
-          excused: boolean | null
-          id: string
-          periods: number[] | null
-          reason: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          date: string
-          excused?: boolean | null
-          id?: string
-          periods?: number[] | null
-          reason?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          date?: string
-          excused?: boolean | null
-          id?: string
-          periods?: number[] | null
-          reason?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
-      accounts: {
-        Row: {
-          account_type: string
-          balance: number | null
-          created_at: string | null
-          id: string
-          name: string
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          account_type: string
-          balance?: number | null
-          created_at?: string | null
-          id?: string
-          name: string
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          account_type?: string
-          balance?: number | null
-          created_at?: string | null
-          id?: string
-          name?: string
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
       achievements: {
         Row: {
           achievement_type: string
@@ -91,33 +31,6 @@ export type Database = {
           achievement_type?: string
           id?: string
           unlocked_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
-      active_time_tracker: {
-        Row: {
-          category_id: string
-          created_at: string
-          id: string
-          start_time: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          category_id: string
-          created_at?: string
-          id?: string
-          start_time?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          category_id?: string
-          created_at?: string
-          id?: string
-          start_time?: string
-          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -177,50 +90,6 @@ export type Database = {
             columns: ["activity_id"]
             isOneToOne: false
             referencedRelation: "boredom_activities"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      balance_history: {
-        Row: {
-          account_id: string | null
-          accounts_balance: number | null
-          balance: number
-          created_at: string
-          date: string
-          id: string
-          investments_balance: number | null
-          total_balance: number | null
-          user_id: string
-        }
-        Insert: {
-          account_id?: string | null
-          accounts_balance?: number | null
-          balance: number
-          created_at?: string
-          date?: string
-          id?: string
-          investments_balance?: number | null
-          total_balance?: number | null
-          user_id: string
-        }
-        Update: {
-          account_id?: string | null
-          accounts_balance?: number | null
-          balance?: number
-          created_at?: string
-          date?: string
-          id?: string
-          investments_balance?: number | null
-          total_balance?: number | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "balance_history_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "accounts"
             referencedColumns: ["id"]
           },
         ]
@@ -831,36 +700,6 @@ export type Database = {
           },
         ]
       }
-      custom_holidays: {
-        Row: {
-          color: string | null
-          created_at: string
-          end_date: string
-          id: string
-          name: string
-          start_date: string
-          user_id: string
-        }
-        Insert: {
-          color?: string | null
-          created_at?: string
-          end_date: string
-          id?: string
-          name: string
-          start_date: string
-          user_id: string
-        }
-        Update: {
-          color?: string | null
-          created_at?: string
-          end_date?: string
-          id?: string
-          name?: string
-          start_date?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       dashboard_config: {
         Row: {
           created_at: string
@@ -1037,13 +876,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "gift_ideas_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "gift_ideas_recipient_id_fkey"
             columns: ["recipient_id"]
             isOneToOne: false
@@ -1143,13 +975,6 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "grades_subject_id_fkey"
-            columns: ["subject_id"]
-            isOneToOne: false
-            referencedRelation: "subjects"
             referencedColumns: ["id"]
           },
         ]
@@ -1284,53 +1109,6 @@ export type Database = {
         }
         Relationships: []
       }
-      homework: {
-        Row: {
-          completed: boolean | null
-          created_at: string | null
-          description: string | null
-          due_date: string
-          id: string
-          priority: string | null
-          subject_id: string
-          title: string
-          user_id: string
-          xp_reward: number | null
-        }
-        Insert: {
-          completed?: boolean | null
-          created_at?: string | null
-          description?: string | null
-          due_date: string
-          id?: string
-          priority?: string | null
-          subject_id: string
-          title: string
-          user_id: string
-          xp_reward?: number | null
-        }
-        Update: {
-          completed?: boolean | null
-          created_at?: string | null
-          description?: string | null
-          due_date?: string
-          id?: string
-          priority?: string | null
-          subject_id?: string
-          title?: string
-          user_id?: string
-          xp_reward?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "homework_subject_id_fkey"
-            columns: ["subject_id"]
-            isOneToOne: false
-            referencedRelation: "subjects"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       ideas: {
         Row: {
           category: string | null
@@ -1369,353 +1147,6 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
-      }
-      investments: {
-        Row: {
-          created_at: string | null
-          currency: string | null
-          id: string
-          investment_type: string
-          name: string
-          purchase_date: string | null
-          purchase_price: number
-          quantity: number
-          source_account_id: string | null
-          symbol: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          currency?: string | null
-          id?: string
-          investment_type: string
-          name: string
-          purchase_date?: string | null
-          purchase_price: number
-          quantity: number
-          source_account_id?: string | null
-          symbol?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          currency?: string | null
-          id?: string
-          investment_type?: string
-          name?: string
-          purchase_date?: string | null
-          purchase_price?: number
-          quantity?: number
-          source_account_id?: string | null
-          symbol?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "investments_source_account_id_fkey"
-            columns: ["source_account_id"]
-            isOneToOne: false
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      journal_entries: {
-        Row: {
-          accomplishment_feeling: number | null
-          autonomy_feeling: number | null
-          best_moment: string | null
-          connection_quality: number | null
-          created_at: string | null
-          energy_level: number | null
-          entry_date: string
-          exercise_minutes: number | null
-          flow_experiences: number | null
-          gratitude_1: string | null
-          gratitude_2: string | null
-          gratitude_3: string | null
-          helped_others: boolean | null
-          id: string
-          mood_rating: number | null
-          notes: string | null
-          progress_made: number | null
-          purpose_feeling: number | null
-          quality_time_minutes: number | null
-          social_interactions: number | null
-          stress_level: number | null
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          accomplishment_feeling?: number | null
-          autonomy_feeling?: number | null
-          best_moment?: string | null
-          connection_quality?: number | null
-          created_at?: string | null
-          energy_level?: number | null
-          entry_date?: string
-          exercise_minutes?: number | null
-          flow_experiences?: number | null
-          gratitude_1?: string | null
-          gratitude_2?: string | null
-          gratitude_3?: string | null
-          helped_others?: boolean | null
-          id?: string
-          mood_rating?: number | null
-          notes?: string | null
-          progress_made?: number | null
-          purpose_feeling?: number | null
-          quality_time_minutes?: number | null
-          social_interactions?: number | null
-          stress_level?: number | null
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          accomplishment_feeling?: number | null
-          autonomy_feeling?: number | null
-          best_moment?: string | null
-          connection_quality?: number | null
-          created_at?: string | null
-          energy_level?: number | null
-          entry_date?: string
-          exercise_minutes?: number | null
-          flow_experiences?: number | null
-          gratitude_1?: string | null
-          gratitude_2?: string | null
-          gratitude_3?: string | null
-          helped_others?: boolean | null
-          id?: string
-          mood_rating?: number | null
-          notes?: string | null
-          progress_made?: number | null
-          purpose_feeling?: number | null
-          quality_time_minutes?: number | null
-          social_interactions?: number | null
-          stress_level?: number | null
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
-      lesson_absences: {
-        Row: {
-          created_at: string
-          date: string
-          description: string | null
-          excused: boolean | null
-          id: string
-          period: number | null
-          reason: string | null
-          subject_id: string | null
-          timetable_entry_id: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          date: string
-          description?: string | null
-          excused?: boolean | null
-          id?: string
-          period?: number | null
-          reason?: string | null
-          subject_id?: string | null
-          timetable_entry_id?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          date?: string
-          description?: string | null
-          excused?: boolean | null
-          id?: string
-          period?: number | null
-          reason?: string | null
-          subject_id?: string | null
-          timetable_entry_id?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "lesson_absences_subject_id_fkey"
-            columns: ["subject_id"]
-            isOneToOne: false
-            referencedRelation: "subjects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "lesson_absences_timetable_entry_id_fkey"
-            columns: ["timetable_entry_id"]
-            isOneToOne: false
-            referencedRelation: "timetable_entries"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      lifetime_events: {
-        Row: {
-          category: string | null
-          created_at: string
-          description: string | null
-          event_date: string | null
-          id: string
-          is_milestone: boolean | null
-          title: string
-          user_id: string
-        }
-        Insert: {
-          category?: string | null
-          created_at?: string
-          description?: string | null
-          event_date?: string | null
-          id?: string
-          is_milestone?: boolean | null
-          title: string
-          user_id: string
-        }
-        Update: {
-          category?: string | null
-          created_at?: string
-          description?: string | null
-          event_date?: string | null
-          id?: string
-          is_milestone?: boolean | null
-          title?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      lifetime_goals: {
-        Row: {
-          category: string
-          created_at: string
-          day_of_week: number | null
-          id: string
-          points_per_minute: number | null
-          target_minutes: number
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          category: string
-          created_at?: string
-          day_of_week?: number | null
-          id?: string
-          points_per_minute?: number | null
-          target_minutes?: number
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          category?: string
-          created_at?: string
-          day_of_week?: number | null
-          id?: string
-          points_per_minute?: number | null
-          target_minutes?: number
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      loans: {
-        Row: {
-          amount: number | null
-          category: string | null
-          created_at: string
-          description: string | null
-          due_date: string | null
-          end_date: string | null
-          id: string
-          interest_rate: number | null
-          is_paid: boolean | null
-          is_returned: boolean | null
-          lender_name: string
-          loan_date: string | null
-          loan_type: string | null
-          monthly_payment: number | null
-          notes: string | null
-          original_amount: number
-          paid_date: string | null
-          person_name: string | null
-          remaining_amount: number
-          return_account_id: string | null
-          returned_date: string | null
-          source_account_id: string | null
-          start_date: string | null
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          amount?: number | null
-          category?: string | null
-          created_at?: string
-          description?: string | null
-          due_date?: string | null
-          end_date?: string | null
-          id?: string
-          interest_rate?: number | null
-          is_paid?: boolean | null
-          is_returned?: boolean | null
-          lender_name: string
-          loan_date?: string | null
-          loan_type?: string | null
-          monthly_payment?: number | null
-          notes?: string | null
-          original_amount: number
-          paid_date?: string | null
-          person_name?: string | null
-          remaining_amount: number
-          return_account_id?: string | null
-          returned_date?: string | null
-          source_account_id?: string | null
-          start_date?: string | null
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          amount?: number | null
-          category?: string | null
-          created_at?: string
-          description?: string | null
-          due_date?: string | null
-          end_date?: string | null
-          id?: string
-          interest_rate?: number | null
-          is_paid?: boolean | null
-          is_returned?: boolean | null
-          lender_name?: string
-          loan_date?: string | null
-          loan_type?: string | null
-          monthly_payment?: number | null
-          notes?: string | null
-          original_amount?: number
-          paid_date?: string | null
-          person_name?: string | null
-          remaining_amount?: number
-          return_account_id?: string | null
-          returned_date?: string | null
-          source_account_id?: string | null
-          start_date?: string | null
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "loans_return_account_id_fkey"
-            columns: ["return_account_id"]
-            isOneToOne: false
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "loans_source_account_id_fkey"
-            columns: ["source_account_id"]
-            isOneToOne: false
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       meal_log: {
         Row: {
@@ -2274,29 +1705,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "recurring_transactions_investment_id_fkey"
-            columns: ["investment_id"]
-            isOneToOne: false
-            referencedRelation: "investments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "recurring_transactions_source_account_id_fkey"
-            columns: ["source_account_id"]
-            isOneToOne: false
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "recurring_transactions_target_account_id_fkey"
-            columns: ["target_account_id"]
-            isOneToOne: false
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       school_events: {
         Row: {
@@ -2329,15 +1738,7 @@ export type Database = {
           title?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "school_events_subject_id_fkey"
-            columns: ["subject_id"]
-            isOneToOne: false
-            referencedRelation: "subjects"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       school_projects: {
         Row: {
@@ -2379,15 +1780,7 @@ export type Database = {
           title?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "school_projects_subject_id_fkey"
-            columns: ["subject_id"]
-            isOneToOne: false
-            referencedRelation: "subjects"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       school_subjects: {
         Row: {
@@ -2642,45 +2035,6 @@ export type Database = {
           },
         ]
       }
-      subjects: {
-        Row: {
-          created_at: string | null
-          grade_year: number
-          id: string
-          name: string
-          oral_weight: number | null
-          room: string | null
-          short_name: string | null
-          teacher_short: string | null
-          user_id: string
-          written_weight: number | null
-        }
-        Insert: {
-          created_at?: string | null
-          grade_year: number
-          id?: string
-          name: string
-          oral_weight?: number | null
-          room?: string | null
-          short_name?: string | null
-          teacher_short?: string | null
-          user_id: string
-          written_weight?: number | null
-        }
-        Update: {
-          created_at?: string | null
-          grade_year?: number
-          id?: string
-          name?: string
-          oral_weight?: number | null
-          room?: string | null
-          short_name?: string | null
-          teacher_short?: string | null
-          user_id?: string
-          written_weight?: number | null
-        }
-        Relationships: []
-      }
       tasks: {
         Row: {
           completed: boolean | null
@@ -2786,99 +2140,6 @@ export type Database = {
         }
         Relationships: []
       }
-      time_entries: {
-        Row: {
-          category: string
-          created_at: string | null
-          entry_date: string
-          id: string
-          minutes: number
-          notes: string | null
-          user_id: string
-        }
-        Insert: {
-          category: string
-          created_at?: string | null
-          entry_date?: string
-          id?: string
-          minutes?: number
-          notes?: string | null
-          user_id: string
-        }
-        Update: {
-          category?: string
-          created_at?: string | null
-          entry_date?: string
-          id?: string
-          minutes?: number
-          notes?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
-      timetable_entries: {
-        Row: {
-          course_id: string | null
-          created_at: string
-          day_of_week: number
-          id: string
-          is_free: boolean | null
-          notes: string | null
-          period: number
-          room: string | null
-          subject_id: string | null
-          subject_short: string | null
-          teacher_short: string | null
-          user_id: string
-          week_type: string | null
-        }
-        Insert: {
-          course_id?: string | null
-          created_at?: string
-          day_of_week: number
-          id?: string
-          is_free?: boolean | null
-          notes?: string | null
-          period: number
-          room?: string | null
-          subject_id?: string | null
-          subject_short?: string | null
-          teacher_short?: string | null
-          user_id: string
-          week_type?: string | null
-        }
-        Update: {
-          course_id?: string | null
-          created_at?: string
-          day_of_week?: number
-          id?: string
-          is_free?: boolean | null
-          notes?: string | null
-          period?: number
-          room?: string | null
-          subject_id?: string | null
-          subject_short?: string | null
-          teacher_short?: string | null
-          user_id?: string
-          week_type?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "timetable_entries_course_id_fkey"
-            columns: ["course_id"]
-            isOneToOne: false
-            referencedRelation: "courses"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "timetable_entries_subject_id_fkey"
-            columns: ["subject_id"]
-            isOneToOne: false
-            referencedRelation: "subjects"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       timetable_overrides: {
         Row: {
           color: string | null
@@ -2960,15 +2221,7 @@ export type Database = {
           transaction_type?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "transactions_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       v2_absences: {
         Row: {
