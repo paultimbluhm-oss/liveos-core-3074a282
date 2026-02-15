@@ -8,7 +8,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { useGamification } from '@/contexts/GamificationContext';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { toast } from 'sonner';
 import { HabitsManagementSheet } from './HabitsManagementSheet';
 import type { WidgetSize, DashboardSettings } from '@/hooks/useDashboardV2';
 
@@ -70,16 +69,10 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
       await supabase.from('habit_completions').delete().eq('habit_id', habit.id).eq('completed_date', today);
       setCompletions(prev => prev.filter(id => id !== habit.id));
       await addXP(-habit.xp_reward, `${habit.name} rueckgaengig`);
-      if (settings?.showXpToast !== false) {
-        toast.info(`-${habit.xp_reward} XP`);
-      }
     } else {
       await supabase.from('habit_completions').insert({ user_id: user.id, habit_id: habit.id, completed_date: today });
       setCompletions(prev => [...prev, habit.id]);
       await addXP(habit.xp_reward, habit.name);
-      if (settings?.showXpToast !== false) {
-        toast.success(`+${habit.xp_reward} XP`);
-      }
     }
   };
 
