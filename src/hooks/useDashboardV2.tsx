@@ -49,9 +49,10 @@ const DEFAULT_WIDGETS: DashboardWidget[] = [
 export interface DashboardSettings {
   habitDisplayLimit: number; // 0 = all
   showXpToast: boolean;
+  statsVisibleFields: string[]; // e.g. ['grade', 'netWorth']
 }
 
-const DEFAULT_SETTINGS: DashboardSettings = { habitDisplayLimit: 0, showXpToast: true };
+const DEFAULT_SETTINGS: DashboardSettings = { habitDisplayLimit: 0, showXpToast: true, statsVisibleFields: ['grade', 'netWorth'] };
 
 export function useDashboardV2Config() {
   const { user } = useAuth();

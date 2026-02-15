@@ -12,6 +12,7 @@ import { XPLevelWidget } from '@/components/dashboard-v2/XPLevelWidget';
 
 import { QuickStatsWidget } from '@/components/dashboard-v2/QuickStatsWidget';
 import { MotivationWidget } from '@/components/dashboard-v2/MotivationWidget';
+import { QuickStatsConfigSheet } from '@/components/dashboard-v2/QuickStatsConfigSheet';
 import { NextActionsWidget } from '@/components/dashboard-v2/NextActionsWidget';
 import { WIDGET_CATALOG } from '@/hooks/useDashboardV2';
 import { Settings2, X, Plus, Minus, EyeOff, ChevronUp, ChevronDown, Bell, BellOff } from 'lucide-react';
@@ -46,6 +47,7 @@ export default function Index() {
   const { widgets, visibleWidgets, loading: configLoading, updateWidgetSize, toggleWidget, moveWidget, resetToDefault, settings, updateSettings } = useDashboardV2Config();
   const navigate = useNavigate();
   const [editMode, setEditMode] = useState(false);
+  const [statsConfigOpen, setStatsConfigOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) navigate('/auth');
@@ -119,9 +121,16 @@ export default function Index() {
                 } : { duration: 0.2 }}
               >
                 {/* Widget content */}
-                <div className={editMode ? 'pointer-events-none opacity-80' : ''}>
+                <div className={editMode && widget.type !== 'quick-stats' ? 'pointer-events-none opacity-80' : (editMode ? 'opacity-80' : '')}>
                   {widget.type === 'habits-checklist' 
                     ? <Component size={widget.size} settings={settings} />
+                    : widget.type === 'quick-stats'
+                    ? <Component 
+                        size={widget.size} 
+                        editMode={editMode}
+                        statsConfig={{ visibleFields: settings.statsVisibleFields || ['grade', 'netWorth'] }}
+                        onOpenConfig={() => setStatsConfigOpen(true)}
+                      />
                     : <Component size={widget.size} />
                   }
                 </div>
@@ -134,6 +143,9 @@ export default function Index() {
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.8 }}
                       className="absolute inset-0 z-10"
+                      onClick={() => {
+                        if (widget.type === 'quick-stats') setStatsConfigOpen(true);
+                      }}
                     >
                       {/* Remove button (top-left) */}
                       <button
@@ -268,6 +280,19 @@ export default function Index() {
           )}
         </AnimatePresence>
       </div>
+
+      <QuickStatsConfigSheet
+        open={statsConfigOpen}
+        onOpenChange={setStatsConfigOpen}
+        visibleFields={(settings.statsVisibleFields || ['grade', 'netWorth']) as any}
+        onToggleField={(field) => {
+          const current = settings.statsVisibleFields || ['grade', 'netWorth'];
+          const next = current.includes(field)
+            ? current.filter(f => f !== field)
+            : [...current, field];
+          updateSettings({ statsVisibleFields: next });
+        }}
+      />
     </AppLayout>
   );
 }
