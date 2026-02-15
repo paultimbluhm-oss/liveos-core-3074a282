@@ -15,7 +15,7 @@ import { MotivationWidget } from '@/components/dashboard-v2/MotivationWidget';
 import { QuickStatsConfigSheet } from '@/components/dashboard-v2/QuickStatsConfigSheet';
 import { NextActionsWidget } from '@/components/dashboard-v2/NextActionsWidget';
 import { WIDGET_CATALOG } from '@/hooks/useDashboardV2';
-import { Settings2, X, Plus, Minus, EyeOff, ChevronUp, ChevronDown, Bell, BellOff } from 'lucide-react';
+import { Settings2, X, Plus, Minus, EyeOff, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -121,7 +121,7 @@ export default function Index() {
                 } : { duration: 0.2 }}
               >
                 {/* Widget content */}
-                <div className={editMode && widget.type !== 'quick-stats' ? 'pointer-events-none opacity-80' : (editMode ? 'opacity-80' : '')}>
+                <div className={editMode ? 'pointer-events-none opacity-80' : ''}>
                   {widget.type === 'habits-checklist' 
                     ? <Component size={widget.size} settings={settings} />
                     : widget.type === 'quick-stats'
@@ -129,7 +129,6 @@ export default function Index() {
                         size={widget.size} 
                         editMode={editMode}
                         statsConfig={{ visibleFields: settings.statsVisibleFields || ['grade', 'netWorth'] }}
-                        onOpenConfig={() => setStatsConfigOpen(true)}
                       />
                     : <Component size={widget.size} />
                   }
@@ -143,14 +142,17 @@ export default function Index() {
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.8 }}
                       className="absolute inset-0 z-10"
-                      onClick={() => {
-                        if (widget.type === 'quick-stats') setStatsConfigOpen(true);
+                      onClick={(e) => {
+                        if (widget.type === 'quick-stats') {
+                          e.stopPropagation();
+                          setStatsConfigOpen(true);
+                        }
                       }}
                     >
                       {/* Remove button (top-left) */}
                       <button
                         className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow-md"
-                        onClick={() => toggleWidget(widget.id)}
+                        onClick={(e) => { e.stopPropagation(); toggleWidget(widget.id); }}
                       >
                         <EyeOff className="w-3 h-3" strokeWidth={2} />
                       </button>
@@ -161,14 +163,14 @@ export default function Index() {
                           <button
                             className="w-6 h-6 rounded-full bg-card border border-border shadow-md flex items-center justify-center disabled:opacity-30"
                             disabled={!canSizeDown}
-                            onClick={() => cycleSizeDown(widget)}
+                            onClick={(e) => { e.stopPropagation(); cycleSizeDown(widget); }}
                           >
                             <Minus className="w-3 h-3" strokeWidth={2} />
                           </button>
                           <button
                             className="w-6 h-6 rounded-full bg-card border border-border shadow-md flex items-center justify-center disabled:opacity-30"
                             disabled={!canSizeUp}
-                            onClick={() => cycleSizeUp(widget)}
+                            onClick={(e) => { e.stopPropagation(); cycleSizeUp(widget); }}
                           >
                             <Plus className="w-3 h-3" strokeWidth={2} />
                           </button>
@@ -180,14 +182,14 @@ export default function Index() {
                         <button
                           className="w-6 h-6 rounded-full bg-card border border-border shadow-md flex items-center justify-center disabled:opacity-30"
                           disabled={index <= 0}
-                          onClick={() => moveWidget(index, index - 1)}
+                          onClick={(e) => { e.stopPropagation(); moveWidget(index, index - 1); }}
                         >
                           <ChevronUp className="w-3 h-3" strokeWidth={2} />
                         </button>
                         <button
                           className="w-6 h-6 rounded-full bg-card border border-border shadow-md flex items-center justify-center disabled:opacity-30"
                           disabled={index >= visibleWidgets.length - 1}
-                          onClick={() => moveWidget(index, index + 1)}
+                          onClick={(e) => { e.stopPropagation(); moveWidget(index, index + 1); }}
                         >
                           <ChevronDown className="w-3 h-3" strokeWidth={2} />
                         </button>
@@ -260,16 +262,6 @@ export default function Index() {
                 </div>
               </div>
 
-              {/* XP toast toggle */}
-              <div className="flex items-center justify-between p-3 rounded-xl bg-card border border-border/50">
-                <span className="text-xs font-medium">XP-Benachrichtigungen</span>
-                <button
-                  onClick={() => updateSettings({ showXpToast: !settings.showXpToast })}
-                  className={`p-1.5 rounded-lg transition-colors ${settings.showXpToast ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}
-                >
-                  {settings.showXpToast ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
-                </button>
-              </div>
 
               <div className="flex justify-center">
                 <Button variant="outline" size="sm" onClick={resetToDefault} className="text-xs">

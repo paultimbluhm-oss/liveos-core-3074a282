@@ -10,14 +10,13 @@ interface QuickStatsWidgetProps {
   size: WidgetSize;
   editMode?: boolean;
   statsConfig?: { visibleFields: StatsField[] };
-  onOpenConfig?: () => void;
 }
 
-export function QuickStatsWidget({ size, editMode, statsConfig, onOpenConfig }: QuickStatsWidgetProps) {
+export function QuickStatsWidget({ size, editMode, statsConfig }: QuickStatsWidgetProps) {
   const { user } = useAuth();
   const [showFinance, setShowFinance] = useState(false);
   const [averageGrade, setAverageGrade] = useState<number | null>(null);
-  const [netWorth, setNetWorth] = useState(0);
+  const [netWorth, setNetWorth] = useState<number | null>(null);
   const [loadingPrices, setLoadingPrices] = useState(false);
 
   const visibleFields = statsConfig?.visibleFields ?? ['grade', 'netWorth'];
@@ -26,72 +25,97 @@ export function QuickStatsWidget({ size, editMode, statsConfig, onOpenConfig }: 
     if (!user) return;
     const supabase = getSupabase();
 
-    const promises: Promise<any>[] = [];
-
-    // Grades from V2 courses
+    // Grades: scope to current V2 semester
     if (visibleFields.includes('grade')) {
-      promises.push(
-        (async () => {
-          const { data } = await supabase
-            .from('grades')
-            .select('points, grade_type, course_id')
-            .eq('user_id', user.id);
-          const grades = data || [];
-          if (grades.length > 0) {
-            const avg = Math.round((grades.reduce((s, g) => s + g.points, 0) / grades.length) * 10) / 10;
-            setAverageGrade(avg);
+      // Get user's current scope
+      const { data: membership } = await supabase
+        .from('v2_school_memberships')
+        .select('current_grade_level, current_semester, school_id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (membership) {
+        // Find the semester_id for this scope
+        const { data: semData } = await supabase
+          .from('year_semesters')
+          .select('id')
+          .eq('school_id', membership.school_id)
+          .eq('grade_level', membership.current_grade_level)
+          .eq('semester', membership.current_semester)
+          .maybeSingle();
+
+        if (semData) {
+          // Get courses for this semester
+          const { data: courses } = await supabase
+            .from('courses')
+            .select('id')
+            .eq('semester_id', semData.id)
+            .eq('created_by', user.id);
+
+          const courseIds = (courses || []).map(c => c.id);
+
+          if (courseIds.length > 0) {
+            const { data: grades } = await supabase
+              .from('grades')
+              .select('points')
+              .eq('user_id', user.id)
+              .in('course_id', courseIds);
+
+            if (grades && grades.length > 0) {
+              const avg = Math.round((grades.reduce((s, g) => s + g.points, 0) / grades.length) * 10) / 10;
+              setAverageGrade(avg);
+            } else {
+              setAverageGrade(null);
+            }
           } else {
             setAverageGrade(null);
           }
-        })()
-      );
+        } else {
+          setAverageGrade(null);
+        }
+      } else {
+        setAverageGrade(null);
+      }
     }
 
     // Net worth from V2 finance
     if (visibleFields.includes('netWorth')) {
       setLoadingPrices(true);
-      promises.push(
-        Promise.all([
-          supabase.from('v2_accounts').select('balance, currency, is_active').eq('user_id', user.id).eq('is_active', true),
-          supabase.from('v2_investments').select('quantity, avg_purchase_price, current_price, currency, is_active').eq('user_id', user.id).eq('is_active', true),
-          supabase.from('v2_external_savings').select('amount, currency, is_received').eq('user_id', user.id).eq('is_received', false),
-        ]).then(([accRes, invRes, extRes]) => {
-          const rate = 1.08; // EUR/USD fallback
-          let total = 0;
+      const [accRes, invRes, extRes] = await Promise.all([
+        supabase.from('v2_accounts').select('balance, currency, is_active').eq('user_id', user.id).eq('is_active', true),
+        supabase.from('v2_investments').select('quantity, avg_purchase_price, current_price, currency, is_active').eq('user_id', user.id).eq('is_active', true),
+        supabase.from('v2_external_savings').select('amount, currency, is_received').eq('user_id', user.id).eq('is_received', false),
+      ]);
 
-          (accRes.data || []).forEach(a => {
-            total += a.currency === 'USD' ? a.balance / rate : a.balance;
-          });
+      const rate = 1.08;
+      let total = 0;
 
-          (invRes.data || []).forEach(i => {
-            const val = i.quantity * (i.current_price || i.avg_purchase_price);
-            total += i.currency === 'USD' ? val / rate : val;
-          });
+      (accRes.data || []).forEach(a => {
+        total += a.currency === 'USD' ? a.balance / rate : a.balance;
+      });
 
-          (extRes.data || []).forEach(e => {
-            total += e.currency === 'USD' ? e.amount / rate : e.amount;
-          });
+      (invRes.data || []).forEach(i => {
+        const val = i.quantity * (i.current_price || i.avg_purchase_price);
+        total += i.currency === 'USD' ? val / rate : val;
+      });
 
-          setNetWorth(total);
-          setLoadingPrices(false);
-        })
-      );
+      (extRes.data || []).forEach(e => {
+        total += e.currency === 'USD' ? e.amount / rate : e.amount;
+      });
+
+      setNetWorth(total);
+      setLoadingPrices(false);
     }
-
-    await Promise.all(promises);
   }, [user, visibleFields]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  const activeFields = visibleFields.filter(f => {
-    if (f === 'grade') return true;
-    if (f === 'netWorth') return true;
-    return false;
-  });
+  const hasGrade = visibleFields.includes('grade');
+  const hasNetWorth = visibleFields.includes('netWorth');
 
-  if (activeFields.length === 0) {
+  if (!hasGrade && !hasNetWorth) {
     return (
       <div className="rounded-2xl bg-card border border-border/50 p-4 flex items-center justify-center min-h-[80px]">
         <p className="text-xs text-muted-foreground">Keine Statistik ausgewaehlt</p>
@@ -102,7 +126,7 @@ export function QuickStatsWidget({ size, editMode, statsConfig, onOpenConfig }: 
   return (
     <>
       <div className="rounded-2xl bg-card border border-border/50 p-4 space-y-2.5">
-        {visibleFields.includes('grade') && averageGrade !== null && (
+        {hasGrade && (
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-xl bg-accent/10 flex items-center justify-center">
@@ -110,11 +134,13 @@ export function QuickStatsWidget({ size, editMode, statsConfig, onOpenConfig }: 
               </div>
               <span className="text-xs text-muted-foreground">Schnitt</span>
             </div>
-            <span className="text-lg font-bold font-mono">{averageGrade}P</span>
+            <span className="text-lg font-bold font-mono">
+              {averageGrade !== null ? `${averageGrade}P` : '---'}
+            </span>
           </div>
         )}
 
-        {visibleFields.includes('netWorth') && (
+        {hasNetWorth && (
           <button
             onClick={() => !editMode && setShowFinance(true)}
             className="flex items-center justify-between w-full hover:opacity-70 transition-opacity"
@@ -127,7 +153,7 @@ export function QuickStatsWidget({ size, editMode, statsConfig, onOpenConfig }: 
             </div>
             <div className="flex items-center gap-1.5">
               <span className="text-lg font-bold font-mono">
-                {loadingPrices
+                {loadingPrices || netWorth === null
                   ? '...'
                   : `${netWorth.toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} EUR`}
               </span>
