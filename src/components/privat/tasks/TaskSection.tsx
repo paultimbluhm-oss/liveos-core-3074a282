@@ -1,18 +1,14 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, CheckCircle2, Clock, AlertTriangle, ChevronDown, ListTodo } from 'lucide-react';
+import { ArrowLeft, Plus, CheckCircle2, ListTodo, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth, getSupabase } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { useGamification } from '@/contexts/GamificationContext';
 import { TaskCard } from './TaskCard';
 import { TaskDialog } from './TaskDialog';
 import { format, isToday, isTomorrow, isPast, isThisWeek, parseISO } from 'date-fns';
 import { de } from 'date-fns/locale';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
 interface Task {
@@ -22,7 +18,6 @@ interface Task {
   due_date: string | null;
   priority: string;
   completed: boolean;
-  xp_reward: number;
   created_at: string;
   recurrence_type?: string | null;
   type: 'task';
@@ -35,7 +30,6 @@ interface TaskSectionProps {
 export function TaskSection({ onBack }: TaskSectionProps) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { addXP, celebrateTaskComplete } = useGamification();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -45,40 +39,25 @@ export function TaskSection({ onBack }: TaskSectionProps) {
   const fetchData = async () => {
     if (!user) return;
     const supabase = getSupabase();
-
     const { data, error } = await supabase
-      .from('tasks')
-      .select('*')
-      .eq('user_id', user.id)
+      .from('tasks').select('*').eq('user_id', user.id)
       .order('due_date', { ascending: true, nullsFirst: false });
-
     if (error) {
       toast({ title: 'Fehler', description: error.message, variant: 'destructive' });
     } else {
       setTasks((data || []).map(t => ({ ...t, type: 'task' as const })));
     }
-
     setLoading(false);
   };
 
-  useEffect(() => {
-    fetchData();
-  }, [user]);
+  useEffect(() => { fetchData(); }, [user]);
 
   const toggleTaskComplete = async (task: Task) => {
     const supabase = getSupabase();
     const newCompleted = !task.completed;
-    const { error } = await supabase
-      .from('tasks')
-      .update({ completed: newCompleted })
-      .eq('id', task.id);
-
+    const { error } = await supabase.from('tasks').update({ completed: newCompleted }).eq('id', task.id);
     if (!error) {
       setTasks(tasks.map(t => t.id === task.id ? { ...t, completed: newCompleted } : t));
-      if (newCompleted && task.xp_reward) {
-        celebrateTaskComplete();
-        await addXP(task.xp_reward, task.title);
-      }
     }
   };
 
@@ -93,11 +72,7 @@ export function TaskSection({ onBack }: TaskSectionProps) {
 
   const filterItems = (items: Task[]) => {
     let filtered = items;
-    
-    if (!showCompleted) {
-      filtered = filtered.filter(item => !item.completed);
-    }
-
+    if (!showCompleted) filtered = filtered.filter(item => !item.completed);
     switch (activeTab) {
       case 'today':
         filtered = filtered.filter(item => {
@@ -109,17 +84,12 @@ export function TaskSection({ onBack }: TaskSectionProps) {
         });
         break;
       case 'week':
-        filtered = filtered.filter(item => 
-          item.due_date && isThisWeek(parseISO(item.due_date), { locale: de })
-        );
+        filtered = filtered.filter(item => item.due_date && isThisWeek(parseISO(item.due_date), { locale: de }));
         break;
       case 'overdue':
-        filtered = filtered.filter(item => 
-          item.due_date && isPast(parseISO(item.due_date)) && !item.completed
-        );
+        filtered = filtered.filter(item => item.due_date && isPast(parseISO(item.due_date)) && !item.completed);
         break;
     }
-
     return filtered.sort((a, b) => {
       if (!a.due_date) return 1;
       if (!b.due_date) return -1;
@@ -128,18 +98,11 @@ export function TaskSection({ onBack }: TaskSectionProps) {
   };
 
   const filteredItems = filterItems(tasks);
-  
-  const overdueCount = tasks.filter(item => 
-    item.due_date && isPast(parseISO(item.due_date)) && !item.completed
-  ).length;
-
-  const todayCount = tasks.filter(item => 
-    item.due_date && isToday(parseISO(item.due_date)) && !item.completed
-  ).length;
+  const overdueCount = tasks.filter(item => item.due_date && isPast(parseISO(item.due_date)) && !item.completed).length;
+  const todayCount = tasks.filter(item => item.due_date && isToday(parseISO(item.due_date)) && !item.completed).length;
 
   const groupByDate = (items: Task[]) => {
     const groups: { [key: string]: Task[] } = {};
-    
     items.forEach(item => {
       let key = 'Ohne Datum';
       if (item.due_date) {
@@ -152,7 +115,6 @@ export function TaskSection({ onBack }: TaskSectionProps) {
       if (!groups[key]) groups[key] = [];
       groups[key].push(item);
     });
-
     const order = ['Ueberfaellig', 'Heute', 'Morgen'];
     const sortedKeys = Object.keys(groups).sort((a, b) => {
       const aIndex = order.indexOf(a);
@@ -164,34 +126,26 @@ export function TaskSection({ onBack }: TaskSectionProps) {
       if (b === 'Ohne Datum') return -1;
       return 0;
     });
-
     return sortedKeys.map(key => ({ key, items: groups[key] }));
   };
 
   const groupedItems = groupByDate(filteredItems);
-
   const filterOptions = [
     { value: 'today', label: 'Heute', count: todayCount },
     { value: 'week', label: 'Diese Woche' },
     { value: 'overdue', label: 'Ueberfaellig', count: overdueCount, danger: overdueCount > 0 },
     { value: 'all', label: 'Alle' },
   ];
-
   const currentFilter = filterOptions.find(f => f.value === activeTab);
 
   return (
     <div className="space-y-4 pb-20 md:pb-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onBack}>
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onBack}><ArrowLeft className="w-4 h-4" /></Button>
           <h2 className="text-lg font-semibold">Aufgaben</h2>
         </div>
-        <Button onClick={() => setShowAddDialog(true)} size="sm" className="hidden md:flex">
-          <Plus className="w-4 h-4 mr-1" />
-          Neu
-        </Button>
+        <Button onClick={() => setShowAddDialog(true)} size="sm" className="hidden md:flex"><Plus className="w-4 h-4 mr-1" /> Neu</Button>
       </div>
 
       <div className="grid grid-cols-3 gap-2">
@@ -219,26 +173,14 @@ export function TaskSection({ onBack }: TaskSectionProps) {
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-48 bg-popover border border-border shadow-lg z-50">
             {filterOptions.map(opt => (
-              <DropdownMenuItem 
-                key={opt.value} 
-                onClick={() => setActiveTab(opt.value)}
-                className={opt.danger ? 'text-rose-500' : ''}
-              >
+              <DropdownMenuItem key={opt.value} onClick={() => setActiveTab(opt.value)} className={opt.danger ? 'text-rose-500' : ''}>
                 {opt.label}
-                {opt.count !== undefined && opt.count > 0 && (
-                  <span className="ml-auto text-xs opacity-60">({opt.count})</span>
-                )}
+                {opt.count !== undefined && opt.count > 0 && <span className="ml-auto text-xs opacity-60">({opt.count})</span>}
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
-        
-        <Button
-          variant={showCompleted ? 'secondary' : 'outline'}
-          size="sm"
-          onClick={() => setShowCompleted(!showCompleted)}
-          className="h-9 px-3"
-        >
+        <Button variant={showCompleted ? 'secondary' : 'outline'} size="sm" onClick={() => setShowCompleted(!showCompleted)} className="h-9 px-3">
           <CheckCircle2 className="w-4 h-4" />
         </Button>
       </div>
@@ -254,22 +196,10 @@ export function TaskSection({ onBack }: TaskSectionProps) {
         <div className="space-y-4">
           {groupedItems.map(group => (
             <div key={group.key}>
-              <h3 className={`text-xs font-medium mb-2 ${
-                group.key === 'Ueberfaellig' ? 'text-rose-500' : 
-                group.key === 'Heute' ? 'text-primary' : 
-                'text-muted-foreground'
-              }`}>
-                {group.key}
-              </h3>
+              <h3 className={`text-xs font-medium mb-2 ${group.key === 'Ueberfaellig' ? 'text-rose-500' : group.key === 'Heute' ? 'text-primary' : 'text-muted-foreground'}`}>{group.key}</h3>
               <div className="space-y-1.5">
                 {group.items.map(item => (
-                  <TaskCard
-                    key={item.id}
-                    task={item}
-                    onToggle={() => toggleTaskComplete(item)}
-                    onDelete={() => deleteTask(item.id)}
-                    onUpdate={fetchData}
-                  />
+                  <TaskCard key={item.id} task={item} onToggle={() => toggleTaskComplete(item)} onDelete={() => deleteTask(item.id)} onUpdate={fetchData} />
                 ))}
               </div>
             </div>
@@ -277,18 +207,11 @@ export function TaskSection({ onBack }: TaskSectionProps) {
         </div>
       )}
 
-      <Button 
-        className="md:hidden fixed bottom-20 right-4 h-14 w-14 rounded-full shadow-lg z-40" 
-        onClick={() => setShowAddDialog(true)}
-      >
+      <Button className="md:hidden fixed bottom-20 right-4 h-14 w-14 rounded-full shadow-lg z-40" onClick={() => setShowAddDialog(true)}>
         <Plus className="w-6 h-6" />
       </Button>
 
-      <TaskDialog
-        open={showAddDialog}
-        onOpenChange={setShowAddDialog}
-        onSuccess={fetchData}
-      />
+      <TaskDialog open={showAddDialog} onOpenChange={setShowAddDialog} onSuccess={fetchData} />
     </div>
   );
 }
