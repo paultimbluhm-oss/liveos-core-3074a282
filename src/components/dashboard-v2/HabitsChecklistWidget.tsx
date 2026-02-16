@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Check, Plus, Settings } from 'lucide-react';
+import { Check, Flame, Plus, Settings } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useGamification } from '@/contexts/GamificationContext';
 import { useNavigate } from 'react-router-dom';
-import { format } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import { HabitsManagementSheet } from './HabitsManagementSheet';
 import type { WidgetSize, DashboardSettings } from '@/hooks/useDashboardV2';
 
@@ -18,6 +17,41 @@ interface Props {
   settings?: DashboardSettings;
 }
 
+function computeStreaks(habitIds: string[], completions: { habit_id: string; completed_date: string }[]): Record<string, number> {
+  const streaks: Record<string, number> = {};
+  const today = format(new Date(), 'yyyy-MM-dd');
+
+  for (const id of habitIds) {
+    const dates = new Set(
+      completions.filter(c => c.habit_id === id).map(c => c.completed_date)
+    );
+    
+    let streak = 0;
+    // Check if completed today first
+    if (dates.has(today)) {
+      streak = 1;
+      let day = 1;
+      while (dates.has(format(subDays(new Date(), day), 'yyyy-MM-dd'))) {
+        streak++;
+        day++;
+      }
+    } else {
+      // Check if yesterday was completed (streak not broken yet today)
+      const yesterday = format(subDays(new Date(), 1), 'yyyy-MM-dd');
+      if (dates.has(yesterday)) {
+        streak = 1;
+        let day = 2;
+        while (dates.has(format(subDays(new Date(), day), 'yyyy-MM-dd'))) {
+          streak++;
+          day++;
+        }
+      }
+    }
+    streaks[id] = streak;
+  }
+  return streaks;
+}
+
 export function HabitsChecklistWidget({ size, settings }: Props) {
   const { user } = useAuth();
   const { addXP } = useGamification();
@@ -25,6 +59,7 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [completions, setCompletions] = useState<string[]>([]);
   const [lifetimeCounts, setLifetimeCounts] = useState<Record<string, number>>({});
+  const [habitStreaks, setHabitStreaks] = useState<Record<string, number>>({});
   const [showManagement, setShowManagement] = useState(false);
   const today = format(new Date(), 'yyyy-MM-dd');
 
@@ -36,17 +71,22 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
     ]);
     if (hRes.data) {
       setHabits(hRes.data.sort((a, b) => (b.xp_reward || 0) - (a.xp_reward || 0)));
-      // Fetch lifetime counts
       const ids = hRes.data.map(h => h.id);
       if (ids.length > 0) {
+        // Fetch all completions for lifetime counts AND streak calculation
         const { data: allCompletions } = await supabase
           .from('habit_completions')
-          .select('habit_id')
+          .select('habit_id, completed_date')
           .eq('user_id', user.id)
           .in('habit_id', ids);
+        
+        // Lifetime counts
         const counts: Record<string, number> = {};
         allCompletions?.forEach(c => { counts[c.habit_id] = (counts[c.habit_id] || 0) + 1; });
         setLifetimeCounts(counts);
+
+        // Per-habit streaks
+        setHabitStreaks(computeStreaks(ids, allCompletions || []));
       }
     }
     if (cRes.data) setCompletions(cRes.data.map(c => c.habit_id));
@@ -81,7 +121,6 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
   const pct = total > 0 ? Math.round((doneCount / total) * 100) : 0;
   const allDone = total > 0 && doneCount === total;
 
-  // Apply display limit
   const limit = settings?.habitDisplayLimit || 0;
   const sortedHabits = [...habits].sort((a, b) => {
     const aDone = completions.includes(a.id);
@@ -129,12 +168,13 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
         />
       </div>
 
-      {/* List - no max-height when showing all */}
+      {/* List */}
       <div className={`space-y-1.5 ${limit > 0 ? 'max-h-48 overflow-y-auto scrollbar-hide' : ''}`}>
         {displayHabits.map(habit => {
           const done = completions.includes(habit.id);
           const ltCount = lifetimeCounts[habit.id] || 0;
           const ltPct = Math.min(ltCount, 100);
+          const streak = habitStreaks[habit.id] || 0;
 
           return (
             <div key={habit.id} className="space-y-1">
@@ -145,11 +185,19 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
                 }`}
               >
                 <Checkbox checked={done} className="pointer-events-none" />
-                <span className={`flex-1 text-sm ${done ? 'line-through text-muted-foreground' : ''}`}>
+                <span className={`flex-1 text-sm truncate ${done ? 'line-through text-muted-foreground' : ''}`}>
                   {habit.name}
                 </span>
-                <span className="text-[10px] text-muted-foreground font-mono">{ltCount}/100</span>
-                <span className="text-[10px] text-primary font-mono">+{habit.xp_reward}</span>
+                {streak > 0 && (
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    <Flame className={`w-3 h-3 ${streak >= 7 ? 'text-orange-500' : 'text-muted-foreground'}`} />
+                    <span className={`text-[10px] font-mono ${streak >= 7 ? 'text-orange-500 font-semibold' : 'text-muted-foreground'}`}>
+                      {streak}
+                    </span>
+                  </div>
+                )}
+                <span className="text-[10px] text-muted-foreground font-mono shrink-0">{ltCount}/100</span>
+                <span className="text-[10px] text-primary font-mono shrink-0">+{habit.xp_reward}</span>
               </div>
               {/* Mini lifetime progress bar */}
               <div className="px-2">
