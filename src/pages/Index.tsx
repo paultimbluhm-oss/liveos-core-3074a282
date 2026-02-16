@@ -8,7 +8,7 @@ import { StreakRingWidget } from '@/components/dashboard-v2/StreakRingWidget';
 import { HabitsChecklistWidget } from '@/components/dashboard-v2/HabitsChecklistWidget';
 import { TodayProgressWidget } from '@/components/dashboard-v2/TodayProgressWidget';
 import { HealthBarWidget } from '@/components/dashboard-v2/HealthBarWidget';
-import { XPLevelWidget } from '@/components/dashboard-v2/XPLevelWidget';
+
 
 import { QuickStatsWidget } from '@/components/dashboard-v2/QuickStatsWidget';
 import { MotivationWidget } from '@/components/dashboard-v2/MotivationWidget';
@@ -26,8 +26,6 @@ const WIDGET_COMPONENTS: Record<string, React.FC<any>> = {
   'habits-checklist': HabitsChecklistWidget,
   'today-progress': TodayProgressWidget,
   'health-bar': HealthBarWidget,
-  'xp-level': XPLevelWidget,
-  
   'quick-stats': QuickStatsWidget,
   'motivation-quote': MotivationWidget,
   'next-actions': NextActionsWidget,

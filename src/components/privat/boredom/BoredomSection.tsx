@@ -12,7 +12,6 @@ interface Activity {
   description: string | null;
   category: string | null;
   icon: string;
-  total_xp_earned: number;
   is_productive: boolean;
   skills_count?: number;
   completed_skills?: number;

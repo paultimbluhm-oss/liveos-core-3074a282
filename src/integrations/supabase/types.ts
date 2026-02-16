@@ -14,27 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      achievements: {
-        Row: {
-          achievement_type: string
-          id: string
-          unlocked_at: string | null
-          user_id: string
-        }
-        Insert: {
-          achievement_type: string
-          id?: string
-          unlocked_at?: string | null
-          user_id: string
-        }
-        Update: {
-          achievement_type?: string
-          id?: string
-          unlocked_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
       activity_skills: {
         Row: {
           activity_id: string
@@ -49,8 +28,6 @@ export type Database = {
           order_index: number | null
           unit: string | null
           user_id: string
-          xp_per_improvement: number | null
-          xp_reward: number | null
         }
         Insert: {
           activity_id: string
@@ -65,8 +42,6 @@ export type Database = {
           order_index?: number | null
           unit?: string | null
           user_id: string
-          xp_per_improvement?: number | null
-          xp_reward?: number | null
         }
         Update: {
           activity_id?: string
@@ -81,8 +56,6 @@ export type Database = {
           order_index?: number | null
           unit?: string | null
           user_id?: string
-          xp_per_improvement?: number | null
-          xp_reward?: number | null
         }
         Relationships: [
           {
@@ -103,7 +76,6 @@ export type Database = {
           id: string
           is_productive: boolean | null
           name: string
-          total_xp_earned: number | null
           user_id: string
         }
         Insert: {
@@ -114,7 +86,6 @@ export type Database = {
           id?: string
           is_productive?: boolean | null
           name: string
-          total_xp_earned?: number | null
           user_id: string
         }
         Update: {
@@ -125,7 +96,6 @@ export type Database = {
           id?: string
           is_productive?: boolean | null
           name?: string
-          total_xp_earned?: number | null
           user_id?: string
         }
         Relationships: []
@@ -1047,7 +1017,6 @@ export type Database = {
           is_active: boolean | null
           name: string
           user_id: string
-          xp_reward: number | null
         }
         Insert: {
           created_at?: string | null
@@ -1057,7 +1026,6 @@ export type Database = {
           is_active?: boolean | null
           name: string
           user_id: string
-          xp_reward?: number | null
         }
         Update: {
           created_at?: string | null
@@ -1067,7 +1035,6 @@ export type Database = {
           is_active?: boolean | null
           name?: string
           user_id?: string
-          xp_reward?: number | null
         }
         Relationships: []
       }
@@ -1447,7 +1414,6 @@ export type Database = {
           display_name: string | null
           id: string
           last_active_date: string | null
-          level: number | null
           selected_class_id: string | null
           selected_class_name: string | null
           selected_school_id: string | null
@@ -1456,7 +1422,6 @@ export type Database = {
           updated_at: string | null
           user_id: string
           username: string | null
-          xp: number | null
         }
         Insert: {
           avatar_url?: string | null
@@ -1466,7 +1431,6 @@ export type Database = {
           display_name?: string | null
           id?: string
           last_active_date?: string | null
-          level?: number | null
           selected_class_id?: string | null
           selected_class_name?: string | null
           selected_school_id?: string | null
@@ -1475,7 +1439,6 @@ export type Database = {
           updated_at?: string | null
           user_id: string
           username?: string | null
-          xp?: number | null
         }
         Update: {
           avatar_url?: string | null
@@ -1485,7 +1448,6 @@ export type Database = {
           display_name?: string | null
           id?: string
           last_active_date?: string | null
-          level?: number | null
           selected_class_id?: string | null
           selected_class_name?: string | null
           selected_school_id?: string | null
@@ -1494,7 +1456,6 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
           username?: string | null
-          xp?: number | null
         }
         Relationships: [
           {
@@ -2074,7 +2035,6 @@ export type Database = {
           recurrence_type: string | null
           title: string
           user_id: string
-          xp_reward: number | null
         }
         Insert: {
           completed?: boolean | null
@@ -2087,7 +2047,6 @@ export type Database = {
           recurrence_type?: string | null
           title: string
           user_id: string
-          xp_reward?: number | null
         }
         Update: {
           completed?: boolean | null
@@ -2100,7 +2059,6 @@ export type Database = {
           recurrence_type?: string | null
           title?: string
           user_id?: string
-          xp_reward?: number | null
         }
         Relationships: []
       }

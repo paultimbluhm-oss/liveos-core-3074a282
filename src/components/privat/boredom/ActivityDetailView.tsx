@@ -40,11 +40,9 @@ interface Skill {
   name: string;
   description: string | null;
   completed: boolean;
-  xp_reward: number;
   order_index: number;
   measurement_type: string;
   best_value: number | null;
-  xp_per_improvement: number;
 }
 
 interface Activity {
@@ -98,13 +96,11 @@ const parseTimeInput = (input: string): number | null => {
 export function ActivityDetailView({ activityId, onBack }: ActivityDetailViewProps) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { addXP } = useGamification();
   const [activity, setActivity] = useState<Activity | null>(null);
   const [skills, setSkills] = useState<Skill[]>([]);
   const [skillEntries, setSkillEntries] = useState<Record<string, SkillEntry[]>>({});
   const [loading, setLoading] = useState(true);
   const [newSkillName, setNewSkillName] = useState('');
-  const [newSkillXP, setNewSkillXP] = useState('15');
   const [newMeasurementType, setNewMeasurementType] = useState('completion');
   const [editingSkillId, setEditingSkillId] = useState<string | null>(null);
   const [tempSkillName, setTempSkillName] = useState('');

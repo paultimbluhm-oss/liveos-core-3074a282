@@ -14,7 +14,6 @@ interface Habit {
   id: string;
   name: string;
   description: string | null;
-  xp_reward: number;
   is_active: boolean;
   lifetime_count?: number;
 }
@@ -31,14 +30,13 @@ export function HabitsManagementSheet({ open, onOpenChange }: HabitsManagementSh
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [xpReward, setXpReward] = useState(5);
   const [manualDays, setManualDays] = useState<number | ''>('');
 
   const fetchHabits = async () => {
     if (!user) return;
     const { data: habitsData } = await supabase
       .from('habits')
-      .select('id, name, description, xp_reward, is_active')
+      .select('id, name, description, is_active')
       .eq('user_id', user.id)
       .eq('is_active', true)
       .order('created_at');
@@ -56,9 +54,7 @@ export function HabitsManagementSheet({ open, onOpenChange }: HabitsManagementSh
         .in('habit_id', habitIds);
 
       if (completions) {
-        completions.forEach(c => {
-          counts[c.habit_id] = (counts[c.habit_id] || 0) + 1;
-        });
+        completions.forEach(c => { counts[c.habit_id] = (counts[c.habit_id] || 0) + 1; });
       }
     }
 
@@ -72,7 +68,6 @@ export function HabitsManagementSheet({ open, onOpenChange }: HabitsManagementSh
   const resetForm = () => {
     setName('');
     setDescription('');
-    setXpReward(5);
     setManualDays('');
     setEditingHabit(null);
     setDialogOpen(false);
@@ -82,18 +77,15 @@ export function HabitsManagementSheet({ open, onOpenChange }: HabitsManagementSh
     if (!name.trim() || !user) return;
 
     if (editingHabit) {
-      await supabase.from('habits').update({ name, description: description || null, xp_reward: xpReward }).eq('id', editingHabit.id);
+      await supabase.from('habits').update({ name, description: description || null }).eq('id', editingHabit.id);
 
-      // Handle manual day count adjustment
       if (manualDays !== '' && manualDays !== editingHabit.lifetime_count) {
         const targetDays = Number(manualDays);
         const currentDays = editingHabit.lifetime_count || 0;
 
         if (targetDays === 0) {
-          // Delete all completions for this habit
           await supabase.from('habit_completions').delete().eq('habit_id', editingHabit.id).eq('user_id', user.id);
         } else if (targetDays < currentDays) {
-          // Need to remove some completions - delete oldest ones
           const { data: allCompletions } = await supabase
             .from('habit_completions')
             .select('id, completed_date')
@@ -108,7 +100,6 @@ export function HabitsManagementSheet({ open, onOpenChange }: HabitsManagementSh
             }
           }
         } else if (targetDays > currentDays) {
-          // Add placeholder completions for past days
           const toAdd = targetDays - currentDays;
           const inserts = [];
           for (let i = 0; i < toAdd; i++) {
@@ -126,7 +117,7 @@ export function HabitsManagementSheet({ open, onOpenChange }: HabitsManagementSh
 
       toast.success('Habit aktualisiert');
     } else {
-      await supabase.from('habits').insert({ user_id: user.id, name, description: description || null, xp_reward: xpReward });
+      await supabase.from('habits').insert({ user_id: user.id, name, description: description || null });
       toast.success('Habit erstellt');
     }
     resetForm();
@@ -143,7 +134,6 @@ export function HabitsManagementSheet({ open, onOpenChange }: HabitsManagementSh
     setEditingHabit(habit);
     setName(habit.name);
     setDescription(habit.description || '');
-    setXpReward(habit.xp_reward);
     setManualDays(habit.lifetime_count || 0);
     setDialogOpen(true);
   };
@@ -181,7 +171,6 @@ export function HabitsManagementSheet({ open, onOpenChange }: HabitsManagementSh
                         <p className="text-xs text-muted-foreground truncate">{habit.description}</p>
                       )}
                     </div>
-                    <span className="text-xs text-primary font-mono shrink-0">+{habit.xp_reward} XP</span>
                     <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => openEdit(habit)}>
                       <Edit className="w-3.5 h-3.5" />
                     </Button>
@@ -189,7 +178,6 @@ export function HabitsManagementSheet({ open, onOpenChange }: HabitsManagementSh
                       <Trash2 className="w-3.5 h-3.5" />
                     </Button>
                   </div>
-                  {/* Lifetime progress */}
                   <div className="mt-2 flex items-center gap-2">
                     <Progress value={progressPct} variant={adopted ? 'success' : 'default'} className="h-1.5 flex-1" />
                     <span className="text-[10px] text-muted-foreground font-mono whitespace-nowrap">
@@ -216,10 +204,6 @@ export function HabitsManagementSheet({ open, onOpenChange }: HabitsManagementSh
                 <Label>Beschreibung (optional)</Label>
                 <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="z.B. 2L pro Tag" />
               </div>
-              <div>
-                <Label>XP Belohnung</Label>
-                <Input type="number" value={xpReward} onChange={(e) => setXpReward(Number(e.target.value))} min={1} />
-              </div>
               {editingHabit && (
                 <div>
                   <Label>Abgeschlossene Tage</Label>
@@ -232,19 +216,12 @@ export function HabitsManagementSheet({ open, onOpenChange }: HabitsManagementSh
                       max={999}
                       className="flex-1"
                     />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      className="shrink-0"
-                      onClick={() => setManualDays(0)}
-                      title="Auf Null setzen"
-                    >
+                    <Button type="button" variant="outline" size="icon" className="shrink-0" onClick={() => setManualDays(0)} title="Auf Null setzen">
                       <RotateCcw className="w-3.5 h-3.5" />
                     </Button>
                   </div>
                   <p className="text-[10px] text-muted-foreground mt-1">
-                    Aktuell: {editingHabit.lifetime_count || 0} Tage. Aendern passt den Fortschritt an.
+                    Aktuell: {editingHabit.lifetime_count || 0} Tage
                   </p>
                 </div>
               )}
