@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useAuth, getSupabase } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 
@@ -28,7 +28,6 @@ export const WIDGET_CATALOG: { type: WidgetType; name: string; description: stri
   { type: 'today-progress', name: 'Heute', description: 'Aufgaben, Hausaufgaben, Habits', defaultSize: 'medium', sizes: ['small', 'medium', 'large'] },
   { type: 'health-bar', name: 'Gesundheit', description: 'Taegliche Routinen', defaultSize: 'small', sizes: ['small', 'medium'] },
   { type: 'xp-level', name: 'Level & XP', description: 'Aktuelles Level und XP-Fortschritt', defaultSize: 'small', sizes: ['small', 'medium'] },
-  
   { type: 'quick-stats', name: 'Statistiken', description: 'Noten und Vermoegen', defaultSize: 'small', sizes: ['small', 'medium'] },
   { type: 'motivation-quote', name: 'Motivation', description: 'Taeglicher Motivationsspruch', defaultSize: 'medium', sizes: ['small', 'medium', 'large'] },
   { type: 'next-actions', name: 'Aktionen', description: 'Naechste Aufgaben und Deadlines', defaultSize: 'large', sizes: ['medium', 'large'] },
@@ -40,16 +39,15 @@ const DEFAULT_WIDGETS: DashboardWidget[] = [
   { id: 'w3', type: 'today-progress', size: 'medium', order: 2, visible: true },
   { id: 'w4', type: 'habits-checklist', size: 'large', order: 3, visible: true },
   { id: 'w5', type: 'health-bar', size: 'small', order: 4, visible: true },
-  
   { id: 'w7', type: 'motivation-quote', size: 'medium', order: 6, visible: true },
   { id: 'w8', type: 'quick-stats', size: 'small', order: 7, visible: true },
   { id: 'w9', type: 'next-actions', size: 'large', order: 8, visible: true },
 ];
 
 export interface DashboardSettings {
-  habitDisplayLimit: number; // 0 = all
+  habitDisplayLimit: number;
   showXpToast: boolean;
-  statsVisibleFields: string[]; // e.g. ['grade', 'netWorth']
+  statsVisibleFields: string[];
 }
 
 const DEFAULT_SETTINGS: DashboardSettings = { habitDisplayLimit: 0, showXpToast: true, statsVisibleFields: ['grade', 'netWorth'] };
@@ -66,31 +64,65 @@ export function useDashboardV2Config() {
   }, [user]);
 
   const loadConfig = useCallback(async () => {
-    const saved = localStorage.getItem(`dashboard-v2-${user?.id}`);
-    if (saved) {
-      try {
-        setWidgets(JSON.parse(saved));
-      } catch { /* use defaults */ }
+    if (!user) return;
+    
+    const { data } = await supabase
+      .from('dashboard_v2_config')
+      .select('widgets, settings')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (data) {
+      if (data.widgets && Array.isArray(data.widgets) && data.widgets.length > 0) {
+        setWidgets(data.widgets as unknown as DashboardWidget[]);
+      }
+      if (data.settings && typeof data.settings === 'object') {
+        setSettings({ ...DEFAULT_SETTINGS, ...(data.settings as Record<string, unknown>) } as DashboardSettings);
+      }
+    } else {
+      // Migrate from localStorage if exists
+      const savedWidgets = localStorage.getItem(`dashboard-v2-${user.id}`);
+      const savedSettings = localStorage.getItem(`dashboard-v2-settings-${user.id}`);
+      let w = DEFAULT_WIDGETS;
+      let s = DEFAULT_SETTINGS;
+      try { if (savedWidgets) w = JSON.parse(savedWidgets); } catch {}
+      try { if (savedSettings) s = { ...DEFAULT_SETTINGS, ...JSON.parse(savedSettings) }; } catch {}
+      
+      setWidgets(w);
+      setSettings(s);
+
+      // Save to Supabase and clean up localStorage
+      await supabase.from('dashboard_v2_config').upsert([{
+        user_id: user.id,
+        widgets: w as any,
+        settings: s as any,
+      }], { onConflict: 'user_id' });
+      localStorage.removeItem(`dashboard-v2-${user.id}`);
+      localStorage.removeItem(`dashboard-v2-settings-${user.id}`);
     }
-    const savedSettings = localStorage.getItem(`dashboard-v2-settings-${user?.id}`);
-    if (savedSettings) {
-      try {
-        setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(savedSettings) });
-      } catch { /* use defaults */ }
-    }
+    
     setLoading(false);
+  }, [user]);
+
+  const persistToDb = useCallback(async (w: DashboardWidget[], s: DashboardSettings) => {
+    if (!user) return;
+    await supabase.from('dashboard_v2_config').upsert([{
+      user_id: user.id,
+      widgets: w as any,
+      settings: s as any,
+    }], { onConflict: 'user_id' });
   }, [user]);
 
   const saveConfig = useCallback((newWidgets: DashboardWidget[]) => {
     setWidgets(newWidgets);
-    if (user) localStorage.setItem(`dashboard-v2-${user.id}`, JSON.stringify(newWidgets));
-  }, [user]);
+    persistToDb(newWidgets, settings);
+  }, [persistToDb, settings]);
 
   const updateSettings = useCallback((patch: Partial<DashboardSettings>) => {
     const next = { ...settings, ...patch };
     setSettings(next);
-    if (user) localStorage.setItem(`dashboard-v2-settings-${user.id}`, JSON.stringify(next));
-  }, [settings, user]);
+    persistToDb(widgets, next);
+  }, [settings, widgets, persistToDb]);
 
   const updateWidgetSize = useCallback((widgetId: string, size: WidgetSize) => {
     saveConfig(widgets.map(w => w.id === widgetId ? { ...w, size } : w));
