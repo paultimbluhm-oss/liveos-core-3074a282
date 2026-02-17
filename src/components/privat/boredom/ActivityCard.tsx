@@ -1,4 +1,4 @@
-import { Trash2, Trophy, Target, Lightbulb, Gamepad2, Music, Palette, Book, Dumbbell, Code, Camera, ChefHat, Wrench, Languages, Brain } from 'lucide-react';
+import { Trash2, Target, Lightbulb, Gamepad2, Music, Palette, Book, Dumbbell, Code, Camera, ChefHat, Wrench, Languages, Brain } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
@@ -15,7 +15,6 @@ interface ActivityCardProps {
     description: string | null;
     category: string | null;
     icon: string;
-    total_xp_earned: number;
     skills_count?: number;
     completed_skills?: number;
   };
@@ -31,10 +30,7 @@ export function ActivityCard({ activity, onClick, onDelete }: ActivityCardProps)
   const IconComponent = iconMap[activity.icon] || Lightbulb;
 
   return (
-    <div
-      className="glass-card p-5 hover:border-primary/50 transition-colors cursor-pointer group"
-      onClick={onClick}
-    >
+    <div className="glass-card p-5 hover:border-primary/50 transition-colors cursor-pointer group" onClick={onClick}>
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
           <div className="p-3 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20">
@@ -43,29 +39,18 @@ export function ActivityCard({ activity, onClick, onDelete }: ActivityCardProps)
           <div>
             <h3 className="font-semibold text-lg">{activity.name}</h3>
             {activity.category && (
-              <Badge variant="outline" className="mt-1 text-xs">
-                {activity.category}
-              </Badge>
+              <Badge variant="outline" className="mt-1 text-xs">{activity.category}</Badge>
             )}
           </div>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="opacity-0 group-hover:opacity-100 transition-opacity"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete();
-          }}
-        >
+        <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={(e) => { e.stopPropagation(); onDelete(); }}>
           <Trash2 className="w-4 h-4 text-destructive" />
         </Button>
       </div>
 
       {activity.description && (
-        <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-          {activity.description}
-        </p>
+        <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{activity.description}</p>
       )}
 
       <div className="space-y-3">
@@ -74,12 +59,7 @@ export function ActivityCard({ activity, onClick, onDelete }: ActivityCardProps)
             <Target className="w-4 h-4" />
             {activity.completed_skills || 0} / {activity.skills_count || 0} Skills
           </span>
-          <span className="flex items-center gap-1 text-primary font-medium">
-            <Trophy className="w-4 h-4" />
-            {activity.total_xp_earned || 0} XP
-          </span>
         </div>
-        
         {activity.skills_count && activity.skills_count > 0 && (
           <Progress value={progress} className="h-2" />
         )}
