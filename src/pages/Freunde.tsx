@@ -33,8 +33,6 @@ interface UserProfile {
   user_id: string;
   username: string | null;
   display_name?: string | null;
-  level: number | null;
-  xp: number | null;
   streak_days: number | null;
 }
 
@@ -114,7 +112,7 @@ export default function Freunde() {
     // Fetch all user profiles
     const { data: profiles } = await supabase
       .from('profiles')
-      .select('id, user_id, username, display_name, level, xp, streak_days')
+      .select('id, user_id, username, display_name, streak_days')
       .neq('user_id', user.id);
     
     if (profiles) setAllUsers(profiles);
@@ -388,10 +386,9 @@ export default function Freunde() {
                           <div>
                             <p className="font-medium text-sm">{friend.friend_profile?.username || 'Unbekannt'}</p>
                             <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                              <span>Lvl {friend.friend_profile?.level || 1}</span>
                               <span className="flex items-center gap-0.5">
                                 <Flame className="w-3 h-3 text-orange-500" />
-                                {friend.friend_profile?.streak_days || 0}
+                                {friend.friend_profile?.streak_days || 0} Tage
                               </span>
                             </div>
                           </div>
@@ -543,7 +540,7 @@ export default function Freunde() {
                         </div>
                         <div>
                           <p className="font-medium text-sm">{u.username || 'Unbekannt'}</p>
-                          <p className="text-[10px] text-muted-foreground">Level {u.level || 1}</p>
+                          <p className="text-[10px] text-muted-foreground">Streak: {u.streak_days || 0} Tage</p>
                         </div>
                       </div>
                       <Button size="sm" variant="outline" className="h-8 gap-1" onClick={() => sendFriendRequest(u.user_id)}>
