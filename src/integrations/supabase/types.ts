@@ -3037,6 +3037,72 @@ export type Database = {
         }
         Relationships: []
       }
+      v2_loans: {
+        Row: {
+          account_id: string | null
+          amount: number
+          created_at: string | null
+          currency: string
+          date: string
+          id: string
+          is_settled: boolean | null
+          loan_type: string
+          note: string | null
+          person_name: string
+          settled_account_id: string | null
+          settled_date: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          account_id?: string | null
+          amount: number
+          created_at?: string | null
+          currency?: string
+          date?: string
+          id?: string
+          is_settled?: boolean | null
+          loan_type: string
+          note?: string | null
+          person_name: string
+          settled_account_id?: string | null
+          settled_date?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          account_id?: string | null
+          amount?: number
+          created_at?: string | null
+          currency?: string
+          date?: string
+          id?: string
+          is_settled?: boolean | null
+          loan_type?: string
+          note?: string | null
+          person_name?: string
+          settled_account_id?: string | null
+          settled_date?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "v2_loans_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "v2_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "v2_loans_settled_account_id_fkey"
+            columns: ["settled_account_id"]
+            isOneToOne: false
+            referencedRelation: "v2_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v2_material_assets: {
         Row: {
           category: string | null
