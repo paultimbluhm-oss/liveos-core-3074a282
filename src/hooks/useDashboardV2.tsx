@@ -198,8 +198,8 @@ export function useTodayStats() {
     return () => { supabase.removeChannel(ch1); supabase.removeChannel(ch3); };
   }, [user, fetchStats]);
 
-  const totalDone = stats.tasksCompleted + stats.homeworkCompleted + stats.habitsCompleted;
-  const totalAll = stats.tasksTotal + stats.homeworkTotal + stats.habitsTotal;
+  const totalDone = stats.homeworkCompleted + stats.habitsCompleted;
+  const totalAll = stats.homeworkTotal + stats.habitsTotal;
   const percentage = totalAll === 0 ? 100 : Math.round((totalDone / totalAll) * 100);
 
   return { stats, percentage, allDone: totalAll > 0 && totalDone === totalAll, totalDone, totalAll };
