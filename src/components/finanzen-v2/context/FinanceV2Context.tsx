@@ -125,6 +125,23 @@ export interface V2ExternalSaving {
   updated_at: string;
 }
 
+export interface V2Loan {
+  id: string;
+  user_id: string;
+  loan_type: 'lent' | 'borrowed';
+  person_name: string;
+  amount: number;
+  currency: string;
+  account_id?: string;
+  date: string;
+  note?: string;
+  is_settled: boolean;
+  settled_date?: string;
+  settled_account_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 interface FinanceV2ContextType {
   // Data
   accounts: V2Account[];
@@ -136,6 +153,7 @@ interface FinanceV2ContextType {
   snapshots: V2DailySnapshot[];
   cashDenominations: Record<string, V2CashDenomination[]>;
   externalSavings: V2ExternalSaving[];
+  loans: V2Loan[];
   
   // Loading states
   loading: boolean;
@@ -156,6 +174,7 @@ interface FinanceV2ContextType {
   refreshAutomations: () => Promise<void>;
   refreshSnapshots: () => Promise<void>;
   refreshExternalSavings: () => Promise<void>;
+  refreshLoans: () => Promise<void>;
   createSnapshot: () => Promise<void>;
   recalculateSnapshotsFromDate: (fromDate: string) => Promise<void>;
   
@@ -177,6 +196,7 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
   const [snapshots, setSnapshots] = useState<V2DailySnapshot[]>([]);
   const [cashDenominations, setCashDenominations] = useState<Record<string, V2CashDenomination[]>>({});
   const [externalSavings, setExternalSavings] = useState<V2ExternalSaving[]>([]);
+  const [loans, setLoans] = useState<V2Loan[]>([]);
   const [loading, setLoading] = useState(true);
   const [eurUsdRate, setEurUsdRate] = useState(1.08);
 
@@ -355,6 +375,17 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
     if (data) setExternalSavings(data as V2ExternalSaving[]);
   }, [user]);
 
+  const refreshLoans = useCallback(async () => {
+    if (!user) return;
+    const supabase = getSupabase();
+    const { data } = await supabase
+      .from('v2_loans')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('date', { ascending: false });
+    if (data) setLoans(data as V2Loan[]);
+  }, [user]);
+
   const refreshData = useCallback(async () => {
     setLoading(true);
     await Promise.all([
@@ -366,9 +397,10 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
       refreshAutomations(),
       refreshSnapshots(),
       refreshExternalSavings(),
+      refreshLoans(),
     ]);
     setLoading(false);
-  }, [refreshAccounts, refreshCategories, refreshTransactions, refreshInvestments, refreshMaterialAssets, refreshAutomations, refreshSnapshots, refreshExternalSavings]);
+  }, [refreshAccounts, refreshCategories, refreshTransactions, refreshInvestments, refreshMaterialAssets, refreshAutomations, refreshSnapshots, refreshExternalSavings, refreshLoans]);
 
   // Create/update today's snapshot
   const createSnapshot = useCallback(async () => {
@@ -620,6 +652,7 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
       snapshots,
       cashDenominations,
       externalSavings,
+      loans,
       loading,
       totalAccountsEur,
       totalInvestmentsEur,
@@ -634,6 +667,7 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
       refreshAutomations,
       refreshSnapshots,
       refreshExternalSavings,
+      refreshLoans,
       createSnapshot,
       recalculateSnapshotsFromDate,
       eurUsdRate,

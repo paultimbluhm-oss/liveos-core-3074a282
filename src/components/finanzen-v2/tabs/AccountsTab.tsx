@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Wallet, Banknote, PiggyBank, HelpCircle, Coins, ChevronRight, Users, Check, Package, TrendingDown, TrendingUp } from 'lucide-react';
-import { useFinanceV2, V2Account, V2ExternalSaving, V2MaterialAsset } from '../context/FinanceV2Context';
+import { Plus, Wallet, Banknote, PiggyBank, HelpCircle, Coins, ChevronRight, Users, Check, Package, TrendingDown, TrendingUp, ArrowUpRight, ArrowDownRight, HandCoins } from 'lucide-react';
+import { useFinanceV2, V2Account, V2ExternalSaving, V2MaterialAsset, V2Loan } from '../context/FinanceV2Context';
 import { AddAccountDialog } from '../dialogs/AddAccountDialog';
 import { AccountDetailSheet } from '../sheets/AccountDetailSheet';
 import { CashDenominationSheet } from '../sheets/CashDenominationSheet';
@@ -10,6 +10,8 @@ import { AddExternalSavingDialog } from '../dialogs/AddExternalSavingDialog';
 import { ExternalSavingDetailSheet } from '../sheets/ExternalSavingDetailSheet';
 import { AddMaterialAssetDialog } from '../dialogs/AddMaterialAssetDialog';
 import { MaterialAssetDetailSheet } from '../sheets/MaterialAssetDetailSheet';
+import { AddLoanDialog } from '../dialogs/AddLoanDialog';
+import { LoanDetailSheet } from '../sheets/LoanDetailSheet';
 import { getSupabase } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -30,7 +32,7 @@ const accountTypeLabels: Record<string, string> = {
 };
 
 export function AccountsTab() {
-  const { accounts, externalSavings, materialAssets, totalAccountsEur, totalExternalSavingsEur, loading, refreshAccounts, refreshExternalSavings } = useFinanceV2();
+  const { accounts, externalSavings, materialAssets, loans, totalAccountsEur, totalExternalSavingsEur, loading, refreshAccounts, refreshExternalSavings } = useFinanceV2();
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<V2Account | null>(null);
   const [showCashSheet, setShowCashSheet] = useState(false);
@@ -44,6 +46,10 @@ export function AccountsTab() {
   const [showAddMaterialDialog, setShowAddMaterialDialog] = useState(false);
   const [selectedMaterialAsset, setSelectedMaterialAsset] = useState<V2MaterialAsset | null>(null);
   
+  // Loans state
+  const [showAddLoanDialog, setShowAddLoanDialog] = useState(false);
+  const [selectedLoan, setSelectedLoan] = useState<V2Loan | null>(null);
+
   // Quick cash input state
   const [quickCashAmount, setQuickCashAmount] = useState('');
   const [savingCash, setSavingCash] = useState(false);
@@ -342,6 +348,104 @@ export function AccountsTab() {
         )}
       </div>
 
+      {/* Loans Section */}
+      <div className="space-y-2 pt-4 border-t border-border">
+        <div className="flex items-center justify-between px-1">
+          <div className="flex items-center gap-2">
+            <HandCoins className="w-4 h-4 text-muted-foreground" />
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Verliehen / Geliehen
+            </span>
+          </div>
+          {loans.filter(l => !l.is_settled).length > 0 && (
+            <span className="text-sm font-semibold">
+              {formatCurrency(
+                loans.filter(l => !l.is_settled && l.loan_type === 'lent').reduce((s, l) => s + l.amount, 0) -
+                loans.filter(l => !l.is_settled && l.loan_type === 'borrowed').reduce((s, l) => s + l.amount, 0)
+              )}
+            </span>
+          )}
+        </div>
+
+        <Button
+          onClick={() => setShowAddLoanDialog(true)}
+          variant="ghost"
+          className="w-full h-10 rounded-xl bg-card border border-border hover:bg-secondary text-sm"
+        >
+          <Plus className="w-4 h-4 mr-2 text-primary" />
+          Neuer Eintrag
+        </Button>
+
+        {loans.filter(l => !l.is_settled).length > 0 && (
+          <div className="rounded-2xl bg-card border border-border overflow-hidden">
+            {loans.filter(l => !l.is_settled).map((loan, index, arr) => (
+              <div
+                key={loan.id}
+                className={`flex items-center gap-3 p-3 cursor-pointer hover:bg-secondary/50 transition-colors ${
+                  index !== arr.length - 1 ? 'border-b border-border' : ''
+                }`}
+                onClick={() => setSelectedLoan(loan)}
+              >
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                  loan.loan_type === 'lent' ? 'bg-amber-500/10' : 'bg-violet-500/10'
+                }`}>
+                  {loan.loan_type === 'lent'
+                    ? <ArrowUpRight className="w-5 h-5 text-amber-500" />
+                    : <ArrowDownRight className="w-5 h-5 text-violet-500" />
+                  }
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm truncate">{loan.person_name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {loan.loan_type === 'lent' ? 'Verliehen' : 'Geliehen'}
+                    {' · '}{format(new Date(loan.date), 'dd.MM.yy', { locale: de })}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`font-semibold text-sm ${loan.loan_type === 'lent' ? 'text-amber-500' : 'text-violet-500'}`}>
+                    {formatCurrency(loan.amount, loan.currency)}
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Settled loans */}
+        {loans.filter(l => l.is_settled).length > 0 && (
+          <details className="group">
+            <summary className="text-xs text-muted-foreground cursor-pointer px-1 py-1">
+              {loans.filter(l => l.is_settled).length} beglichen
+            </summary>
+            <div className="rounded-2xl bg-card border border-border overflow-hidden mt-2 opacity-60">
+              {loans.filter(l => l.is_settled).map((loan, index, arr) => (
+                <div
+                  key={loan.id}
+                  className={`flex items-center gap-3 p-3 cursor-pointer hover:bg-secondary/50 transition-colors ${
+                    index !== arr.length - 1 ? 'border-b border-border' : ''
+                  }`}
+                  onClick={() => setSelectedLoan(loan)}
+                >
+                  <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
+                    <Check className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{loan.person_name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {loan.loan_type === 'lent' ? 'Verliehen' : 'Geliehen'}
+                    </p>
+                  </div>
+                  <span className="font-semibold text-sm text-muted-foreground">
+                    {formatCurrency(loan.amount, loan.currency)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </details>
+        )}
+      </div>
+
       {/* Empty State */}
       {accounts.length === 0 && (
         <div className="rounded-2xl bg-card border border-border p-8 text-center">
@@ -391,6 +495,17 @@ export function AccountsTab() {
         asset={selectedMaterialAsset}
         open={!!selectedMaterialAsset}
         onOpenChange={(open) => !open && setSelectedMaterialAsset(null)}
+      />
+
+      <AddLoanDialog
+        open={showAddLoanDialog}
+        onOpenChange={setShowAddLoanDialog}
+      />
+
+      <LoanDetailSheet
+        loan={selectedLoan}
+        open={!!selectedLoan}
+        onOpenChange={(open) => !open && setSelectedLoan(null)}
       />
     </div>
   );
