@@ -6,7 +6,6 @@ export function TodayProgressWidget({ size }: { size: WidgetSize }) {
   const { stats, percentage, allDone } = useTodayStats();
 
   const items = [
-    { label: 'Aufgaben', done: stats.tasksCompleted, total: stats.tasksTotal, icon: ListTodo },
     { label: 'Hausaufgaben', done: stats.homeworkCompleted, total: stats.homeworkTotal, icon: BookOpen },
     { label: 'Habits', done: stats.habitsCompleted, total: stats.habitsTotal, icon: Target },
   ].filter(i => i.total > 0);
