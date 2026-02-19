@@ -14,6 +14,7 @@ import { QuickStatsWidget } from '@/components/dashboard-v2/QuickStatsWidget';
 import { MotivationWidget } from '@/components/dashboard-v2/MotivationWidget';
 import { QuickStatsConfigSheet } from '@/components/dashboard-v2/QuickStatsConfigSheet';
 import { TasksWidget } from '@/components/dashboard-v2/TasksWidget';
+import { TimetableWidget } from '@/components/dashboard-v2/TimetableWidget';
 import { WIDGET_CATALOG } from '@/hooks/useDashboardV2';
 import { Settings2, X, Plus, Minus, EyeOff, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -29,6 +30,7 @@ const WIDGET_COMPONENTS: Record<string, React.FC<any>> = {
   'quick-stats': QuickStatsWidget,
   'motivation-quote': MotivationWidget,
   'tasks': TasksWidget,
+  'timetable': TimetableWidget,
 };
 
 function getGridClass(size: WidgetSize): string {

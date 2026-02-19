@@ -11,7 +11,8 @@ export type WidgetType =
   | 'health-bar' 
   | 'quick-stats' 
   | 'motivation-quote'
-  | 'tasks';
+  | 'tasks'
+  | 'timetable';
 
 export interface DashboardWidget {
   id: string;
@@ -29,6 +30,7 @@ export const WIDGET_CATALOG: { type: WidgetType; name: string; description: stri
   { type: 'quick-stats', name: 'Statistiken', description: 'Noten und Vermoegen', defaultSize: 'small', sizes: ['small', 'medium'] },
   { type: 'motivation-quote', name: 'Motivation', description: 'Taeglicher Motivationsspruch', defaultSize: 'medium', sizes: ['small', 'medium', 'large'] },
   { type: 'tasks', name: 'Aufgaben', description: 'Aufgaben verwalten und abhaken', defaultSize: 'large', sizes: ['small', 'medium', 'large'] },
+  { type: 'timetable', name: 'Stundenplan', description: 'Heutiger Stundenplan und Hausaufgaben', defaultSize: 'medium', sizes: ['small', 'medium', 'large'] },
 ];
 
 const DEFAULT_WIDGETS: DashboardWidget[] = [
