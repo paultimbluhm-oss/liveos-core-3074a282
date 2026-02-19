@@ -51,17 +51,15 @@ export function TasksWidget({ size }: { size: WidgetSize }) {
     setTasks(prev => prev.map(t => t.id === task.id ? { ...t, completed: newCompleted } : t));
   };
 
-  // Filters
-  const todayTasks = tasks.filter(t => {
-    if (!t.due_date) return false;
-    const d = parseISO(t.due_date);
-    return isToday(d) || (isPast(d) && !isToday(d));
-  });
+  // Filters — only today's tasks count for the percentage
+  const todayOnlyTasks = tasks.filter(t => t.due_date && isToday(parseISO(t.due_date)));
+  const overdueTasks = tasks.filter(t => t.due_date && isPast(parseISO(t.due_date)) && !isToday(parseISO(t.due_date)) && !t.completed);
   const tomorrowTasks = tasks.filter(t => t.due_date && isTomorrow(parseISO(t.due_date)) && !t.completed);
-  const todayOpen = todayTasks.filter(t => !t.completed);
-  const todayDone = todayTasks.filter(t => t.completed);
-  const overdueCount = tasks.filter(t => t.due_date && isPast(parseISO(t.due_date)) && !isToday(parseISO(t.due_date)) && !t.completed).length;
-  const todayTotal = todayTasks.length;
+  const todayOpen = [...todayOnlyTasks.filter(t => !t.completed), ...overdueTasks];
+  const todayDone = todayOnlyTasks.filter(t => t.completed);
+  const overdueCount = overdueTasks.length;
+  // Percentage based only on today's tasks
+  const todayTotal = todayOnlyTasks.length;
   const todayDoneCount = todayDone.length;
   const percentage = todayTotal === 0 ? 100 : Math.round((todayDoneCount / todayTotal) * 100);
 
