@@ -72,7 +72,20 @@ export function useDashboardV2Config() {
 
     if (data) {
       if (data.widgets && Array.isArray(data.widgets) && data.widgets.length > 0) {
-        setWidgets(data.widgets as unknown as DashboardWidget[]);
+        let loaded = data.widgets as unknown as DashboardWidget[];
+        // Auto-add any new widget types from the catalog that are missing
+        const existingTypes = new Set(loaded.map(w => w.type));
+        const maxOrder = Math.max(...loaded.map(w => w.order), -1);
+        let nextOrder = maxOrder + 1;
+        for (const cat of WIDGET_CATALOG) {
+          if (!existingTypes.has(cat.type)) {
+            loaded = [...loaded, { id: `w-auto-${cat.type}`, type: cat.type, size: cat.defaultSize, order: nextOrder++, visible: false }];
+          }
+        }
+        // Remove widgets whose type no longer exists in the catalog
+        const validTypes = new Set(WIDGET_CATALOG.map(c => c.type));
+        loaded = loaded.filter(w => validTypes.has(w.type));
+        setWidgets(loaded);
       }
       if (data.settings && typeof data.settings === 'object') {
         setSettings({ ...DEFAULT_SETTINGS, ...(data.settings as Record<string, unknown>) } as DashboardSettings);
