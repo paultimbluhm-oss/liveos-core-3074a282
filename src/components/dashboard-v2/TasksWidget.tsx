@@ -58,8 +58,8 @@ export function TasksWidget({ size }: { size: WidgetSize }) {
   const todayOpen = [...todayOnlyTasks.filter(t => !t.completed), ...overdueTasks];
   const todayDone = todayOnlyTasks.filter(t => t.completed);
   const overdueCount = overdueTasks.length;
-  // Percentage based only on today's tasks
-  const todayTotal = todayOnlyTasks.length;
+  // Percentage based on today's + overdue tasks
+  const todayTotal = todayOnlyTasks.length + overdueTasks.length;
   const todayDoneCount = todayDone.length;
   const percentage = todayTotal === 0 ? 100 : Math.round((todayDoneCount / todayTotal) * 100);
 
