@@ -192,11 +192,14 @@ export function useTodayStats() {
       supabase.from('habit_completions').select('id').eq('user_id', user.id).eq('completed_date', today),
     ]);
 
-    const todayTasks = (tasksRes.data || []).filter(t => t.due_date && format(new Date(t.due_date), 'yyyy-MM-dd') === today);
+    const allTasks = tasksRes.data || [];
+    const todayTasks = allTasks.filter(t => t.due_date && format(new Date(t.due_date), 'yyyy-MM-dd') === today);
+    const overdueTasks = allTasks.filter(t => t.due_date && format(new Date(t.due_date), 'yyyy-MM-dd') < today && !t.completed);
+    const relevantTasks = [...todayTasks, ...overdueTasks];
 
     setStats({
-      tasksCompleted: todayTasks.filter(t => t.completed).length,
-      tasksTotal: todayTasks.length,
+      tasksCompleted: relevantTasks.filter(t => t.completed).length,
+      tasksTotal: relevantTasks.length,
       homeworkCompleted: 0,
       homeworkTotal: 0,
       habitsCompleted: completionsRes.data?.length || 0,
@@ -213,8 +216,8 @@ export function useTodayStats() {
     return () => { supabase.removeChannel(ch1); supabase.removeChannel(ch3); };
   }, [user, fetchStats]);
 
-  const totalDone = stats.homeworkCompleted + stats.habitsCompleted;
-  const totalAll = stats.homeworkTotal + stats.habitsTotal;
+  const totalDone = stats.tasksCompleted + stats.homeworkCompleted + stats.habitsCompleted;
+  const totalAll = stats.tasksTotal + stats.homeworkTotal + stats.habitsTotal;
   const percentage = totalAll === 0 ? 100 : Math.round((totalDone / totalAll) * 100);
 
   return { stats, percentage, allDone: totalAll > 0 && totalDone === totalAll, totalDone, totalAll };
