@@ -35,9 +35,9 @@ const WIDGET_COMPONENTS: Record<string, React.FC<any>> = {
 
 function getGridClass(size: WidgetSize): string {
   switch (size) {
-    case 'small': return 'col-span-1 md:col-span-1';
-    case 'medium': return 'col-span-2 md:col-span-2';
-    case 'large': return 'col-span-2 md:col-span-3 lg:col-span-3';
+    case 'small': return 'col-span-1';
+    case 'medium': return 'col-span-2';
+    case 'large': return 'col-span-2';
   }
 }
 
@@ -83,7 +83,7 @@ export default function Index() {
 
   return (
     <AppLayout>
-      <div className="p-4 pb-24 max-w-lg md:max-w-4xl lg:max-w-6xl mx-auto space-y-3">
+      <div className="p-4 pb-24 mx-auto space-y-3 max-w-lg md:max-w-none md:px-8">
         {/* Edit mode toggle */}
         <div className="flex justify-end">
           <Button
@@ -97,7 +97,7 @@ export default function Index() {
         </div>
 
         {/* Widget Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
           {visibleWidgets.map((widget, index) => {
             const Component = WIDGET_COMPONENTS[widget.type];
             const info = getInfo(widget.type);
