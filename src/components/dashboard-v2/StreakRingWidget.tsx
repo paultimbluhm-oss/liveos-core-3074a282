@@ -1,12 +1,9 @@
 import { motion } from 'framer-motion';
 import { Flame } from 'lucide-react';
-import { useProfile } from '@/hooks/useProfile';
 import { useTodayStats, WidgetSize } from '@/hooks/useDashboardV2';
 
 export function StreakRingWidget({ size }: { size: WidgetSize }) {
-  const { profile } = useProfile();
-  const { percentage, allDone, totalDone, totalAll } = useTodayStats();
-  const streakDays = profile?.streak_days || 0;
+  const { percentage, allDone, totalDone, totalAll, yesterdayPercentage, streakDays } = useTodayStats();
 
   const ringSize = size === 'small' ? 80 : 120;
   const strokeWidth = size === 'small' ? 5 : 7;
@@ -66,9 +63,16 @@ export function StreakRingWidget({ size }: { size: WidgetSize }) {
       </div>
 
       {size !== 'small' && (
-        <p className="text-[11px] text-muted-foreground text-center">
-          {totalDone}/{totalAll} erledigt
-        </p>
+        <div className="text-center space-y-0.5">
+          <p className="text-[11px] text-muted-foreground">
+            {totalDone}/{totalAll} erledigt
+          </p>
+          {yesterdayPercentage !== null && (
+            <p className={`text-[10px] font-mono ${yesterdayPercentage === 100 ? 'text-success' : 'text-muted-foreground'}`}>
+              Gestern: {yesterdayPercentage}%
+            </p>
+          )}
+        </div>
       )}
     </div>
   );

@@ -181,6 +181,8 @@ export function useTodayStats() {
     homeworkCompleted: 0, homeworkTotal: 0,
     habitsCompleted: 0, habitsTotal: 0,
   });
+  const [yesterdayPercentage, setYesterdayPercentage] = useState<number | null>(null);
+  const [streakDays, setStreakDays] = useState(0);
 
   const fetchStats = useCallback(async () => {
     if (!user) return;
@@ -207,18 +209,106 @@ export function useTodayStats() {
     });
   }, [user]);
 
-  useEffect(() => { fetchStats(); }, [fetchStats]);
+  // Compute streak from past days (today does NOT count toward streak)
+  const computeStreak = useCallback(async () => {
+    if (!user) return;
+
+    // We need to check past days. For each day going backwards from yesterday,
+    // check if all habits were completed and all tasks due that day were completed.
+    const habitIds = (await supabase.from('habits').select('id').eq('user_id', user.id).eq('is_active', true)).data || [];
+    const habitCount = habitIds.length;
+
+    if (habitCount === 0) {
+      setStreakDays(0);
+      setYesterdayPercentage(null);
+      return;
+    }
+
+    // Fetch last 60 days of habit completions
+    const sixtyDaysAgo = new Date();
+    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+    const fromDate = format(sixtyDaysAgo, 'yyyy-MM-dd');
+
+    const { data: recentCompletions } = await supabase
+      .from('habit_completions')
+      .select('habit_id, completed_date')
+      .eq('user_id', user.id)
+      .gte('completed_date', fromDate);
+
+    // Group completions by date
+    const completionsByDate: Record<string, Set<string>> = {};
+    (recentCompletions || []).forEach(c => {
+      if (!completionsByDate[c.completed_date]) completionsByDate[c.completed_date] = new Set();
+      completionsByDate[c.completed_date].add(c.habit_id);
+    });
+
+    // Also check tasks per day
+    const { data: recentTasks } = await supabase
+      .from('tasks')
+      .select('id, completed, due_date')
+      .eq('user_id', user.id)
+      .not('due_date', 'is', null)
+      .gte('due_date', sixtyDaysAgo.toISOString());
+
+    const tasksByDate: Record<string, { total: number; done: number }> = {};
+    (recentTasks || []).forEach(t => {
+      if (!t.due_date) return;
+      const d = format(new Date(t.due_date), 'yyyy-MM-dd');
+      if (!tasksByDate[d]) tasksByDate[d] = { total: 0, done: 0 };
+      tasksByDate[d].total++;
+      if (t.completed) tasksByDate[d].done++;
+    });
+
+    // Check day by day going backwards from yesterday
+    let streak = 0;
+    const hIds = habitIds.map(h => h.id);
+
+    for (let i = 1; i <= 60; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = format(d, 'yyyy-MM-dd');
+
+      const habitsCompletedOnDay = completionsByDate[dateStr] || new Set();
+      const allHabitsDone = hIds.every(id => habitsCompletedOnDay.has(id));
+
+      const tasksOnDay = tasksByDate[dateStr];
+      const allTasksDone = !tasksOnDay || tasksOnDay.done >= tasksOnDay.total;
+
+      if (allHabitsDone && allTasksDone) {
+        streak++;
+      } else {
+        break;
+      }
+
+      // Calculate yesterday's percentage (i === 1)
+      if (i === 1) {
+        const habitsDone = hIds.filter(id => habitsCompletedOnDay.has(id)).length;
+        const tasksDone = tasksOnDay?.done || 0;
+        const tasksTotal = tasksOnDay?.total || 0;
+        const totalDone = habitsDone + tasksDone;
+        const totalAll = habitCount + tasksTotal;
+        setYesterdayPercentage(totalAll > 0 ? Math.round((totalDone / totalAll) * 100) : 100);
+      }
+    }
+
+    setStreakDays(streak);
+
+    // Persist to profile
+    await supabase.from('profiles').update({ streak_days: streak }).eq('user_id', user.id);
+  }, [user]);
+
+  useEffect(() => { fetchStats(); computeStreak(); }, [fetchStats, computeStreak]);
 
   useEffect(() => {
     if (!user) return;
-    const ch1 = supabase.channel('dv2-tasks').on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, fetchStats).subscribe();
-    const ch3 = supabase.channel('dv2-hc').on('postgres_changes', { event: '*', schema: 'public', table: 'habit_completions' }, fetchStats).subscribe();
+    const ch1 = supabase.channel('dv2-tasks').on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => { fetchStats(); computeStreak(); }).subscribe();
+    const ch3 = supabase.channel('dv2-hc').on('postgres_changes', { event: '*', schema: 'public', table: 'habit_completions' }, () => { fetchStats(); computeStreak(); }).subscribe();
     return () => { supabase.removeChannel(ch1); supabase.removeChannel(ch3); };
-  }, [user, fetchStats]);
+  }, [user, fetchStats, computeStreak]);
 
   const totalDone = stats.tasksCompleted + stats.homeworkCompleted + stats.habitsCompleted;
   const totalAll = stats.tasksTotal + stats.homeworkTotal + stats.habitsTotal;
   const percentage = totalAll === 0 ? 100 : Math.round((totalDone / totalAll) * 100);
 
-  return { stats, percentage, allDone: totalAll > 0 && totalDone === totalAll, totalDone, totalAll };
+  return { stats, percentage, allDone: totalAll > 0 && totalDone === totalAll, totalDone, totalAll, yesterdayPercentage, streakDays };
 }

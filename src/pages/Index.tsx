@@ -35,9 +35,9 @@ const WIDGET_COMPONENTS: Record<string, React.FC<any>> = {
 
 function getGridClass(size: WidgetSize): string {
   switch (size) {
-    case 'small': return 'col-span-1';
-    case 'medium': return 'col-span-2';
-    case 'large': return 'col-span-2';
+    case 'small': return '';
+    case 'medium': return '';
+    case 'large': return '';
   }
 }
 
@@ -83,7 +83,7 @@ export default function Index() {
 
   return (
     <AppLayout>
-      <div className="p-4 pb-24 mx-auto space-y-3 max-w-lg md:max-w-none md:px-8">
+      <div className="p-4 pb-24 mx-auto space-y-3 max-w-lg md:max-w-3xl lg:max-w-5xl">
         {/* Edit mode toggle */}
         <div className="flex justify-end">
           <Button
@@ -96,103 +96,47 @@ export default function Index() {
           </Button>
         </div>
 
-        {/* Widget Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+        {/* Widget Grid - masonry-like with independent columns on desktop */}
+        <div className="md:hidden space-y-3">
           {visibleWidgets.map((widget, index) => {
             const Component = WIDGET_COMPONENTS[widget.type];
             const info = getInfo(widget.type);
             if (!Component || !info) return null;
-
             const canSizeUp = info.sizes.indexOf(widget.size) < info.sizes.length - 1;
             const canSizeDown = info.sizes.indexOf(widget.size) > 0;
-
             return (
               <motion.div
                 key={widget.id}
-                className={`${getGridClass(widget.size)} relative`}
-                animate={editMode ? {
-                  rotate: [0, -0.8, 0.8, -0.8, 0],
-                } : { rotate: 0 }}
-                transition={editMode ? {
-                  repeat: Infinity,
-                  duration: 0.4,
-                  ease: 'easeInOut',
-                  delay: index * 0.05,
-                } : { duration: 0.2 }}
+                className="relative"
+                animate={editMode ? { rotate: [0, -0.8, 0.8, -0.8, 0] } : { rotate: 0 }}
+                transition={editMode ? { repeat: Infinity, duration: 0.4, ease: 'easeInOut', delay: index * 0.05 } : { duration: 0.2 }}
               >
-                {/* Widget content */}
                 <div className={editMode ? 'pointer-events-none opacity-80' : ''}>
-                  {widget.type === 'habits-checklist' 
+                  {widget.type === 'habits-checklist'
                     ? <Component size={widget.size} settings={settings} />
                     : widget.type === 'quick-stats'
-                    ? <Component 
-                        size={widget.size} 
-                        editMode={editMode}
-                        statsConfig={{ visibleFields: settings.statsVisibleFields || ['grade', 'netWorth'] }}
-                      />
-                    : <Component size={widget.size} />
-                  }
+                    ? <Component size={widget.size} editMode={editMode} statsConfig={{ visibleFields: settings.statsVisibleFields || ['grade', 'netWorth'] }} />
+                    : <Component size={widget.size} />}
                 </div>
-
-                {/* Edit overlay controls */}
                 <AnimatePresence>
                   {editMode && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.8 }}
-                      className="absolute inset-0 z-10"
-                      onClick={(e) => {
-                        if (widget.type === 'quick-stats') {
-                          e.stopPropagation();
-                          setStatsConfigOpen(true);
-                        }
-                      }}
-                    >
-                      {/* Remove button (top-left) */}
-                      <button
-                        className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow-md"
-                        onClick={(e) => { e.stopPropagation(); toggleWidget(widget.id); }}
-                      >
-                        <EyeOff className="w-3 h-3" strokeWidth={2} />
-                      </button>
-
-                      {/* Size controls (top-right) */}
+                    <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} className="absolute inset-0 z-10"
+                      onClick={(e) => { if (widget.type === 'quick-stats') { e.stopPropagation(); setStatsConfigOpen(true); } }}>
+                      <button className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow-md"
+                        onClick={(e) => { e.stopPropagation(); toggleWidget(widget.id); }}><EyeOff className="w-3 h-3" strokeWidth={2} /></button>
                       {info.sizes.length > 1 && (
                         <div className="absolute -top-2 -right-2 flex gap-1">
-                          <button
-                            className="w-6 h-6 rounded-full bg-card border border-border shadow-md flex items-center justify-center disabled:opacity-30"
-                            disabled={!canSizeDown}
-                            onClick={(e) => { e.stopPropagation(); cycleSizeDown(widget); }}
-                          >
-                            <Minus className="w-3 h-3" strokeWidth={2} />
-                          </button>
-                          <button
-                            className="w-6 h-6 rounded-full bg-card border border-border shadow-md flex items-center justify-center disabled:opacity-30"
-                            disabled={!canSizeUp}
-                            onClick={(e) => { e.stopPropagation(); cycleSizeUp(widget); }}
-                          >
-                            <Plus className="w-3 h-3" strokeWidth={2} />
-                          </button>
+                          <button className="w-6 h-6 rounded-full bg-card border border-border shadow-md flex items-center justify-center disabled:opacity-30" disabled={!canSizeDown}
+                            onClick={(e) => { e.stopPropagation(); cycleSizeDown(widget); }}><Minus className="w-3 h-3" strokeWidth={2} /></button>
+                          <button className="w-6 h-6 rounded-full bg-card border border-border shadow-md flex items-center justify-center disabled:opacity-30" disabled={!canSizeUp}
+                            onClick={(e) => { e.stopPropagation(); cycleSizeUp(widget); }}><Plus className="w-3 h-3" strokeWidth={2} /></button>
                         </div>
                       )}
-
-                      {/* Move controls (bottom-center) */}
                       <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
-                        <button
-                          className="w-6 h-6 rounded-full bg-card border border-border shadow-md flex items-center justify-center disabled:opacity-30"
-                          disabled={index <= 0}
-                          onClick={(e) => { e.stopPropagation(); moveWidget(index, index - 1); }}
-                        >
-                          <ChevronUp className="w-3 h-3" strokeWidth={2} />
-                        </button>
-                        <button
-                          className="w-6 h-6 rounded-full bg-card border border-border shadow-md flex items-center justify-center disabled:opacity-30"
-                          disabled={index >= visibleWidgets.length - 1}
-                          onClick={(e) => { e.stopPropagation(); moveWidget(index, index + 1); }}
-                        >
-                          <ChevronDown className="w-3 h-3" strokeWidth={2} />
-                        </button>
+                        <button className="w-6 h-6 rounded-full bg-card border border-border shadow-md flex items-center justify-center disabled:opacity-30" disabled={index <= 0}
+                          onClick={(e) => { e.stopPropagation(); moveWidget(index, index - 1); }}><ChevronUp className="w-3 h-3" strokeWidth={2} /></button>
+                        <button className="w-6 h-6 rounded-full bg-card border border-border shadow-md flex items-center justify-center disabled:opacity-30" disabled={index >= visibleWidgets.length - 1}
+                          onClick={(e) => { e.stopPropagation(); moveWidget(index, index + 1); }}><ChevronDown className="w-3 h-3" strokeWidth={2} /></button>
                       </div>
                     </motion.div>
                   )}
@@ -200,6 +144,70 @@ export default function Index() {
               </motion.div>
             );
           })}
+        </div>
+
+        {/* Desktop: two independent columns */}
+        <div className="hidden md:flex gap-4">
+          {(() => {
+            const col1: typeof visibleWidgets = [];
+            const col2: typeof visibleWidgets = [];
+            visibleWidgets.forEach((w, i) => {
+              if (i % 2 === 0) col1.push(w);
+              else col2.push(w);
+            });
+            const renderCol = (col: typeof visibleWidgets) => (
+              <div className="flex-1 space-y-4">
+                {col.map((widget) => {
+                  const Component = WIDGET_COMPONENTS[widget.type];
+                  const info = getInfo(widget.type);
+                  const globalIndex = visibleWidgets.indexOf(widget);
+                  if (!Component || !info) return null;
+                  const canSizeUp = info.sizes.indexOf(widget.size) < info.sizes.length - 1;
+                  const canSizeDown = info.sizes.indexOf(widget.size) > 0;
+                  return (
+                    <motion.div
+                      key={widget.id}
+                      className="relative"
+                      animate={editMode ? { rotate: [0, -0.8, 0.8, -0.8, 0] } : { rotate: 0 }}
+                      transition={editMode ? { repeat: Infinity, duration: 0.4, ease: 'easeInOut', delay: globalIndex * 0.05 } : { duration: 0.2 }}
+                    >
+                      <div className={editMode ? 'pointer-events-none opacity-80' : ''}>
+                        {widget.type === 'habits-checklist'
+                          ? <Component size={widget.size} settings={settings} />
+                          : widget.type === 'quick-stats'
+                          ? <Component size={widget.size} editMode={editMode} statsConfig={{ visibleFields: settings.statsVisibleFields || ['grade', 'netWorth'] }} />
+                          : <Component size={widget.size} />}
+                      </div>
+                      <AnimatePresence>
+                        {editMode && (
+                          <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} className="absolute inset-0 z-10"
+                            onClick={(e) => { if (widget.type === 'quick-stats') { e.stopPropagation(); setStatsConfigOpen(true); } }}>
+                            <button className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow-md"
+                              onClick={(e) => { e.stopPropagation(); toggleWidget(widget.id); }}><EyeOff className="w-3 h-3" strokeWidth={2} /></button>
+                            {info.sizes.length > 1 && (
+                              <div className="absolute -top-2 -right-2 flex gap-1">
+                                <button className="w-6 h-6 rounded-full bg-card border border-border shadow-md flex items-center justify-center disabled:opacity-30" disabled={!canSizeDown}
+                                  onClick={(e) => { e.stopPropagation(); cycleSizeDown(widget); }}><Minus className="w-3 h-3" strokeWidth={2} /></button>
+                                <button className="w-6 h-6 rounded-full bg-card border border-border shadow-md flex items-center justify-center disabled:opacity-30" disabled={!canSizeUp}
+                                  onClick={(e) => { e.stopPropagation(); cycleSizeUp(widget); }}><Plus className="w-3 h-3" strokeWidth={2} /></button>
+                              </div>
+                            )}
+                            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                              <button className="w-6 h-6 rounded-full bg-card border border-border shadow-md flex items-center justify-center disabled:opacity-30" disabled={globalIndex <= 0}
+                                onClick={(e) => { e.stopPropagation(); moveWidget(globalIndex, globalIndex - 1); }}><ChevronUp className="w-3 h-3" strokeWidth={2} /></button>
+                              <button className="w-6 h-6 rounded-full bg-card border border-border shadow-md flex items-center justify-center disabled:opacity-30" disabled={globalIndex >= visibleWidgets.length - 1}
+                                onClick={(e) => { e.stopPropagation(); moveWidget(globalIndex, globalIndex + 1); }}><ChevronDown className="w-3 h-3" strokeWidth={2} /></button>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            );
+            return <>{renderCol(col1)}{renderCol(col2)}</>;
+          })()}
         </div>
 
         {/* Hidden widgets (show in edit mode) */}
