@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { ListTodo, Plus, ChevronRight } from 'lucide-react';
+import { ListTodo, Plus, ChevronRight, ChevronDown } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth, getSupabase } from '@/hooks/useAuth';
 import { format, isToday, isTomorrow, isPast, parseISO, addDays } from 'date-fns';
@@ -24,6 +25,7 @@ export function TasksWidget({ size }: { size: WidgetSize }) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [showSheet, setShowSheet] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
+  const [showDoneTasks, setShowDoneTasks] = useState(false);
 
   const fetchTasks = async () => {
     if (!user) return;
@@ -171,7 +173,7 @@ export function TasksWidget({ size }: { size: WidgetSize }) {
               Aufgabe hinzufuegen
             </button>
           </div>
-        ) : todayOpen.length === 0 ? (
+        ) : todayOpen.length === 0 && todayDoneCount > 0 ? (
           <div className="flex items-center justify-center py-3">
             <p className="text-xs text-emerald-500 font-medium">Alles erledigt</p>
           </div>
@@ -189,6 +191,21 @@ export function TasksWidget({ size }: { size: WidgetSize }) {
               </button>
             )}
           </div>
+        )}
+
+        {/* Completed tasks dropdown */}
+        {todayDone.length > 0 && (
+          <Collapsible open={showDoneTasks} onOpenChange={setShowDoneTasks}>
+            <CollapsibleTrigger className="flex items-center gap-2 w-full py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showDoneTasks ? 'rotate-180' : ''}`} />
+              <span>Abgehakte Aufgaben ({todayDone.length})</span>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-1.5 pt-1.5">
+              {todayDone.map(task => (
+                <TaskRow key={task.id} task={task} />
+              ))}
+            </CollapsibleContent>
+          </Collapsible>
         )}
 
         {/* Tomorrow preview (large only) */}
