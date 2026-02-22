@@ -983,6 +983,7 @@ export type Database = {
           habit_id: string
           id: string
           user_id: string
+          value: number | null
         }
         Insert: {
           completed_date?: string
@@ -990,6 +991,7 @@ export type Database = {
           habit_id: string
           id?: string
           user_id: string
+          value?: number | null
         }
         Update: {
           completed_date?: string
@@ -997,6 +999,7 @@ export type Database = {
           habit_id?: string
           id?: string
           user_id?: string
+          value?: number | null
         }
         Relationships: [
           {
