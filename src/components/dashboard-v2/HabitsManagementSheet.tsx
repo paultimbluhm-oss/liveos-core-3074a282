@@ -15,6 +15,7 @@ interface Habit {
   name: string;
   description: string | null;
   is_active: boolean;
+  habit_type: string;
   lifetime_count?: number;
 }
 
@@ -30,16 +31,17 @@ export function HabitsManagementSheet({ open, onOpenChange }: HabitsManagementSh
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [habitType, setHabitType] = useState<'check' | 'count'>('check');
   const [manualDays, setManualDays] = useState<number | ''>('');
 
   const fetchHabits = async () => {
     if (!user) return;
     const { data: habitsData } = await supabase
       .from('habits')
-      .select('id, name, description, is_active')
+      .select('id, name, description, is_active, habit_type')
       .eq('user_id', user.id)
       .eq('is_active', true)
-      .order('created_at');
+      .order('created_at') as { data: Habit[] | null };
 
     if (!habitsData) return;
 
@@ -68,6 +70,7 @@ export function HabitsManagementSheet({ open, onOpenChange }: HabitsManagementSh
   const resetForm = () => {
     setName('');
     setDescription('');
+    setHabitType('check');
     setManualDays('');
     setEditingHabit(null);
     setDialogOpen(false);
@@ -117,7 +120,7 @@ export function HabitsManagementSheet({ open, onOpenChange }: HabitsManagementSh
 
       toast.success('Habit aktualisiert');
     } else {
-      await supabase.from('habits').insert({ user_id: user.id, name, description: description || null });
+      await supabase.from('habits').insert({ user_id: user.id, name, description: description || null, habit_type: habitType });
       toast.success('Habit erstellt');
     }
     resetForm();
@@ -134,6 +137,7 @@ export function HabitsManagementSheet({ open, onOpenChange }: HabitsManagementSh
     setEditingHabit(habit);
     setName(habit.name);
     setDescription(habit.description || '');
+    setHabitType((habit.habit_type || 'check') as 'check' | 'count');
     setManualDays(habit.lifetime_count || 0);
     setDialogOpen(true);
   };
@@ -197,8 +201,29 @@ export function HabitsManagementSheet({ open, onOpenChange }: HabitsManagementSh
             </DialogHeader>
             <div className="space-y-4 mt-4">
               <div>
+                <Label>Typ</Label>
+                <div className="flex gap-2 mt-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setHabitType('check')}
+                    className={`flex-1 p-3 rounded-xl border text-sm text-left transition-all ${habitType === 'check' ? 'border-primary bg-primary/5 font-medium' : 'border-border/50 hover:border-border'}`}
+                  >
+                    Abhaken
+                    <p className="text-[10px] text-muted-foreground mt-0.5">Einmal pro Tag</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setHabitType('count')}
+                    className={`flex-1 p-3 rounded-xl border text-sm text-left transition-all ${habitType === 'count' ? 'border-primary bg-primary/5 font-medium' : 'border-border/50 hover:border-border'}`}
+                  >
+                    Anzahl
+                    <p className="text-[10px] text-muted-foreground mt-0.5">z.B. Liegestuetze</p>
+                  </button>
+                </div>
+              </div>
+              <div>
                 <Label>Name</Label>
-                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="z.B. Wasser trinken" />
+                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={habitType === 'count' ? 'z.B. Liegestuetze' : 'z.B. Wasser trinken'} />
               </div>
               <div>
                 <Label>Beschreibung (optional)</Label>
