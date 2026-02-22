@@ -57,13 +57,14 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
     if (!user) return;
     const yesterday = format(subDays(new Date(), 1), 'yyyy-MM-dd');
     const [hRes, cRes, yRes] = await Promise.all([
-      supabase.from('habits').select('id, name, habit_type').eq('user_id', user.id).eq('is_active', true) as any,
-      supabase.from('habit_completions').select('habit_id, value').eq('user_id', user.id).eq('completed_date', today) as any,
-      supabase.from('habit_completions').select('habit_id, value').eq('user_id', user.id).eq('completed_date', yesterday) as any,
+      supabase.from('habits').select('*').eq('user_id', user.id).eq('is_active', true),
+      supabase.from('habit_completions').select('*').eq('user_id', user.id).eq('completed_date', today),
+      supabase.from('habit_completions').select('*').eq('user_id', user.id).eq('completed_date', yesterday),
     ]);
     if (hRes.data) {
-      setHabits(hRes.data);
-      const ids = hRes.data.map((h: Habit) => h.id);
+      const habitsWithType = hRes.data.map((h: any) => ({ id: h.id, name: h.name, habit_type: h.habit_type || 'check' }));
+      setHabits(habitsWithType);
+      const ids = habitsWithType.map((h: Habit) => h.id);
       if (ids.length > 0) {
         const { data: allCompletions } = await supabase
           .from('habit_completions')
@@ -149,9 +150,10 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
     return (
       <div className="rounded-2xl bg-card border border-border/50 p-4 flex flex-col items-center justify-center gap-3">
         <p className="text-sm text-muted-foreground">Noch keine Habits</p>
-        <Button variant="outline" size="sm" onClick={() => navigate('/privat?section=habits')}>
+        <Button variant="outline" size="sm" onClick={() => setShowManagement(true)}>
           <Plus className="w-3.5 h-3.5 mr-1.5" /> Erstellen
         </Button>
+        <HabitsManagementSheet open={showManagement} onOpenChange={(o) => { setShowManagement(o); if (!o) fetchData(); }} />
       </div>
     );
   }

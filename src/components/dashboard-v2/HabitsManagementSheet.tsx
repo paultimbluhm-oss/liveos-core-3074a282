@@ -36,12 +36,13 @@ export function HabitsManagementSheet({ open, onOpenChange }: HabitsManagementSh
 
   const fetchHabits = async () => {
     if (!user) return;
-    const { data: habitsData } = await supabase
+    const { data: rawData } = await supabase
       .from('habits')
-      .select('id, name, description, is_active, habit_type')
+      .select('*')
       .eq('user_id', user.id)
       .eq('is_active', true)
-      .order('created_at') as { data: Habit[] | null };
+      .order('created_at');
+    const habitsData = (rawData as any[])?.map(h => ({ ...h, habit_type: h.habit_type || 'check' })) as Habit[] | null;
 
     if (!habitsData) return;
 
@@ -120,7 +121,7 @@ export function HabitsManagementSheet({ open, onOpenChange }: HabitsManagementSh
 
       toast.success('Habit aktualisiert');
     } else {
-      await supabase.from('habits').insert({ user_id: user.id, name, description: description || null, habit_type: habitType });
+      await supabase.from('habits').insert({ user_id: user.id, name, description: description || null, habit_type: habitType } as any);
       toast.success('Habit erstellt');
     }
     resetForm();
