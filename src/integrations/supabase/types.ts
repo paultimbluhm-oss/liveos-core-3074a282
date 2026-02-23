@@ -1014,33 +1014,72 @@ export type Database = {
       habits: {
         Row: {
           created_at: string | null
+          cue_creation: string | null
           description: string | null
+          environment_prep: string | null
+          fun_activity: string | null
+          habit_stacking: string | null
           habit_type: string
           icon: string | null
           id: string
+          identity_statement: string | null
           is_active: boolean | null
           name: string
+          negative_consequences: string | null
+          obstacle_removal: string | null
+          obstacles: string | null
+          positive_benefits: string | null
+          reward: string | null
+          temptation_bundling: string | null
           user_id: string
+          when_trigger: string | null
+          where_location: string | null
         }
         Insert: {
           created_at?: string | null
+          cue_creation?: string | null
           description?: string | null
+          environment_prep?: string | null
+          fun_activity?: string | null
+          habit_stacking?: string | null
           habit_type?: string
           icon?: string | null
           id?: string
+          identity_statement?: string | null
           is_active?: boolean | null
           name: string
+          negative_consequences?: string | null
+          obstacle_removal?: string | null
+          obstacles?: string | null
+          positive_benefits?: string | null
+          reward?: string | null
+          temptation_bundling?: string | null
           user_id: string
+          when_trigger?: string | null
+          where_location?: string | null
         }
         Update: {
           created_at?: string | null
+          cue_creation?: string | null
           description?: string | null
+          environment_prep?: string | null
+          fun_activity?: string | null
+          habit_stacking?: string | null
           habit_type?: string
           icon?: string | null
           id?: string
+          identity_statement?: string | null
           is_active?: boolean | null
           name?: string
+          negative_consequences?: string | null
+          obstacle_removal?: string | null
+          obstacles?: string | null
+          positive_benefits?: string | null
+          reward?: string | null
+          temptation_bundling?: string | null
           user_id?: string
+          when_trigger?: string | null
+          where_location?: string | null
         }
         Relationships: []
       }
