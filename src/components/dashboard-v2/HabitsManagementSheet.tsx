@@ -9,6 +9,7 @@ import { Plus, Trash2, Edit, Check, RotateCcw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { HabitCreationWizard } from './HabitCreationWizard';
 
 interface Habit {
   id: string;
@@ -28,6 +29,7 @@ export function HabitsManagementSheet({ open, onOpenChange }: HabitsManagementSh
   const { user } = useAuth();
   const [habits, setHabits] = useState<Habit[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [wizardOpen, setWizardOpen] = useState(false);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -148,7 +150,7 @@ export function HabitsManagementSheet({ open, onOpenChange }: HabitsManagementSh
       <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl">
         <SheetHeader className="flex flex-row items-center justify-between pr-8">
           <SheetTitle>Habits verwalten</SheetTitle>
-          <Button size="sm" onClick={() => { resetForm(); setDialogOpen(true); }}>
+          <Button size="sm" onClick={() => setWizardOpen(true)}>
             <Plus className="w-3.5 h-3.5 mr-1.5" /> Neu
           </Button>
         </SheetHeader>
@@ -257,6 +259,7 @@ export function HabitsManagementSheet({ open, onOpenChange }: HabitsManagementSh
             </div>
           </DialogContent>
         </Dialog>
+        <HabitCreationWizard open={wizardOpen} onOpenChange={setWizardOpen} onCreated={fetchHabits} />
       </SheetContent>
     </Sheet>
   );
