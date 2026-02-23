@@ -140,8 +140,9 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
   const allDone = total > 0 && doneCount === total;
 
   const limit = settings?.habitDisplayLimit || 0;
-  const openHabits = habits.filter(h => !completions.includes(h.id));
-  const doneHabits = habits.filter(h => completions.includes(h.id));
+  // Count habits stay in main list even when done; only check habits move to done section
+  const openHabits = habits.filter(h => h.habit_type === 'count' || !completions.includes(h.id));
+  const doneHabits = habits.filter(h => h.habit_type !== 'count' && completions.includes(h.id));
   const displayOpen = limit > 0 ? openHabits.slice(0, limit) : openHabits;
   const hiddenCount = limit > 0 ? Math.max(0, openHabits.length - limit) : 0;
   const [showDone, setShowDone] = useState(false);
@@ -190,10 +191,13 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
           const isCount = habit.habit_type === 'count';
           const currentVal = countValues[habit.id] || 0;
           const yesterdayVal = yesterdayValues[habit.id] || 0;
+          const isDoneToday = completions.includes(habit.id);
+          const streakColor = isDoneToday ? 'text-orange-500' : 'text-muted-foreground';
+          const streakWeight = isDoneToday ? 'font-semibold' : '';
           return (
             <div key={habit.id} className="space-y-1">
               {isCount ? (
-                <div className="flex items-center gap-2 p-2 rounded-xl bg-muted/30">
+                <div className={`flex items-center gap-2 p-2 rounded-xl transition-colors ${isDoneToday ? 'bg-success/10' : 'bg-muted/30'}`}>
                   <button onClick={() => adjustCount(habit, -1)} className="w-7 h-7 rounded-lg bg-muted/60 hover:bg-muted flex items-center justify-center transition-colors shrink-0">
                     <Minus className="w-3.5 h-3.5" />
                   </button>
@@ -207,8 +211,8 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
                   )}
                   {streak > 0 && (
                     <div className="flex items-center gap-0.5 shrink-0">
-                      <Flame className={`w-3 h-3 ${streak >= 7 ? 'text-orange-500' : 'text-muted-foreground'}`} />
-                      <span className={`text-[10px] font-mono ${streak >= 7 ? 'text-orange-500 font-semibold' : 'text-muted-foreground'}`}>{streak}</span>
+                      <Flame className={`w-3 h-3 ${streakColor}`} />
+                      <span className={`text-[10px] font-mono ${streakColor} ${streakWeight}`}>{streak}</span>
                     </div>
                   )}
                 </div>
@@ -218,8 +222,8 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
                   <span className="flex-1 text-sm truncate">{habit.name}</span>
                   {streak > 0 && (
                     <div className="flex items-center gap-0.5 shrink-0">
-                      <Flame className={`w-3 h-3 ${streak >= 7 ? 'text-orange-500' : 'text-muted-foreground'}`} />
-                      <span className={`text-[10px] font-mono ${streak >= 7 ? 'text-orange-500 font-semibold' : 'text-muted-foreground'}`}>{streak}</span>
+                      <Flame className={`w-3 h-3 ${streakColor}`} />
+                      <span className={`text-[10px] font-mono ${streakColor} ${streakWeight}`}>{streak}</span>
                     </div>
                   )}
                   <span className="text-[10px] text-muted-foreground font-mono shrink-0">{ltCount}/100</span>
@@ -273,8 +277,8 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
                   )}
                   {streak > 0 && (
                     <div className="flex items-center gap-0.5 shrink-0">
-                      <Flame className={`w-3 h-3 ${streak >= 7 ? 'text-orange-500' : 'text-muted-foreground'}`} />
-                      <span className={`text-[10px] font-mono ${streak >= 7 ? 'text-orange-500 font-semibold' : 'text-muted-foreground'}`}>{streak}</span>
+                      <Flame className="w-3 h-3 text-orange-500" />
+                      <span className="text-[10px] font-mono text-orange-500 font-semibold">{streak}</span>
                     </div>
                   )}
                   <span className="text-[10px] text-muted-foreground font-mono shrink-0">{ltCount}/100</span>
