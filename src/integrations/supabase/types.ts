@@ -2672,6 +2672,65 @@ export type Database = {
           },
         ]
       }
+      v2_course_events: {
+        Row: {
+          absence_status: string | null
+          course_id: string
+          created_at: string
+          date: string
+          event_type: string
+          id: string
+          is_eva: boolean | null
+          notes: string | null
+          period: number | null
+          timetable_slot_id: string | null
+          topic: string | null
+          updated_at: string
+          user_id: string
+          weight_percent: number | null
+        }
+        Insert: {
+          absence_status?: string | null
+          course_id: string
+          created_at?: string
+          date: string
+          event_type: string
+          id?: string
+          is_eva?: boolean | null
+          notes?: string | null
+          period?: number | null
+          timetable_slot_id?: string | null
+          topic?: string | null
+          updated_at?: string
+          user_id: string
+          weight_percent?: number | null
+        }
+        Update: {
+          absence_status?: string | null
+          course_id?: string
+          created_at?: string
+          date?: string
+          event_type?: string
+          id?: string
+          is_eva?: boolean | null
+          notes?: string | null
+          period?: number | null
+          timetable_slot_id?: string | null
+          topic?: string | null
+          updated_at?: string
+          user_id?: string
+          weight_percent?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "v2_course_events_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v2_courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v2_course_feed: {
         Row: {
           course_id: string
