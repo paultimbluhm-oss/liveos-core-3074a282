@@ -1,11 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Fetch current EUR/USD exchange rate
 async function getExchangeRate(): Promise<number> {
   try {
     const url = 'https://query1.finance.yahoo.com/v8/finance/chart/EURUSD=X?interval=1d&range=1d';
@@ -16,17 +16,39 @@ async function getExchangeRate(): Promise<number> {
     });
     const data = await response.json();
     const rate = data.chart?.result?.[0]?.meta?.regularMarketPrice;
-    console.log('EUR/USD rate:', rate);
-    return rate || 1.08; // Fallback rate
-  } catch (error) {
-    console.error('Error fetching exchange rate:', error);
-    return 1.08; // Fallback rate
+    return rate || 1.08;
+  } catch {
+    return 1.08;
   }
 }
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Validate JWT
+  const authHeader = req.headers.get('authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return new Response(
+      JSON.stringify({ error: 'Unauthorized' }),
+      { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: authHeader } },
+  });
+
+  const token = authHeader.replace('Bearer ', '');
+  const { data: claims, error: claimsError } = await supabase.auth.getClaims(token);
+  if (claimsError || !claims?.claims) {
+    return new Response(
+      JSON.stringify({ error: 'Invalid token' }),
+      { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   }
 
   try {
@@ -39,9 +61,6 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Fetching price for ${symbol}, target currency: ${targetCurrency}`);
-
-    // Use Yahoo Finance API
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`;
     
     const response = await fetch(url, {
@@ -51,9 +70,8 @@ serve(async (req) => {
     });
 
     if (!response.ok) {
-      console.error('Yahoo Finance API error:', response.status, response.statusText);
       return new Response(
-        JSON.stringify({ error: 'Failed to fetch stock price', status: response.status }),
+        JSON.stringify({ error: 'Failed to fetch stock price' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -73,7 +91,6 @@ serve(async (req) => {
     const sourceCurrency = meta.currency;
     const previousClose = meta.chartPreviousClose || meta.previousClose;
     
-    // Get exchange rate if conversion needed
     let convertedPrice = price;
     let exchangeRate = 1;
     
@@ -87,7 +104,6 @@ serve(async (req) => {
         exchangeRate = eurUsdRate;
         convertedPrice = price * exchangeRate;
       } else if (sourceCurrency === 'GBP') {
-        // Approximate GBP conversion
         if (targetCurrency === 'EUR') {
           exchangeRate = 1.17;
         } else if (targetCurrency === 'USD') {
@@ -97,17 +113,15 @@ serve(async (req) => {
       }
     }
 
-    console.log(`Price: ${price} ${sourceCurrency} -> ${convertedPrice.toFixed(4)} ${targetCurrency}`);
-
     return new Response(
       JSON.stringify({
-        symbol: symbol,
+        symbol,
         price: convertedPrice,
         originalPrice: price,
-        sourceCurrency: sourceCurrency,
-        targetCurrency: targetCurrency,
-        exchangeRate: exchangeRate,
-        previousClose: previousClose,
+        sourceCurrency,
+        targetCurrency,
+        exchangeRate,
+        previousClose,
         change: price - previousClose,
         changePercent: ((price - previousClose) / previousClose) * 100,
       }),
@@ -116,7 +130,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error:', error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
+      JSON.stringify({ error: 'Internal error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
