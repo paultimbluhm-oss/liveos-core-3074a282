@@ -30,12 +30,15 @@ function getExecutionDates(auto: Automation, fromDate: Date, toDate: Date): Date
   const dates: Date[] = [];
   let currentDate = new Date(fromDate);
   
+  // Set to execution day
   if (auto.interval_type === 'weekly') {
+    // execution_day is day of week (0 = Sunday)
     const dayOfWeek = auto.execution_day;
     const currentDay = currentDate.getDay();
     const daysUntilNext = (dayOfWeek - currentDay + 7) % 7;
     currentDate = addDays(currentDate, daysUntilNext);
   } else {
+    // Monthly/Yearly: execution_day is day of month
     currentDate.setDate(auto.execution_day);
     if (currentDate < fromDate) {
       if (auto.interval_type === 'monthly') {
@@ -66,30 +69,15 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Authenticate: only allow calls with the service role key or a valid FUNCTION_SECRET
-  const authHeader = req.headers.get('authorization');
-  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const functionSecret = Deno.env.get('FUNCTION_SECRET');
-
-  const token = authHeader?.replace('Bearer ', '') ?? '';
-  const isAuthorized =
-    token === supabaseServiceKey ||
-    (functionSecret && token === functionSecret);
-
-  if (!isAuthorized) {
-    return new Response(
-      JSON.stringify({ error: 'Unauthorized' }),
-      { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  }
-
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const today = startOfDay(new Date());
     const todayStr = format(today, 'yyyy-MM-dd');
 
+    // Get all active automations
     const { data: automations, error: autoError } = await supabase
       .from('v2_automations')
       .select('*')
@@ -101,24 +89,31 @@ serve(async (req) => {
     let transactionsCreated = 0;
 
     for (const auto of automations || []) {
+      // Determine the start date for checking
       const lastExecuted = auto.last_executed_at 
         ? startOfDay(new Date(auto.last_executed_at))
-        : startOfDay(addMonths(new Date(), -1));
+        : startOfDay(addMonths(new Date(), -1)); // Default to 1 month ago if never executed
 
+      // Get all execution dates from last execution to today
       const executionDates = getExecutionDates(auto, addDays(lastExecuted, 1), today);
 
       for (const execDate of executionDates) {
         const execDateStr = format(execDate, 'yyyy-MM-dd');
         const executionId = `${auto.id}_${execDateStr}`;
 
+        // Check if this execution already exists
         const { data: existingTx } = await supabase
           .from('v2_transactions')
           .select('id')
           .eq('execution_id', executionId)
           .single();
 
-        if (existingTx) continue;
+        if (existingTx) {
+          // Already executed, skip
+          continue;
+        }
 
+        // Create the transaction
         const transactionData: Record<string, unknown> = {
           user_id: auto.user_id,
           transaction_type: auto.automation_type === 'investment' ? 'investment_buy' : auto.automation_type,
@@ -143,6 +138,7 @@ serve(async (req) => {
           continue;
         }
 
+        // Update account balances
         if (auto.account_id) {
           const { data: account } = await supabase
             .from('v2_accounts')
@@ -165,6 +161,7 @@ serve(async (req) => {
           }
         }
 
+        // Update target account for transfers
         if (auto.automation_type === 'transfer' && auto.to_account_id) {
           const { data: toAccount } = await supabase
             .from('v2_accounts')
@@ -180,6 +177,7 @@ serve(async (req) => {
           }
         }
 
+        // Update investment for investment automations
         if (auto.automation_type === 'investment' && auto.investment_id) {
           const { data: investment } = await supabase
             .from('v2_investments')
@@ -206,6 +204,7 @@ serve(async (req) => {
         transactionsCreated++;
       }
 
+      // Update automation with last execution date
       await supabase
         .from('v2_automations')
         .update({ 

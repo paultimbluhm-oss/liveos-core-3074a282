@@ -12,25 +12,9 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Authenticate: only allow calls with the service role key or a valid FUNCTION_SECRET
-  const authHeader = req.headers.get('authorization');
-  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const functionSecret = Deno.env.get('FUNCTION_SECRET');
-
-  const token = authHeader?.replace('Bearer ', '') ?? '';
-  const isAuthorized =
-    token === supabaseServiceKey ||
-    (functionSecret && token === functionSecret);
-
-  if (!isAuthorized) {
-    return new Response(
-      JSON.stringify({ error: 'Unauthorized' }),
-      { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  }
-
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const today = format(new Date(), 'yyyy-MM-dd');
@@ -46,9 +30,11 @@ serve(async (req) => {
     const uniqueUserIds = [...new Set(accountsData?.map(a => a.user_id) || [])];
     let processedCount = 0;
 
+    // Fetch EUR/USD rate (simplified - in production use a real API)
     const eurUsdRate = 1.08;
 
     for (const userId of uniqueUserIds) {
+      // Get all accounts for this user
       const { data: accounts } = await supabase
         .from('v2_accounts')
         .select('id, balance, currency')
@@ -57,6 +43,7 @@ serve(async (req) => {
 
       if (!accounts) continue;
 
+      // Calculate account balances
       const accountBalances: Record<string, number> = {};
       let totalAccountsEur = 0;
 
@@ -69,6 +56,7 @@ serve(async (req) => {
         }
       }
 
+      // Get investments and calculate value
       const { data: investments } = await supabase
         .from('v2_investments')
         .select('quantity, avg_purchase_price, current_price, currency')
@@ -88,6 +76,7 @@ serve(async (req) => {
         }
       }
 
+      // Calculate today's cashflow from ALL transactions on this date
       const { data: todayTransactions } = await supabase
         .from('v2_transactions')
         .select('transaction_type, amount, currency')
@@ -100,16 +89,20 @@ serve(async (req) => {
       if (todayTransactions) {
         for (const tx of todayTransactions) {
           const amountEur = tx.currency === 'USD' ? tx.amount / eurUsdRate : tx.amount;
+          // Income and investment_sell count as income
           if (tx.transaction_type === 'income' || tx.transaction_type === 'investment_sell') {
             incomeEur += amountEur;
+          // Expense and investment_buy count as expenses
           } else if (tx.transaction_type === 'expense' || tx.transaction_type === 'investment_buy') {
             expensesEur += amountEur;
           }
+          // Transfers are NOT counted as income/expense (internal movement)
         }
       }
 
       const netWorthEur = totalAccountsEur + totalInvestmentsEur;
 
+      // Upsert daily snapshot
       const { error: upsertError } = await supabase
         .from('v2_daily_snapshots')
         .upsert({
