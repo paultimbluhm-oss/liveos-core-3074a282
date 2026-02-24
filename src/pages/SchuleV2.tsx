@@ -62,6 +62,10 @@ function SchuleV2Content() {
     setTimetableKey(prev => prev + 1);
   }, []);
 
+  const handleEventsChange = useCallback(() => {
+    setTimetableKey(prev => prev + 1);
+  }, []);
+
   if (authLoading || !user) return null;
 
   if (schoolLoading) {
@@ -133,6 +137,7 @@ function SchuleV2Content() {
         onTimetableChange={handleTimetableChange}
         onHomeworkChange={handleHomeworkChange}
         onAbsenceChange={handleAbsenceChange}
+        onEventsChange={handleEventsChange}
       />
     </AppLayout>
   );

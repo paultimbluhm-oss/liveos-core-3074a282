@@ -11,13 +11,13 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Slider } from '@/components/ui/slider';
-import { Plus, ClipboardList, GraduationCap, Clock, Settings, UserX } from 'lucide-react';
+import { Plus, ClipboardList, GraduationCap, Clock, Settings, AlertTriangle } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { TimetableSlotManagerV2 } from './TimetableSlotManagerV2';
 import { HomeworkTabV2 } from './HomeworkTabV2';
-import { AbsencesTabV2 } from './AbsencesTabV2';
+import { EventsTabV2 } from './EventsTabV2';
 
 interface CourseDetailSheetV2Props {
   open: boolean;
@@ -26,10 +26,11 @@ interface CourseDetailSheetV2Props {
   onTimetableChange?: () => void;
   onHomeworkChange?: () => void;
   onAbsenceChange?: () => void;
+  onEventsChange?: () => void;
   initialTab?: string;
 }
 
-export function CourseDetailSheetV2({ open, onOpenChange, course, onTimetableChange, onHomeworkChange, onAbsenceChange, initialTab = 'grades' }: CourseDetailSheetV2Props) {
+export function CourseDetailSheetV2({ open, onOpenChange, course, onTimetableChange, onHomeworkChange, onAbsenceChange, onEventsChange, initialTab = 'grades' }: CourseDetailSheetV2Props) {
   const { user } = useAuth();
   const { scope } = useSchoolV2();
   
@@ -161,9 +162,9 @@ export function CourseDetailSheetV2({ open, onOpenChange, course, onTimetableCha
                 <ClipboardList className="w-3.5 h-3.5" strokeWidth={1.5} />
                 Aufgaben
               </TabsTrigger>
-              <TabsTrigger value="absences" className="gap-1 text-xs px-1">
-                <UserX className="w-3.5 h-3.5" strokeWidth={1.5} />
-                Fehlzeit
+              <TabsTrigger value="events" className="gap-1 text-xs px-1">
+                <AlertTriangle className="w-3.5 h-3.5" strokeWidth={1.5} />
+                Termine
               </TabsTrigger>
             </TabsList>
 
@@ -231,8 +232,8 @@ export function CourseDetailSheetV2({ open, onOpenChange, course, onTimetableCha
               <HomeworkTabV2 course={course} onHomeworkChange={onHomeworkChange} />
             </TabsContent>
 
-            <TabsContent value="absences" className="mt-4">
-              <AbsencesTabV2 course={course} onAbsenceChange={onAbsenceChange} />
+            <TabsContent value="events" className="mt-4">
+              <EventsTabV2 course={course} onEventsChange={() => { onEventsChange?.(); onAbsenceChange?.(); }} />
             </TabsContent>
           </Tabs>
         </SheetContent>

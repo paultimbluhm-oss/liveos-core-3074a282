@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { CalendarDays, BookOpen, Check, ChevronDown } from 'lucide-react';
+import { CalendarDays, BookOpen, Check, ChevronDown, AlertTriangle } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { format, isToday, parseISO, isBefore, startOfDay, addDays } from 'date-fns';
+import { format, isToday, parseISO, isBefore, startOfDay, addDays, differenceInDays } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { PERIOD_TIMES } from '@/components/schule-v2/types';
 import { SchoolV2Provider } from '@/components/schule-v2/context/SchoolV2Context';
@@ -55,6 +55,15 @@ interface HomeworkItem {
   course_color: string | null;
 }
 
+interface UpcomingEvent {
+  id: string;
+  event_type: string;
+  date: string;
+  topic: string | null;
+  course_name: string;
+  course_color: string | null;
+}
+
 function TimetableWidgetInner({ size }: { size: WidgetSize }) {
   const { user } = useAuth();
   const [slots, setSlots] = useState<SlotWithCourse[]>([]);
@@ -62,6 +71,7 @@ function TimetableWidgetInner({ size }: { size: WidgetSize }) {
   const [loading, setLoading] = useState(true);
   const [completedHwIds, setCompletedHwIds] = useState<Set<string>>(new Set());
   const [showDoneHw, setShowDoneHw] = useState(false);
+  const [upcomingEvents, setUpcomingEvents] = useState<UpcomingEvent[]>([]);
 
   // SlotActionSheet state
   const [actionSheetOpen, setActionSheetOpen] = useState(false);
@@ -110,10 +120,11 @@ function TimetableWidgetInner({ size }: { size: WidgetSize }) {
 
     const scopeCourseIds = courses.map(c => c.id);
 
-    const [slotsRes, hwRes, completionsRes] = await Promise.all([
+    const [slotsRes, hwRes, completionsRes, eventsRes] = await Promise.all([
       supabase.from('v2_timetable_slots').select('*').in('course_id', scopeCourseIds),
       supabase.from('v2_homework').select('*').in('course_id', scopeCourseIds),
       supabase.from('v2_homework_completions').select('homework_id').eq('user_id', user.id),
+      supabase.from('v2_course_events').select('*').eq('user_id', user.id).in('course_id', scopeCourseIds).neq('event_type', 'absence').gte('date', format(new Date(), 'yyyy-MM-dd')).order('date', { ascending: true }).limit(2),
     ]);
 
     const today = new Date().getDay();
@@ -155,6 +166,21 @@ function TimetableWidgetInner({ size }: { size: WidgetSize }) {
       .sort((a, b) => a.due_date.localeCompare(b.due_date));
 
     setAllHomework(allHw);
+
+    // Upcoming events
+    const upEvents: UpcomingEvent[] = (eventsRes.data || []).map((ev: any) => {
+      const course = courses.find(c => c.id === ev.course_id);
+      return {
+        id: ev.id,
+        event_type: ev.event_type,
+        date: ev.date,
+        topic: ev.topic,
+        course_name: course?.short_name || course?.name || '',
+        course_color: course?.color || null,
+      };
+    });
+    setUpcomingEvents(upEvents);
+
     setLoading(false);
   };
 
@@ -364,6 +390,40 @@ function TimetableWidgetInner({ size }: { size: WidgetSize }) {
                     <span className="text-[10px] text-muted-foreground">{slot.room}</span>
                   )}
                 </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Upcoming Events Countdown */}
+        {upcomingEvents.length > 0 && (
+          <div className="pt-1 border-t border-border/30 space-y-1.5">
+            <div className="flex items-center gap-1">
+              <AlertTriangle className="w-3 h-3 text-muted-foreground" strokeWidth={1.5} />
+              <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+                Termine
+              </span>
+            </div>
+            {upcomingEvents.map(ev => {
+              const daysUntil = differenceInDays(parseISO(ev.date), startOfDay(new Date()));
+              const typeLabels: Record<string, string> = { vocab_test: 'VT', exam: 'KA', abi_exam: 'ABI', other: '' };
+              const typeColors: Record<string, string> = { vocab_test: '#38bdf8', exam: '#fbbf24', abi_exam: '#f87171', other: '#94a3b8' };
+              return (
+                <div key={ev.id} className="flex items-center gap-2 p-1.5 rounded-lg bg-muted/30">
+                  <div
+                    className="w-6 h-6 rounded-full shrink-0 flex items-center justify-center text-[8px] font-bold text-white"
+                    style={{ backgroundColor: typeColors[ev.event_type] || '#94a3b8' }}
+                  >
+                    {typeLabels[ev.event_type]}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-xs font-medium truncate block">{ev.topic || ev.course_name}</span>
+                    <span className="text-[10px] text-muted-foreground">{ev.course_name}</span>
+                  </div>
+                  <span className="text-xs font-bold shrink-0">
+                    {daysUntil === 0 ? 'Heute' : daysUntil === 1 ? 'Morgen' : `${daysUntil}d`}
+                  </span>
+                </div>
               );
             })}
           </div>

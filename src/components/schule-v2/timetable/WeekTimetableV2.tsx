@@ -10,6 +10,12 @@ import { format, addWeeks, subWeeks, startOfWeek, addDays, isToday } from 'date-
 import { de } from 'date-fns/locale';
 import { GradeColorSettingsV2 } from '../settings/GradeColorSettingsV2';
 
+interface EventInfo {
+  event_type: 'vocab_test' | 'exam' | 'abi_exam' | 'other';
+  topic: string | null;
+  id: string;
+}
+
 interface WeekTimetableV2Props {
   onSlotClick?: (slot: V2TimetableSlot, course: V2Course) => void;
 }
@@ -25,6 +31,7 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
   const [homeworkByDate, setHomeworkByDate] = useState<Record<string, V2Homework[]>>({});
   const [completedHwByDate, setCompletedHwByDate] = useState<Record<string, V2Homework[]>>({});
   const [absenceMap, setAbsenceMap] = useState<Record<string, { is_eva: boolean; status: 'excused' | 'unexcused' }>>({});
+  const [eventMap, setEventMap] = useState<Record<string, EventInfo>>({});
   const [loading, setLoading] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -155,6 +162,24 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
         }
       });
       setAbsenceMap(absMap);
+
+      // Course Events (exams, tests etc.)
+      const { data: eventsData } = await supabase
+        .from('v2_course_events')
+        .select('*')
+        .eq('user_id', user.id)
+        .in('course_id', scopeCourseIds)
+        .neq('event_type', 'absence')
+        .gte('date', weekStart)
+        .lte('date', weekEnd);
+
+      const evMap: Record<string, EventInfo> = {};
+      (eventsData || []).forEach((ev: any) => {
+        // Key = courseId-date
+        const key = `${ev.course_id}-${ev.date}`;
+        evMap[key] = { event_type: ev.event_type, topic: ev.topic, id: ev.id };
+      });
+      setEventMap(evMap);
 
       if (slotsData) {
         const enrichedSlots = slotsData.map(slot => ({
@@ -322,9 +347,26 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
                       const isExcused = hasMissed && absenceInfo?.status === 'excused';
                       const isUnexcused = hasMissed && absenceInfo?.status === 'unexcused';
 
-                      // Determine border style
+                      // Course event on this date?
+                      const eventKey = `${slot.course.id}-${dateKey}`;
+                      const eventInfo = eventMap[eventKey];
+
+                      // Determine border style - events take priority with dashed borders
                       let borderClass = 'border border-transparent';
-                      if (hasEva) borderClass = 'border-2 border-sky-400/60';
+                      let borderStyle: React.CSSProperties = {};
+                      if (eventInfo) {
+                        const eventColors: Record<string, string> = {
+                          vocab_test: '#38bdf8',  // sky-400
+                          exam: '#fbbf24',         // amber-400
+                          abi_exam: '#f87171',     // rose-400
+                          other: '#94a3b8',        // slate-400
+                        };
+                        borderStyle = {
+                          border: `2px dashed ${eventColors[eventInfo.event_type] || '#94a3b8'}`,
+                          borderRadius: '0.5rem',
+                        };
+                        borderClass = '';
+                      } else if (hasEva) borderClass = 'border-2 border-sky-400/60';
                       else if (isExcused) borderClass = 'border-2 border-emerald-400/60';
                       else if (isUnexcused) borderClass = 'border-2 border-rose-400/60';
 
@@ -341,7 +383,7 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
                               ${hasEva || hasMissed ? 'opacity-50' : ''}
                               ${isDouble ? 'h-[76px]' : 'h-9'}
                             `}
-                            style={{ backgroundColor: slot.course.color || '#6366f1' }}
+                            style={{ backgroundColor: slot.course.color || '#6366f1', ...borderStyle }}
                           >
                             <span className={`${hasMissed || hasEva || isPast ? 'line-through opacity-70' : ''}`}>
                               {slot.course.short_name || slot.course.name.substring(0, 3)}
@@ -384,6 +426,15 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
                               </span>
                             )}
                             
+                            {/* Event type badge */}
+                            {eventInfo && !isPast && (
+                              <span className="absolute bottom-0.5 left-0.5 text-[7px] font-black text-white px-1 py-0.5 rounded leading-none"
+                                style={{ backgroundColor: eventInfo.event_type === 'vocab_test' ? '#38bdf8' : eventInfo.event_type === 'exam' ? '#fbbf24' : eventInfo.event_type === 'abi_exam' ? '#f87171' : '#94a3b8' }}
+                              >
+                                {eventInfo.event_type === 'vocab_test' ? 'VT' : eventInfo.event_type === 'exam' ? 'KA' : eventInfo.event_type === 'abi_exam' ? 'ABI' : 'T'}
+                              </span>
+                            )}
+
                             {/* Grade badge */}
                             {avg !== null && !isPast && !hasMissed && !hasEva && (
                               <span className={`absolute top-0.5 right-0.5 min-w-[16px] h-[16px] text-[9px] font-bold rounded-full flex items-center justify-center text-white ${getGradeColor(avg)}`}>
