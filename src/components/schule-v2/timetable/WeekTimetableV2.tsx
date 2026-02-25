@@ -333,7 +333,7 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
                       if (!slot) {
                         return (
                           <td key={day} className="p-0">
-                            <div className={`${isDouble ? 'h-[88px]' : 'h-11'} rounded-xl bg-muted/15`} />
+                            <div className={`${isDouble ? 'h-[88px]' : 'h-11'} rounded-xl bg-muted/10 border border-border/20`} />
                           </td>
                         );
                       }
@@ -361,7 +361,7 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
 
                       // Determine outer border for events
                       let outerBorderStyle: React.CSSProperties = {};
-                      let outerBorderClass = 'border border-border/30';
+                      let outerBorderClass = 'border-2 border-border/50';
                       if (eventInfo) {
                         const eventColors: Record<string, string> = {
                           vocab_test: '#38bdf8',
@@ -370,19 +370,19 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
                           other: '#94a3b8',
                         };
                         outerBorderStyle = {
-                          border: `2px dashed ${eventColors[eventInfo.event_type] || '#94a3b8'}`,
+                          border: `2.5px dashed ${eventColors[eventInfo.event_type] || '#94a3b8'}`,
                         };
                         outerBorderClass = '';
-                      } else if (hasEva) outerBorderClass = 'border-2 border-sky-400/50';
-                      else if (isExcused) outerBorderClass = 'border-2 border-emerald-400/50';
-                      else if (isUnexcused) outerBorderClass = 'border-2 border-rose-400/50';
+                      } else if (hasEva) outerBorderClass = 'border-2 border-sky-400/60';
+                      else if (isExcused) outerBorderClass = 'border-2 border-emerald-400/60';
+                      else if (isUnexcused) outerBorderClass = 'border-2 border-rose-400/60';
 
                       return (
                         <td key={day} className="p-0" rowSpan={isDouble ? 2 : 1}>
                           <button
                             onClick={() => onSlotClick?.(slot, slot.course)}
                             className={`
-                              w-full rounded-xl bg-muted/30 relative
+                              w-full rounded-xl bg-card shadow-sm relative
                               flex flex-col items-center justify-center gap-0.5
                               transition-all duration-150 active:scale-95
                               ${outerBorderClass}
@@ -395,7 +395,7 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
                             {/* Colored abbreviation badge */}
                             <span 
                               className={`
-                                text-[11px] font-bold text-white px-2 py-0.5 rounded-md
+                                text-[11px] font-bold text-white px-2.5 py-0.5 rounded-lg shadow-sm
                                 ${hasMissed || hasEva ? 'line-through opacity-60' : ''}
                               `}
                               style={{ backgroundColor: courseColor }}
