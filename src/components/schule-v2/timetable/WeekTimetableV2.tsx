@@ -236,6 +236,13 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
     return 'bg-rose-500';
   };
 
+  const getGradeBorderColor = (points: number | null): string => {
+    if (points === null) return '';
+    if (points >= gradeColorSettings.green_min) return 'border-emerald-500';
+    if (points >= gradeColorSettings.yellow_min) return 'border-amber-500';
+    return 'border-rose-500';
+  };
+
   return (
     <>
     <div className="rounded-2xl bg-card border border-border/50 overflow-hidden">
@@ -271,20 +278,20 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-xs border-separate" style={{ borderSpacing: '3px' }}>
+            <table className="w-full text-xs border-separate" style={{ borderSpacing: '4px' }}>
               <thead>
                 <tr>
-                  <th className="w-7 p-0"></th>
+                  <th className="w-8 p-0"></th>
                   {WEEKDAYS.map((day, idx) => {
                     const date = addDays(currentWeek, idx);
                     const today = isToday(date);
                     return (
                       <th 
                         key={day} 
-                        className={`p-1.5 text-center rounded-lg ${today ? 'bg-primary/10 text-primary' : 'text-muted-foreground'}`}
+                        className={`p-2 text-center rounded-lg ${today ? 'bg-primary/10 text-primary' : 'text-muted-foreground'}`}
                       >
-                        <div className="font-semibold text-[11px]">{day}</div>
-                        <div className={`text-[10px] ${today ? 'font-bold' : 'font-normal opacity-60'}`}>
+                        <div className="font-semibold text-xs">{day}</div>
+                        <div className={`text-[11px] ${today ? 'font-bold' : 'font-normal opacity-60'}`}>
                           {format(date, 'd.')}
                         </div>
                       </th>
@@ -296,7 +303,7 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
                 {displayPeriods.map((period) => {
                   return (
                   <tr key={period} className={period === 8 ? 'border-t border-dashed' : ''}>
-                    <td className="p-0 text-center text-muted-foreground/50 text-[9px] font-medium align-middle">
+                    <td className="p-0 text-center text-muted-foreground/50 text-[10px] font-medium align-middle">
                       {PERIOD_TIMES[period]?.label || period}
                     </td>
                     {[1, 2, 3, 4, 5].map(day => {
@@ -326,12 +333,13 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
                       if (!slot) {
                         return (
                           <td key={day} className="p-0">
-                            <div className={`${isDouble ? 'h-[76px]' : 'h-9'} rounded-lg bg-muted/20`} />
+                            <div className={`${isDouble ? 'h-[88px]' : 'h-11'} rounded-xl bg-muted/15`} />
                           </td>
                         );
                       }
 
                       const avg = courseAverages[slot.course.id];
+                      const courseColor = slot.course.color || '#6366f1';
                       
                       // Open homework for this course on this date
                       const hwOpen = (homeworkByDate[dateKey] || []).filter(hw => hw.course_id === slot.course.id);
@@ -351,84 +359,84 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
                       const eventKey = `${slot.course.id}-${dateKey}`;
                       const eventInfo = eventMap[eventKey];
 
-                      // Determine border style - events take priority with dashed borders
-                      let borderClass = 'border border-transparent';
-                      let borderStyle: React.CSSProperties = {};
+                      // Determine outer border for events
+                      let outerBorderStyle: React.CSSProperties = {};
+                      let outerBorderClass = 'border border-border/30';
                       if (eventInfo) {
                         const eventColors: Record<string, string> = {
-                          vocab_test: '#38bdf8',  // sky-400
-                          exam: '#fbbf24',         // amber-400
-                          abi_exam: '#f87171',     // rose-400
-                          other: '#94a3b8',        // slate-400
+                          vocab_test: '#38bdf8',
+                          exam: '#fbbf24',
+                          abi_exam: '#f87171',
+                          other: '#94a3b8',
                         };
-                        borderStyle = {
+                        outerBorderStyle = {
                           border: `2px dashed ${eventColors[eventInfo.event_type] || '#94a3b8'}`,
-                          borderRadius: '0.5rem',
                         };
-                        borderClass = '';
-                      } else if (hasEva) borderClass = 'border-2 border-sky-400/60';
-                      else if (isExcused) borderClass = 'border-2 border-emerald-400/60';
-                      else if (isUnexcused) borderClass = 'border-2 border-rose-400/60';
+                        outerBorderClass = '';
+                      } else if (hasEva) outerBorderClass = 'border-2 border-sky-400/50';
+                      else if (isExcused) outerBorderClass = 'border-2 border-emerald-400/50';
+                      else if (isUnexcused) outerBorderClass = 'border-2 border-rose-400/50';
 
                       return (
                         <td key={day} className="p-0" rowSpan={isDouble ? 2 : 1}>
                           <button
                             onClick={() => onSlotClick?.(slot, slot.course)}
                             className={`
-                              w-full rounded-lg text-[10px] font-semibold text-white relative
-                              flex flex-col items-center justify-center
+                              w-full rounded-xl bg-muted/30 relative
+                              flex flex-col items-center justify-center gap-0.5
                               transition-all duration-150 active:scale-95
-                              ${borderClass}
-                              ${isPast ? 'opacity-30 saturate-50' : ''}
-                              ${hasEva || hasMissed ? 'opacity-50' : ''}
-                              ${isDouble ? 'h-[76px]' : 'h-9'}
+                              ${outerBorderClass}
+                              ${isPast ? 'opacity-25' : ''}
+                              ${hasEva || hasMissed ? 'opacity-40' : ''}
+                              ${isDouble ? 'h-[88px]' : 'h-11'}
                             `}
-                            style={{ backgroundColor: slot.course.color || '#6366f1', ...borderStyle }}
+                            style={outerBorderStyle}
                           >
-                            <span className={`${hasMissed || hasEva || isPast ? 'line-through opacity-70' : ''}`}>
+                            {/* Colored abbreviation badge */}
+                            <span 
+                              className={`
+                                text-[11px] font-bold text-white px-2 py-0.5 rounded-md
+                                ${hasMissed || hasEva ? 'line-through opacity-60' : ''}
+                              `}
+                              style={{ backgroundColor: courseColor }}
+                            >
                               {slot.course.short_name || slot.course.name.substring(0, 3)}
                             </span>
                             
                             {/* EVA badge */}
                             {hasEva && !isPast && (
-                              <span className="absolute inset-0 flex items-center justify-center">
-                                <span className="text-[9px] font-black bg-sky-500 text-white px-1.5 py-0.5 rounded-md">
-                                  EVA
-                                </span>
+                              <span className="text-[10px] font-black text-sky-500">
+                                EVA
                               </span>
                             )}
                             {/* Excused badge */}
                             {isExcused && !isPast && (
-                              <span className="absolute inset-0 flex items-center justify-center">
-                                <span className="text-[8px] font-bold bg-emerald-500 text-white px-1 py-0.5 rounded-md">
-                                  Entsch.
-                                </span>
+                              <span className="text-[9px] font-bold text-emerald-500">
+                                Entsch.
                               </span>
                             )}
                             {/* Unexcused badge */}
                             {isUnexcused && !isPast && (
-                              <span className="absolute inset-0 flex items-center justify-center">
-                                <span className="text-[8px] font-bold bg-rose-500 text-white px-1 py-0.5 rounded-md">
-                                  Offen
-                                </span>
+                              <span className="text-[9px] font-bold text-rose-500">
+                                Offen
                               </span>
                             )}
                             
-                            {/* Homework badge: red=open, green=all done */}
+                            {/* Homework badge */}
                             {!isPast && !hasMissed && !hasEva && hwOpenCount > 0 && (
-                              <span className="absolute top-0.5 left-0.5 min-w-[14px] h-[14px] text-[8px] font-bold rounded-full flex items-center justify-center bg-rose-500 text-white px-0.5">
+                              <span className="absolute top-0.5 left-0.5 min-w-[16px] h-[16px] text-[9px] font-bold rounded-full flex items-center justify-center bg-rose-500 text-white px-0.5">
                                 {hwOpenCount}
                               </span>
                             )}
                             {!isPast && !hasMissed && !hasEva && allHwDone && (
-                              <span className="absolute top-0.5 left-0.5 min-w-[14px] h-[14px] text-[8px] font-bold rounded-full flex items-center justify-center bg-emerald-500 text-white px-0.5">
+                              <span className="absolute top-0.5 left-0.5 min-w-[16px] h-[16px] text-[9px] font-bold rounded-full flex items-center justify-center bg-emerald-500 text-white px-0.5">
                                 {hwDoneCount}
                               </span>
                             )}
                             
                             {/* Event type badge */}
                             {eventInfo && !isPast && (
-                              <span className="absolute bottom-0.5 left-0.5 text-[7px] font-black text-white px-1 py-0.5 rounded leading-none"
+                              <span className="absolute bottom-0.5 left-0.5 text-[9px] font-black text-white px-1.5 py-0.5 rounded-md leading-none"
                                 style={{ backgroundColor: eventInfo.event_type === 'vocab_test' ? '#38bdf8' : eventInfo.event_type === 'exam' ? '#fbbf24' : eventInfo.event_type === 'abi_exam' ? '#f87171' : '#94a3b8' }}
                               >
                                 {eventInfo.event_type === 'vocab_test' ? 'VT' : eventInfo.event_type === 'exam' ? 'KA' : eventInfo.event_type === 'abi_exam' ? 'ABI' : 'T'}
@@ -437,7 +445,7 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
 
                             {/* Grade badge */}
                             {avg !== null && !isPast && !hasMissed && !hasEva && (
-                              <span className={`absolute top-0.5 right-0.5 min-w-[16px] h-[16px] text-[9px] font-bold rounded-full flex items-center justify-center text-white ${getGradeColor(avg)}`}>
+                              <span className={`absolute top-0.5 right-0.5 min-w-[18px] h-[18px] text-[10px] font-bold rounded-full flex items-center justify-center text-white ${getGradeColor(avg)}`}>
                                 {avg}
                               </span>
                             )}
