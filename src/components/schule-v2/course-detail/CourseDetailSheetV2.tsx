@@ -11,13 +11,14 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Slider } from '@/components/ui/slider';
-import { Plus, ClipboardList, GraduationCap, Clock, Settings, AlertTriangle } from 'lucide-react';
+import { Plus, ClipboardList, GraduationCap, Clock, Settings, AlertTriangle, UserX } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { TimetableSlotManagerV2 } from './TimetableSlotManagerV2';
 import { HomeworkTabV2 } from './HomeworkTabV2';
 import { EventsTabV2 } from './EventsTabV2';
+import { AbsencesTabV2 } from './AbsencesTabV2';
 
 interface CourseDetailSheetV2Props {
   open: boolean;
@@ -149,22 +150,26 @@ export function CourseDetailSheetV2({ open, onOpenChange, course, onTimetableCha
           </SheetHeader>
 
           <Tabs defaultValue={initialTab} className="flex-1">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="grades" className="gap-1 text-xs px-1">
+            <TabsList className="grid w-full grid-cols-5">
+              <TabsTrigger value="grades" className="gap-1 text-[10px] px-0.5">
                 <GraduationCap className="w-3.5 h-3.5" strokeWidth={1.5} />
                 Noten
               </TabsTrigger>
-              <TabsTrigger value="timetable" className="gap-1 text-xs px-1">
+              <TabsTrigger value="timetable" className="gap-1 text-[10px] px-0.5">
                 <Clock className="w-3.5 h-3.5" strokeWidth={1.5} />
                 Stunden
               </TabsTrigger>
-              <TabsTrigger value="homework" className="gap-1 text-xs px-1">
+              <TabsTrigger value="homework" className="gap-1 text-[10px] px-0.5">
                 <ClipboardList className="w-3.5 h-3.5" strokeWidth={1.5} />
                 Aufgaben
               </TabsTrigger>
-              <TabsTrigger value="events" className="gap-1 text-xs px-1">
+              <TabsTrigger value="events" className="gap-1 text-[10px] px-0.5">
                 <AlertTriangle className="w-3.5 h-3.5" strokeWidth={1.5} />
                 Termine
+              </TabsTrigger>
+              <TabsTrigger value="absences" className="gap-1 text-[10px] px-0.5">
+                <UserX className="w-3.5 h-3.5" strokeWidth={1.5} />
+                Fehlzeiten
               </TabsTrigger>
             </TabsList>
 
@@ -234,6 +239,10 @@ export function CourseDetailSheetV2({ open, onOpenChange, course, onTimetableCha
 
             <TabsContent value="events" className="mt-4">
               <EventsTabV2 course={course} onEventsChange={() => { onEventsChange?.(); onAbsenceChange?.(); }} />
+            </TabsContent>
+
+            <TabsContent value="absences" className="mt-4">
+              <AbsencesTabV2 course={course} onAbsenceChange={onAbsenceChange} />
             </TabsContent>
           </Tabs>
         </SheetContent>
