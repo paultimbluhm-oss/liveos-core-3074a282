@@ -34,10 +34,19 @@ export function TasksWidget({ size }: { size: WidgetSize }) {
 
   const fetchTasks = async () => {
     if (!user) return;
-    const { data } = await supabase
+    // Fetch incomplete tasks + today's completed tasks (avoid old completed tasks filling the limit)
+    const todayStr = new Date().toISOString().split('T')[0];
+    const { data: openTasks } = await supabase
       .from('tasks').select('*').eq('user_id', user.id)
-      .order('due_date', { ascending: true, nullsFirst: false }).limit(50);
-    setTasks(data || []);
+      .eq('completed', false)
+      .order('due_date', { ascending: true, nullsFirst: false });
+    const { data: todayDone } = await supabase
+      .from('tasks').select('*').eq('user_id', user.id)
+      .eq('completed', true)
+      .gte('due_date', todayStr)
+      .lt('due_date', todayStr + 'T23:59:59')
+      ;
+    setTasks([...(openTasks || []), ...(todayDone || [])]);
   };
 
   useEffect(() => { if (user) fetchTasks(); }, [user]);
