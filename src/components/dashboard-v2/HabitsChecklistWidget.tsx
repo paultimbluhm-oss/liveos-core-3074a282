@@ -5,23 +5,24 @@ import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { format, subDays } from 'date-fns';
+import { format, subDays, parseISO } from 'date-fns';
 import { HabitsManagementSheet } from './HabitsManagementSheet';
 import { HabitDetailSheet } from './HabitDetailSheet';
 import { HabitCreationWizard } from './HabitCreationWizard';
 import type { WidgetSize, DashboardSettings } from '@/hooks/useDashboardV2';
 
-interface Habit { id: string; name: string; habit_type: string; }
+interface Habit { id: string; name: string; habit_type: string; created_at: string | null; }
 
 interface Props {
   size: WidgetSize;
   settings?: DashboardSettings;
 }
 
-function computeStreaks(habitIds: string[], completions: { habit_id: string; completed_date: string }[]): Record<string, number> {
+function computeStreaks(habits: Habit[], completions: { habit_id: string; completed_date: string }[]): Record<string, number> {
   const streaks: Record<string, number> = {};
   const today = format(new Date(), 'yyyy-MM-dd');
-  for (const id of habitIds) {
+  for (const habit of habits) {
+    const id = habit.id;
     const dates = new Set(completions.filter(c => c.habit_id === id).map(c => c.completed_date));
     if (dates.has(today)) {
       let streak = 1;
@@ -35,18 +36,20 @@ function computeStreaks(habitIds: string[], completions: { habit_id: string; com
         let day = 2;
         while (dates.has(format(subDays(new Date(), day), 'yyyy-MM-dd'))) { streak++; day++; }
         streaks[id] = streak;
-      } else if (dates.size > 0) {
-        // Negative streak: consecutive missed days from yesterday
+      } else {
+        // Negative streak: count missed days from yesterday back to last completion or creation date
+        const createdDate = habit.created_at ? format(parseISO(habit.created_at), 'yyyy-MM-dd') : null;
         let missed = 0;
         let day = 1;
         while (!dates.has(format(subDays(new Date(), day), 'yyyy-MM-dd'))) {
+          const checkDate = format(subDays(new Date(), day), 'yyyy-MM-dd');
+          // Stop if we go before the habit creation date
+          if (createdDate && checkDate < createdDate) break;
           missed++;
           day++;
           if (day > 60) break;
         }
         streaks[id] = missed > 0 ? -missed : 0;
-      } else {
-        streaks[id] = 0;
       }
     }
   }
@@ -75,7 +78,7 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
       supabase.from('habit_completions').select('*').eq('user_id', user.id).eq('completed_date', yesterday),
     ]);
     if (hRes.data) {
-      const habitsWithType = hRes.data.map((h: any) => ({ id: h.id, name: h.name, habit_type: h.habit_type || 'check' }));
+      const habitsWithType = hRes.data.map((h: any) => ({ id: h.id, name: h.name, habit_type: h.habit_type || 'check', created_at: h.created_at || null }));
       setHabits(habitsWithType);
       const ids = habitsWithType.map((h: Habit) => h.id);
       if (ids.length > 0) {
@@ -87,7 +90,7 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
         const counts: Record<string, number> = {};
         allCompletions?.forEach(c => { counts[c.habit_id] = (counts[c.habit_id] || 0) + 1; });
         setLifetimeCounts(counts);
-        setHabitStreaks(computeStreaks(ids, allCompletions || []));
+        setHabitStreaks(computeStreaks(habitsWithType, allCompletions || []));
       }
     }
     if (cRes.data) {

@@ -64,6 +64,48 @@ interface UpcomingEvent {
   course_color: string | null;
 }
 
+function EventCountdown({ event }: { event: UpcomingEvent }) {
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const typeLabels: Record<string, string> = { vocab_test: 'VT', exam: 'KA', abi_exam: 'ABI', other: '' };
+  const typeColors: Record<string, string> = { vocab_test: '#38bdf8', exam: '#fbbf24', abi_exam: '#f87171', other: '#94a3b8' };
+
+  // Target is start of that day (8:00 as typical school start)
+  const target = new Date(event.date + 'T08:00:00');
+  const diffMs = Math.max(0, target.getTime() - now.getTime());
+  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+
+  const isToday = days === 0 && hours === 0 && minutes === 0 && seconds === 0 ? false : days === 0;
+  const timerStr = days > 0
+    ? `${days}d ${hours}h ${minutes}m`
+    : `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+  return (
+    <div className="flex flex-col gap-1 p-2 rounded-lg bg-muted/30">
+      <div className="flex items-center gap-1.5">
+        <div
+          className="w-5 h-5 rounded-full shrink-0 flex items-center justify-center text-[7px] font-bold text-white"
+          style={{ backgroundColor: typeColors[event.event_type] || '#94a3b8' }}
+        >
+          {typeLabels[event.event_type]}
+        </div>
+        <span className="text-[11px] font-medium truncate">{event.topic || event.course_name}</span>
+      </div>
+      <span className="text-[10px] text-muted-foreground">{event.course_name}</span>
+      <span className={`text-[11px] font-mono font-bold ${diffMs === 0 ? 'text-destructive' : isToday ? 'text-destructive' : 'text-primary'}`}>
+        {diffMs === 0 ? 'Jetzt' : timerStr}
+      </span>
+    </div>
+  );
+}
+
 function TimetableWidgetInner({ size }: { size: WidgetSize }) {
   const { user } = useAuth();
   const [slots, setSlots] = useState<SlotWithCourse[]>([]);
@@ -350,7 +392,7 @@ function TimetableWidgetInner({ size }: { size: WidgetSize }) {
           </span>
         </div>
 
-        {/* Today's schedule */}
+        {/* Today's schedule - 2 column grid */}
         {isWeekend || hasNoSchool ? (
           <div className="flex items-center justify-center py-3">
             <p className="text-xs text-muted-foreground">
@@ -358,7 +400,7 @@ function TimetableWidgetInner({ size }: { size: WidgetSize }) {
             </p>
           </div>
         ) : (
-          <div className="space-y-1">
+          <div className="grid grid-cols-2 gap-1.5">
             {slots.map(slot => {
               const past = isPastLesson(slot.period, slot.is_double_lesson);
               const time = PERIOD_TIMES[slot.period];
@@ -366,36 +408,29 @@ function TimetableWidgetInner({ size }: { size: WidgetSize }) {
                 <button
                   key={slot.id}
                   onClick={() => handleSlotClick(slot)}
-                  className={`w-full flex items-center gap-2 p-2 rounded-xl transition-all hover:bg-muted/50 active:scale-[0.98] ${
-                    past ? 'opacity-30' : ''
+                  className={`flex items-center gap-1.5 p-1.5 rounded-lg transition-all hover:bg-muted/50 active:scale-[0.98] ${
+                    past ? 'opacity-30' : 'bg-muted/20'
                   }`}
                 >
                   <div
-                    className="w-1 rounded-full shrink-0"
-                    style={{
-                      backgroundColor: slot.course.color || 'hsl(var(--primary))',
-                      height: slot.is_double_lesson ? '2rem' : '1.25rem',
-                    }}
+                    className="w-0.5 rounded-full shrink-0 self-stretch"
+                    style={{ backgroundColor: slot.course.color || 'hsl(var(--primary))' }}
                   />
-                  <span className="text-[10px] font-mono text-muted-foreground w-10 shrink-0 text-left">
-                    {time?.start || ''}
-                  </span>
-                  <span className={`text-sm font-medium flex-1 truncate text-left ${past ? 'line-through' : ''}`}>
-                    {slot.course.short_name || slot.course.name}
-                  </span>
-                  {slot.is_double_lesson && (
-                    <span className="text-[9px] text-muted-foreground font-mono">2h</span>
-                  )}
-                  {slot.room && (
-                    <span className="text-[10px] text-muted-foreground">{slot.room}</span>
-                  )}
+                  <div className="min-w-0 flex-1">
+                    <span className={`text-xs font-medium truncate block ${past ? 'line-through' : ''}`}>
+                      {slot.course.short_name || slot.course.name}
+                    </span>
+                    <span className="text-[9px] text-muted-foreground font-mono">
+                      {time?.start || ''}{slot.room ? ` · ${slot.room}` : ''}{slot.is_double_lesson ? ' · 2h' : ''}
+                    </span>
+                  </div>
                 </button>
               );
             })}
           </div>
         )}
 
-        {/* Upcoming Events Countdown */}
+        {/* Upcoming Events with live timer - 2 column grid */}
         {upcomingEvents.length > 0 && (
           <div className="pt-1 border-t border-border/30 space-y-1.5">
             <div className="flex items-center gap-1">
@@ -404,28 +439,11 @@ function TimetableWidgetInner({ size }: { size: WidgetSize }) {
                 Termine
               </span>
             </div>
-            {upcomingEvents.map(ev => {
-              const daysUntil = differenceInDays(parseISO(ev.date), startOfDay(new Date()));
-              const typeLabels: Record<string, string> = { vocab_test: 'VT', exam: 'KA', abi_exam: 'ABI', other: '' };
-              const typeColors: Record<string, string> = { vocab_test: '#38bdf8', exam: '#fbbf24', abi_exam: '#f87171', other: '#94a3b8' };
-              return (
-                <div key={ev.id} className="flex items-center gap-2 p-1.5 rounded-lg bg-muted/30">
-                  <div
-                    className="w-6 h-6 rounded-full shrink-0 flex items-center justify-center text-[8px] font-bold text-white"
-                    style={{ backgroundColor: typeColors[ev.event_type] || '#94a3b8' }}
-                  >
-                    {typeLabels[ev.event_type]}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <span className="text-xs font-medium truncate block">{ev.topic || ev.course_name}</span>
-                    <span className="text-[10px] text-muted-foreground">{ev.course_name}</span>
-                  </div>
-                  <span className="text-xs font-bold shrink-0">
-                    {daysUntil === 0 ? 'Heute' : daysUntil === 1 ? 'Morgen' : `${daysUntil}d`}
-                  </span>
-                </div>
-              );
-            })}
+            <div className="grid grid-cols-2 gap-1.5">
+              {upcomingEvents.map(ev => (
+                <EventCountdown key={ev.id} event={ev} />
+              ))}
+            </div>
           </div>
         )}
 
