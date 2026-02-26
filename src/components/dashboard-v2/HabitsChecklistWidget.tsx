@@ -23,20 +23,32 @@ function computeStreaks(habitIds: string[], completions: { habit_id: string; com
   const today = format(new Date(), 'yyyy-MM-dd');
   for (const id of habitIds) {
     const dates = new Set(completions.filter(c => c.habit_id === id).map(c => c.completed_date));
-    let streak = 0;
     if (dates.has(today)) {
-      streak = 1;
+      let streak = 1;
       let day = 1;
       while (dates.has(format(subDays(new Date(), day), 'yyyy-MM-dd'))) { streak++; day++; }
+      streaks[id] = streak;
     } else {
       const yesterday = format(subDays(new Date(), 1), 'yyyy-MM-dd');
       if (dates.has(yesterday)) {
-        streak = 1;
+        let streak = 1;
         let day = 2;
         while (dates.has(format(subDays(new Date(), day), 'yyyy-MM-dd'))) { streak++; day++; }
+        streaks[id] = streak;
+      } else if (dates.size > 0) {
+        // Negative streak: consecutive missed days from yesterday
+        let missed = 0;
+        let day = 1;
+        while (!dates.has(format(subDays(new Date(), day), 'yyyy-MM-dd'))) {
+          missed++;
+          day++;
+          if (day > 60) break;
+        }
+        streaks[id] = missed > 0 ? -missed : 0;
+      } else {
+        streaks[id] = 0;
       }
     }
-    streaks[id] = streak;
   }
   return streaks;
 }
@@ -165,14 +177,16 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
     const isCount = habit.habit_type === 'count';
     const currentVal = countValues[habit.id] || 0;
     const isDoneToday = completions.includes(habit.id);
-    const streakColor = isDoneToday ? 'text-orange-500' : 'text-muted-foreground';
-    const streakWeight = isDoneToday ? 'font-semibold' : '';
+    const isNegative = streak < 0;
+    const streakColor = isNegative ? 'text-destructive' : isDoneToday ? 'text-orange-500' : 'text-muted-foreground';
+    const streakWeight = isDoneToday || isNegative ? 'font-semibold' : '';
     const adopted = ltCount >= 100;
+    const negativeBg = isNegative && !isDoneToday ? 'bg-destructive/8 border border-destructive/20' : '';
 
     return (
       <div key={habit.id} className="space-y-1">
         {isCount ? (
-          <div className={`flex items-center gap-2 p-2 rounded-xl transition-colors ${isDoneToday ? 'bg-success/10' : 'bg-muted/30'}`}>
+          <div className={`flex items-center gap-2 p-2 rounded-xl transition-colors ${isDoneToday ? 'bg-success/10' : negativeBg || 'bg-muted/30'}`}>
             <button onClick={() => adjustCount(habit, -1)} className="w-7 h-7 rounded-lg bg-muted/60 hover:bg-muted flex items-center justify-center transition-colors shrink-0">
               <Minus className="w-3.5 h-3.5" />
             </button>
@@ -180,10 +194,10 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
             <button onClick={() => adjustCount(habit, 1)} className="w-7 h-7 rounded-lg bg-primary/10 hover:bg-primary/20 flex items-center justify-center transition-colors shrink-0">
               <Plus className="w-3.5 h-3.5 text-primary" />
             </button>
-            <button onClick={() => setSelectedHabitId(habit.id)} className="flex-1 text-sm truncate text-left hover:underline underline-offset-2">
+            <button onClick={() => setSelectedHabitId(habit.id)} className={`flex-1 text-sm truncate text-left hover:underline underline-offset-2 ${isNegative && !isDoneToday ? 'text-destructive' : ''}`}>
               {habit.name}
             </button>
-            {streak > 0 && (
+            {streak !== 0 && (
               <div className="flex items-center gap-0.5 shrink-0">
                 <Flame className={`w-3 h-3 ${streakColor}`} />
                 <span className={`text-[10px] font-mono ${streakColor} ${streakWeight}`}>{streak}</span>
@@ -198,22 +212,22 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
             <button onClick={() => setSelectedHabitId(habit.id)} className="flex-1 text-sm truncate line-through text-muted-foreground text-left hover:underline underline-offset-2 cursor-pointer">
               {habit.name}
             </button>
-            {streak > 0 && (
+            {streak !== 0 && (
               <div className="flex items-center gap-0.5 shrink-0">
-                <Flame className="w-3 h-3 text-orange-500" />
-                <span className="text-[10px] font-mono text-orange-500 font-semibold">{streak}</span>
+                <Flame className={`w-3 h-3 ${streakColor}`} />
+                <span className={`text-[10px] font-mono ${streakColor} ${streakWeight}`}>{streak}</span>
               </div>
             )}
             {adopted && <Sparkles className="w-3 h-3 text-success shrink-0" />}
             <span className="text-[10px] text-muted-foreground font-mono shrink-0">{ltPct}%</span>
           </div>
         ) : (
-          <div className="flex items-center gap-2.5 p-2 rounded-xl transition-all bg-muted/30 hover:bg-muted/60">
+          <div className={`flex items-center gap-2.5 p-2 rounded-xl transition-all ${negativeBg || 'bg-muted/30 hover:bg-muted/60'}`}>
             <Checkbox checked={false} onCheckedChange={() => toggle(habit)} />
-            <button onClick={() => setSelectedHabitId(habit.id)} className="flex-1 text-sm truncate text-left hover:underline underline-offset-2">
+            <button onClick={() => setSelectedHabitId(habit.id)} className={`flex-1 text-sm truncate text-left hover:underline underline-offset-2 ${isNegative ? 'text-destructive font-medium' : ''}`}>
               {habit.name}
             </button>
-            {streak > 0 && (
+            {streak !== 0 && (
               <div className="flex items-center gap-0.5 shrink-0">
                 <Flame className={`w-3 h-3 ${streakColor}`} />
                 <span className={`text-[10px] font-mono ${streakColor} ${streakWeight}`}>{streak}</span>
