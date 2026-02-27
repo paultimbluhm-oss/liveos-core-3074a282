@@ -8,7 +8,7 @@ import { format, isToday, parseISO, isBefore, startOfDay, addDays, differenceInD
 import { de } from 'date-fns/locale';
 import { PERIOD_TIMES } from '@/components/schule-v2/types';
 import { SchoolV2Provider } from '@/components/schule-v2/context/SchoolV2Context';
-import { SlotActionSheet } from '@/components/schule-v2/timetable/SlotActionSheet';
+
 import { CourseDetailSheetV2 } from '@/components/schule-v2/course-detail/CourseDetailSheetV2';
 import type { V2Course, V2TimetableSlot } from '@/components/schule-v2/types';
 import type { WidgetSize } from '@/hooks/useDashboardV2';
@@ -114,12 +114,6 @@ function TimetableWidgetInner({ size }: { size: WidgetSize }) {
   const [completedHwIds, setCompletedHwIds] = useState<Set<string>>(new Set());
   const [showDoneHw, setShowDoneHw] = useState(false);
   const [upcomingEvents, setUpcomingEvents] = useState<UpcomingEvent[]>([]);
-
-  // SlotActionSheet state
-  const [actionSheetOpen, setActionSheetOpen] = useState(false);
-  const [selectedSlot, setSelectedSlot] = useState<V2TimetableSlot | null>(null);
-  const [selectedCourse, setSelectedCourse] = useState<V2Course | null>(null);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   // CourseDetailSheet state
   const [courseDetailOpen, setCourseDetailOpen] = useState(false);
@@ -271,33 +265,14 @@ function TimetableWidgetInner({ size }: { size: WidgetSize }) {
   const doneHomework = allHomework.filter(hw => completedHwIds.has(hw.id));
 
   const handleSlotClick = (slot: SlotWithCourse) => {
-    const slotAsV2: V2TimetableSlot = {
-      id: slot.id,
-      course_id: slot.course_id,
-      day_of_week: slot.day_of_week,
-      period: slot.period,
-      room: slot.room,
-      week_type: slot.week_type as 'both' | 'A' | 'B',
-      is_double_lesson: slot.is_double_lesson,
-      created_at: slot.created_at,
-    };
     const courseAsV2: V2Course = {
       ...slot.course,
       semester: slot.course.semester as 1 | 2,
       class_name: slot.course.class_name as any,
       is_member: true,
     };
-    setSelectedSlot(slotAsV2);
-    setSelectedCourse(courseAsV2);
-    setSelectedDate(new Date());
-    setActionSheetOpen(true);
-  };
-
-  const handleOpenCourseDetail = () => {
-    if (selectedCourse) {
-      setCourseDetailCourse(selectedCourse);
-      setCourseDetailOpen(true);
-    }
+    setCourseDetailCourse(courseAsV2);
+    setCourseDetailOpen(true);
   };
 
   if (loading) {
@@ -336,15 +311,6 @@ function TimetableWidgetInner({ size }: { size: WidgetSize }) {
             <p className="text-[10px] text-primary font-medium mt-1">{openHomework.length} HA offen</p>
           )}
         </div>
-        <SlotActionSheet
-          open={actionSheetOpen}
-          onOpenChange={setActionSheetOpen}
-          slot={selectedSlot}
-          course={selectedCourse}
-          slotDate={selectedDate}
-          onOpenCourseDetail={handleOpenCourseDetail}
-          onAbsenceChange={loadData}
-        />
         <CourseDetailSheetV2
           open={courseDetailOpen}
           onOpenChange={setCourseDetailOpen}
@@ -480,15 +446,6 @@ function TimetableWidgetInner({ size }: { size: WidgetSize }) {
         )}
       </div>
 
-      <SlotActionSheet
-        open={actionSheetOpen}
-        onOpenChange={setActionSheetOpen}
-        slot={selectedSlot}
-        course={selectedCourse}
-        slotDate={selectedDate}
-        onOpenCourseDetail={handleOpenCourseDetail}
-        onAbsenceChange={loadData}
-      />
       <CourseDetailSheetV2
         open={courseDetailOpen}
         onOpenChange={setCourseDetailOpen}
