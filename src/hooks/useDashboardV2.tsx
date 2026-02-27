@@ -263,6 +263,19 @@ export function useTodayStats() {
     let streak = 0;
     const hIds = habitIds.map(h => h.id);
 
+    // First check if today is 100% complete - if so, include today in streak
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    const todayHabitsCompleted = completionsByDate[todayStr] || new Set();
+    const allHabitsDoneToday = hIds.every(id => todayHabitsCompleted.has(id));
+    const todayTasks = tasksByDate[todayStr];
+    const allTasksDoneToday = !todayTasks || todayTasks.done >= todayTasks.total;
+    const todayComplete = allHabitsDoneToday && allTasksDoneToday;
+
+    if (todayComplete) {
+      streak++;
+    }
+
+    // Now count backwards from yesterday (or today if today isn't complete, break immediately)
     for (let i = 1; i <= 60; i++) {
       const d = new Date();
       d.setDate(d.getDate() - i);
@@ -277,6 +290,8 @@ export function useTodayStats() {
       if (allHabitsDone && allTasksDone) {
         streak++;
       } else {
+        // If today was complete, we can still have a streak from past days
+        // But if there's a gap, stop
         break;
       }
 

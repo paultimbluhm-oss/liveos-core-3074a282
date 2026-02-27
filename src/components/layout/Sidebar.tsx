@@ -18,6 +18,7 @@ import { FinanceSheetWrapper } from '@/components/dashboard-v2/FinanceSheetWrapp
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
+import { useTodayStats } from '@/hooks/useDashboardV2';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -57,8 +58,9 @@ export function Sidebar() {
   const { profile } = useProfile();
   
   const location = useLocation();
+  const { percentage, allDone, streakDays: liveStreakDays } = useTodayStats();
 
-  const streakDays = profile?.streak_days || 0;
+  const streakDays = liveStreakDays;
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -96,7 +98,12 @@ export function Sidebar() {
         </div>
         
         {/* Streak in header */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
+          <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold font-mono ${
+            allDone ? 'bg-success/15 text-success' : percentage > 0 ? 'bg-primary/10 text-primary' : 'text-muted-foreground'
+          }`}>
+            {percentage}%
+          </div>
           <div className={`flex items-center gap-1 px-2 py-1 rounded-full ${streakDays > 0 ? 'bg-streak/10 text-streak' : 'text-muted-foreground'}`}>
             <Flame className="w-3.5 h-3.5" />
             <span className="text-xs font-bold font-mono">{streakDays}</span>
