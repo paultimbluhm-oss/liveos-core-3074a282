@@ -16,6 +16,7 @@ import { QuickStatsConfigSheet } from '@/components/dashboard-v2/QuickStatsConfi
 import { TasksWidget } from '@/components/dashboard-v2/TasksWidget';
 import { TimetableWidget } from '@/components/dashboard-v2/TimetableWidget';
 import { FinanceWidget } from '@/components/dashboard-v2/FinanceWidget';
+import { PortalWidget } from '@/components/dashboard-v2/PortalWidget';
 import { WIDGET_CATALOG } from '@/hooks/useDashboardV2';
 import { Settings2, X, Plus, Minus, EyeOff, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -33,6 +34,7 @@ const WIDGET_COMPONENTS: Record<string, React.FC<any>> = {
   'tasks': TasksWidget,
   'timetable': TimetableWidget,
   'finance': FinanceWidget,
+  'portal': PortalWidget,
 };
 
 function getGridClass(size: WidgetSize): string {
