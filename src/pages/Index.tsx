@@ -17,6 +17,7 @@ import { TasksWidget } from '@/components/dashboard-v2/TasksWidget';
 import { TimetableWidget } from '@/components/dashboard-v2/TimetableWidget';
 import { FinanceWidget } from '@/components/dashboard-v2/FinanceWidget';
 import { PortalWidget } from '@/components/dashboard-v2/PortalWidget';
+import { FinanceSheetWrapper } from '@/components/dashboard-v2/FinanceSheetWrapper';
 import { WIDGET_CATALOG } from '@/hooks/useDashboardV2';
 import { Settings2, X, Plus, Minus, EyeOff, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -52,6 +53,7 @@ export default function Index() {
   const navigate = useNavigate();
   const [editMode, setEditMode] = useState(false);
   const [statsConfigOpen, setStatsConfigOpen] = useState(false);
+  const [financeSheetOpen, setFinanceSheetOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) navigate('/auth');
@@ -120,6 +122,8 @@ export default function Index() {
                     ? <Component size={widget.size} settings={settings} />
                     : widget.type === 'quick-stats'
                     ? <Component size={widget.size} editMode={editMode} statsConfig={{ visibleFields: settings.statsVisibleFields || ['grade', 'netWorth'] }} />
+                    : widget.type === 'finance'
+                    ? <Component size={widget.size} onOpenSheet={() => setFinanceSheetOpen(true)} />
                     : <Component size={widget.size} />}
                 </div>
                 <AnimatePresence>
@@ -180,7 +184,9 @@ export default function Index() {
                           ? <Component size={widget.size} settings={settings} />
                           : widget.type === 'quick-stats'
                           ? <Component size={widget.size} editMode={editMode} statsConfig={{ visibleFields: settings.statsVisibleFields || ['grade', 'netWorth'] }} />
-                          : <Component size={widget.size} />}
+                        : widget.type === 'finance'
+                        ? <Component size={widget.size} onOpenSheet={() => setFinanceSheetOpen(true)} />
+                        : <Component size={widget.size} />}
                       </div>
                       <AnimatePresence>
                         {editMode && (
@@ -297,6 +303,7 @@ export default function Index() {
           updateSettings({ statsVisibleFields: next });
         }}
       />
+      <FinanceSheetWrapper open={financeSheetOpen} onOpenChange={setFinanceSheetOpen} />
     </AppLayout>
   );
 }
