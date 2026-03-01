@@ -106,7 +106,7 @@ function EventCountdown({ event }: { event: UpcomingEvent }) {
   );
 }
 
-function TimetableWidgetInner({ size }: { size: WidgetSize }) {
+function TimetableWidgetInner({ size, onOpenSheet }: { size: WidgetSize; onOpenSheet?: () => void }) {
   const { user } = useAuth();
   const [slots, setSlots] = useState<SlotWithCourse[]>([]);
   const [allHomework, setAllHomework] = useState<HomeworkItem[]>([]);
@@ -295,7 +295,7 @@ function TimetableWidgetInner({ size }: { size: WidgetSize }) {
             <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
               <CalendarDays className="w-4 h-4 text-primary" strokeWidth={1.5} />
             </div>
-            <span className="text-sm font-semibold">Schule</span>
+            <button onClick={onOpenSheet} className="text-sm font-semibold hover:text-primary transition-colors">Schule</button>
           </div>
           {isWeekend || hasNoSchool ? (
             <p className="text-xs text-muted-foreground">Kein Unterricht</p>
@@ -352,7 +352,7 @@ function TimetableWidgetInner({ size }: { size: WidgetSize }) {
           <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
             <CalendarDays className="w-4 h-4 text-primary" strokeWidth={1.5} />
           </div>
-          <span className="text-sm font-semibold">Stundenplan</span>
+          <button onClick={onOpenSheet} className="text-sm font-semibold hover:text-primary transition-colors">Stundenplan</button>
           <span className="text-xs text-muted-foreground ml-auto mr-1">
             {format(new Date(), 'EEEE', { locale: de })}
           </span>
@@ -467,10 +467,10 @@ function TimetableWidgetInner({ size }: { size: WidgetSize }) {
 }
 
 // Wrap in SchoolV2Provider so SlotActionSheet/CourseDetailSheet can access school context
-export function TimetableWidget({ size }: { size: WidgetSize }) {
+export function TimetableWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenSheet?: () => void }) {
   return (
     <SchoolV2Provider>
-      <TimetableWidgetInner size={size} />
+      <TimetableWidgetInner size={size} onOpenSheet={onOpenSheet} />
     </SchoolV2Provider>
   );
 }
