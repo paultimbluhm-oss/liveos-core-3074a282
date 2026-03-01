@@ -93,11 +93,6 @@ export function TasksManagementSheet({ open, onOpenChange }: Props) {
   const overdueCount = tasks.filter(t => t.due_date && isPast(parseISO(t.due_date)) && !t.completed && !isToday(parseISO(t.due_date))).length;
   const todayCount = tasks.filter(t => t.due_date && isToday(parseISO(t.due_date)) && !t.completed).length;
 
-  const priorityIndicator: Record<string, string> = {
-    high: 'bg-rose-500',
-    medium: 'bg-amber-500',
-    low: 'bg-emerald-500',
-  };
 
   const filterOptions = [
     { value: 'today', label: 'Heute' },
@@ -174,7 +169,7 @@ export function TasksManagementSheet({ open, onOpenChange }: Props) {
                   <div key={task.id} className={`flex items-center gap-2.5 p-2.5 rounded-xl transition-all group ${
                     task.completed ? 'bg-secondary/20 opacity-60' : isOverdue ? 'bg-rose-500/5 border border-rose-500/20' : 'bg-muted/30 hover:bg-muted/50'
                   }`}>
-                    <div className={`w-1 h-7 rounded-full shrink-0 ${priorityIndicator[task.priority] || priorityIndicator.medium}`} />
+                    
                     <Checkbox checked={task.completed} onCheckedChange={() => toggleComplete(task)} className="shrink-0" />
                     <div className="flex-1 min-w-0" onClick={() => setEditTask(task)}>
                       <div className="flex items-center gap-1.5">

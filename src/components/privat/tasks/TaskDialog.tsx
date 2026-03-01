@@ -36,7 +36,7 @@ export function TaskDialog({ open, onOpenChange, onSuccess, task }: TaskDialogPr
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
-  const [priority, setPriority] = useState('medium');
+  
   const [recurrence, setRecurrence] = useState<string>('none');
   const [loading, setLoading] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -50,7 +50,7 @@ export function TaskDialog({ open, onOpenChange, onSuccess, task }: TaskDialogPr
       if (task) {
         setTitle(task.title);
         setDescription(task.description || '');
-        setPriority(task.priority);
+        
         setRecurrence(task.recurrence_type || 'none');
         setShowMore(!!task.recurrence_type);
         setShowDescription(!!task.description);
@@ -58,7 +58,7 @@ export function TaskDialog({ open, onOpenChange, onSuccess, task }: TaskDialogPr
         else setSelectedDate(undefined);
       } else {
         setTitle(''); setDescription(''); setSelectedDate(undefined);
-        setPriority('medium'); setRecurrence('none');
+        setRecurrence('none');
         setShowMore(false); setShowDescription(false);
       }
     }
@@ -90,7 +90,7 @@ export function TaskDialog({ open, onOpenChange, onSuccess, task }: TaskDialogPr
       title: title.trim(),
       description: description.trim() || null,
       due_date: dueDate,
-      priority,
+      priority: 'medium',
       recurrence_type: recurrence === 'none' ? null : recurrence,
     };
 
@@ -140,16 +140,6 @@ export function TaskDialog({ open, onOpenChange, onSuccess, task }: TaskDialogPr
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground">Prioritaet</Label>
-            <div className="grid grid-cols-3 gap-1 p-1 bg-secondary/50 rounded-lg">
-              {[{ value: 'low', label: 'Niedrig' }, { value: 'medium', label: 'Mittel' }, { value: 'high', label: 'Hoch' }].map((p) => (
-                <Button key={p.value} type="button" variant={priority === p.value ? 'default' : 'ghost'} size="sm" onClick={() => setPriority(p.value)}
-                  className={cn("text-xs h-8", priority === p.value && p.value === 'high' && "bg-rose-500 hover:bg-rose-600", priority === p.value && p.value === 'low' && "bg-emerald-500 hover:bg-emerald-600")}
-                >{p.label}</Button>
-              ))}
-            </div>
-          </div>
 
           <Button type="button" variant="ghost" size="sm" onClick={() => setShowDescription(!showDescription)} className="w-full justify-between text-xs text-muted-foreground h-8">
             <span className="flex items-center gap-2"><FileText className="w-3.5 h-3.5" /> Beschreibung {description && <span className="text-primary">*</span>}</span>
