@@ -13,7 +13,8 @@ export type WidgetType =
   | 'motivation-quote'
   | 'tasks'
   | 'timetable'
-  | 'finance';
+  | 'finance'
+  | 'portal';
 
 export interface DashboardWidget {
   id: string;
@@ -33,6 +34,7 @@ export const WIDGET_CATALOG: { type: WidgetType; name: string; description: stri
   { type: 'tasks', name: 'Aufgaben', description: 'Aufgaben verwalten und abhaken', defaultSize: 'large', sizes: ['small', 'medium', 'large'] },
   { type: 'timetable', name: 'Stundenplan', description: 'Heutiger Stundenplan und Hausaufgaben', defaultSize: 'medium', sizes: ['small', 'medium', 'large'] },
   { type: 'finance', name: 'Finanzen', description: 'Kontostand, Investments und Buchungen', defaultSize: 'medium', sizes: ['small', 'medium', 'large'] },
+  { type: 'portal', name: 'LARA Portal', description: 'Schulportal direkt im Dashboard', defaultSize: 'large', sizes: ['small', 'medium', 'large'] },
 ];
 
 const DEFAULT_WIDGETS: DashboardWidget[] = [
