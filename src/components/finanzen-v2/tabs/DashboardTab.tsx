@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react';
 import { useFinanceV2 } from '../context/FinanceV2Context';
-import { TrendingUp, TrendingDown, Wallet, PiggyBank, ArrowUpRight, ArrowDownRight, ChevronRight, Users } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, subMonths, startOfYear, endOfYear, subYears } from 'date-fns';
+import { TrendingUp, TrendingDown, Wallet, PiggyBank, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, startOfYear, endOfYear, subYears, eachMonthOfInterval } from 'date-fns';
 import { de } from 'date-fns/locale';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, ComposedChart, Line } from 'recharts';
 
 type TimePeriod = 'week' | 'month' | 'year' | 'all';
 
@@ -12,11 +12,9 @@ export function DashboardTab() {
     accounts, 
     transactions, 
     investments,
-    externalSavings,
     totalAccountsEur, 
     totalInvestmentsEur, 
     netWorthEur,
-    totalExternalSavingsEur,
     loading,
     snapshots,
     eurUsdRate,
@@ -27,7 +25,6 @@ export function DashboardTab() {
   const formatCurrency = (value: number) => 
     value.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
 
-  // Get date range based on period
   const dateRange = useMemo(() => {
     const now = new Date();
     switch (period) {
@@ -42,7 +39,6 @@ export function DashboardTab() {
     }
   }, [period]);
 
-  // Cashflow stats for selected period
   const periodStats = useMemo(() => {
     const periodTx = transactions.filter(tx => {
       const txDate = new Date(tx.date);
@@ -51,23 +47,16 @@ export function DashboardTab() {
     });
     
     const income = periodTx.filter(tx => tx.transaction_type === 'income' || tx.transaction_type === 'investment_sell')
-      .reduce((sum, tx) => {
-        const amt = tx.currency === 'USD' ? tx.amount / eurUsdRate : tx.amount;
-        return sum + amt;
-      }, 0);
+      .reduce((sum, tx) => sum + (tx.currency === 'USD' ? tx.amount / eurUsdRate : tx.amount), 0);
     
     const expenses = periodTx.filter(tx => tx.transaction_type === 'expense' || tx.transaction_type === 'investment_buy')
-      .reduce((sum, tx) => {
-        const amt = tx.currency === 'USD' ? tx.amount / eurUsdRate : tx.amount;
-        return sum + amt;
-      }, 0);
+      .reduce((sum, tx) => sum + (tx.currency === 'USD' ? tx.amount / eurUsdRate : tx.amount), 0);
     
     const savingsRate = income > 0 ? ((income - expenses) / income) * 100 : 0;
     
     return { income, expenses, difference: income - expenses, savingsRate };
   }, [transactions, dateRange, eurUsdRate]);
 
-  // Net worth chart data from snapshots
   const netWorthChartData = useMemo(() => {
     if (snapshots.length === 0) return [];
     
@@ -80,10 +69,34 @@ export function DashboardTab() {
       .map(s => ({
         date: format(new Date(s.date), 'dd.MM'),
         value: s.net_worth_eur,
+        accounts: s.total_accounts_eur,
+        investments: s.total_investments_eur,
       }));
   }, [snapshots, dateRange]);
 
-  // Investment performance
+  // Monthly cashflow
+  const monthlyCashflow = useMemo(() => {
+    if (period === 'week' || period === 'month') return [];
+    const months = eachMonthOfInterval({ start: dateRange.start, end: dateRange.end });
+    
+    return months.map(month => {
+      const monthStart = startOfMonth(month);
+      const monthEnd = endOfMonth(month);
+      
+      const monthTx = transactions.filter(tx => {
+        const txDate = new Date(tx.date);
+        return txDate >= monthStart && txDate <= monthEnd && tx.transaction_type !== 'transfer';
+      });
+      
+      const income = monthTx.filter(tx => tx.transaction_type === 'income')
+        .reduce((sum, tx) => sum + (tx.currency === 'USD' ? tx.amount / eurUsdRate : tx.amount), 0);
+      const expenses = monthTx.filter(tx => tx.transaction_type === 'expense')
+        .reduce((sum, tx) => sum + (tx.currency === 'USD' ? tx.amount / eurUsdRate : tx.amount), 0);
+      
+      return { name: format(month, 'MMM', { locale: de }), income, expenses, net: income - expenses };
+    });
+  }, [transactions, dateRange, period, eurUsdRate]);
+
   const investmentStats = useMemo(() => {
     const totalCost = investments.reduce((sum, inv) => {
       const cost = inv.quantity * inv.avg_purchase_price;
@@ -113,7 +126,7 @@ export function DashboardTab() {
 
   return (
     <div className="space-y-4">
-      {/* Period Selector - Compact Pills */}
+      {/* Period Selector */}
       <div className="flex gap-2 p-1 bg-secondary/50 rounded-xl">
         {periods.map(p => (
           <button
@@ -132,13 +145,13 @@ export function DashboardTab() {
         ))}
       </div>
 
-      {/* Net Worth - Clean Minimal Header */}
+      {/* Net Worth */}
       <div className="text-center py-4">
         <p className="text-xs text-muted-foreground font-medium mb-1">Gesamtvermögen</p>
         <p className="text-4xl font-bold text-foreground tracking-tight">{formatCurrency(netWorthEur)}</p>
       </div>
 
-      {/* Accounts / Investments Split - Minimal Cards */}
+      {/* Accounts / Investments Split */}
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-2xl bg-card border border-border p-4">
           <div className="flex items-center gap-2 mb-2">
@@ -158,6 +171,11 @@ export function DashboardTab() {
             <span className="text-xs text-muted-foreground">Investments</span>
           </div>
           <p className="text-xl font-bold text-foreground">{formatCurrency(totalInvestmentsEur)}</p>
+          {investmentStats.profit !== 0 && (
+            <p className={`text-xs mt-1 ${investmentStats.profit >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>
+              {investmentStats.profit >= 0 ? '+' : ''}{investmentStats.profitPercent.toFixed(1)}%
+            </p>
+          )}
         </div>
       </div>
 
@@ -202,7 +220,7 @@ export function DashboardTab() {
         </div>
       )}
 
-      {/* Cashflow Cards - 2x2 Grid */}
+      {/* Cashflow Cards */}
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-2xl bg-card border border-border p-4">
           <div className="flex items-center gap-2 mb-2">
@@ -241,6 +259,36 @@ export function DashboardTab() {
         </div>
       </div>
 
+      {/* Monthly Cashflow Chart (year/all) */}
+      {monthlyCashflow.length > 1 && (
+        <div className="rounded-2xl bg-card border border-border p-4">
+          <h3 className="text-xs font-medium text-muted-foreground mb-3">Monatlicher Cashflow</h3>
+          <ResponsiveContainer width="100%" height={140}>
+            <ComposedChart data={monthlyCashflow}>
+              <XAxis 
+                dataKey="name" 
+                tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} 
+                axisLine={false} 
+                tickLine={false} 
+              />
+              <YAxis hide />
+              <Tooltip 
+                formatter={(value: number) => formatCurrency(value)}
+                contentStyle={{ 
+                  backgroundColor: 'hsl(var(--popover))', 
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px',
+                  fontSize: '11px',
+                }}
+              />
+              <Bar dataKey="income" fill="hsl(142, 70%, 45%)" radius={[3, 3, 0, 0]} name="Einnahmen" />
+              <Bar dataKey="expenses" fill="hsl(0, 70%, 55%)" radius={[3, 3, 0, 0]} name="Ausgaben" />
+              <Line type="monotone" dataKey="net" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} name="Netto" />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
       {/* Accounts Quick View */}
       <div className="rounded-2xl bg-card border border-border overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
@@ -251,7 +299,7 @@ export function DashboardTab() {
           {accounts.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-6">Noch keine Konten</p>
           ) : (
-            accounts.slice(0, 3).map(account => (
+            accounts.slice(0, 4).map(account => (
               <div key={account.id} className="flex items-center justify-between px-4 py-3">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center">
@@ -267,32 +315,6 @@ export function DashboardTab() {
           )}
         </div>
       </div>
-
-      {/* External Savings Card */}
-      {externalSavings.length > 0 && (
-        <div className="rounded-2xl bg-card border border-border overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-            <div className="flex items-center gap-2">
-              <Users className="w-4 h-4 text-muted-foreground" />
-              <h3 className="text-sm font-semibold">Externe Sparbeträge</h3>
-            </div>
-            <span className="font-semibold text-sm text-primary">{formatCurrency(totalExternalSavingsEur)}</span>
-          </div>
-          <div className="divide-y divide-border">
-            {externalSavings.filter(s => !s.is_received).slice(0, 2).map(saving => (
-              <div key={saving.id} className="flex items-center justify-between px-4 py-3">
-                <div>
-                  <p className="font-medium text-sm">{saving.name}</p>
-                  <p className="text-xs text-muted-foreground">{saving.source_person}</p>
-                </div>
-                <span className="font-semibold text-sm">
-                  {saving.amount.toLocaleString('de-DE', { style: 'currency', currency: saving.currency })}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Investments Quick View */}
       {investments.length > 0 && (

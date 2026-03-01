@@ -1,20 +1,18 @@
 import { useState } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { LayoutDashboard, Wallet, TrendingUp, BarChart3, Receipt, Settings } from 'lucide-react';
+import { LayoutDashboard, Wallet, TrendingUp, Receipt, Settings } from 'lucide-react';
 import { DashboardTab } from '@/components/finanzen-v2/tabs/DashboardTab';
 import { AccountsTab } from '@/components/finanzen-v2/tabs/AccountsTab';
 import { InvestmentsTab } from '@/components/finanzen-v2/tabs/InvestmentsTab';
-import { StatisticsTab } from '@/components/finanzen-v2/tabs/StatisticsTab';
 import { TransactionsTab } from '@/components/finanzen-v2/tabs/TransactionsTab';
 import { FinanceSettingsSheet } from '@/components/finanzen-v2/sheets/FinanceSettingsSheet';
 import { FinanceV2Provider } from '@/components/finanzen-v2/context/FinanceV2Context';
 
 const tabs = [
-  { id: 'dashboard', icon: LayoutDashboard, label: 'Übersicht' },
+  { id: 'dashboard', icon: LayoutDashboard, label: 'Uebersicht' },
   { id: 'accounts', icon: Wallet, label: 'Konten' },
   { id: 'investments', icon: TrendingUp, label: 'Invest' },
   { id: 'transactions', icon: Receipt, label: 'Buchungen' },
-  { id: 'statistics', icon: BarChart3, label: 'Statistik' },
 ];
 
 export default function FinanzenV2() {
@@ -27,7 +25,6 @@ export default function FinanzenV2() {
       case 'accounts': return <AccountsTab />;
       case 'investments': return <InvestmentsTab />;
       case 'transactions': return <TransactionsTab />;
-      case 'statistics': return <StatisticsTab />;
       default: return <DashboardTab />;
     }
   };
@@ -51,7 +48,7 @@ export default function FinanzenV2() {
             {renderContent()}
           </div>
 
-          {/* Compact Bottom Tab Bar - iOS Style */}
+          {/* Bottom Tab Bar */}
           <div className="fixed bottom-0 left-0 right-0 z-50 safe-area-bottom">
             <div className="bg-background/95 backdrop-blur-xl border-t border-border/50">
               <div className="max-w-2xl mx-auto">
@@ -66,10 +63,7 @@ export default function FinanzenV2() {
                         onClick={() => setActiveTab(tab.id)}
                         className={`
                           flex flex-col items-center justify-center gap-0.5 py-2 px-2 rounded-xl transition-all duration-200
-                          ${isActive 
-                            ? 'text-primary' 
-                            : 'text-muted-foreground'
-                          }
+                          ${isActive ? 'text-primary' : 'text-muted-foreground'}
                         `}
                       >
                         <Icon className={`w-5 h-5 ${isActive ? 'text-primary' : ''}`} />

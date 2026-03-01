@@ -66,22 +66,7 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Authenticate: only allow calls with the service role key or a valid FUNCTION_SECRET
-  const authHeader = req.headers.get('authorization');
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const functionSecret = Deno.env.get('FUNCTION_SECRET');
-
-  const token = authHeader?.replace('Bearer ', '') ?? '';
-  const isAuthorized =
-    token === supabaseServiceKey ||
-    (functionSecret && token === functionSecret);
-
-  if (!isAuthorized) {
-    return new Response(
-      JSON.stringify({ error: 'Unauthorized' }),
-      { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  }
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
