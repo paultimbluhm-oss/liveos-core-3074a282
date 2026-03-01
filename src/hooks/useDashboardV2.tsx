@@ -7,14 +7,9 @@ export type WidgetSize = 'small' | 'medium' | 'large';
 export type WidgetType = 
   | 'streak-ring' 
   | 'habits-checklist' 
-  | 'today-progress' 
-  | 'health-bar' 
-  | 'quick-stats' 
-  | 'motivation-quote'
   | 'tasks'
   | 'timetable'
-  | 'finance'
-  | 'portal';
+  | 'finance';
 
 export interface DashboardWidget {
   id: string;
@@ -27,25 +22,17 @@ export interface DashboardWidget {
 export const WIDGET_CATALOG: { type: WidgetType; name: string; description: string; defaultSize: WidgetSize; sizes: WidgetSize[] }[] = [
   { type: 'streak-ring', name: 'Streak', description: 'Tagesfortschritt und Streak-Zaehler', defaultSize: 'medium', sizes: ['small', 'medium', 'large'] },
   { type: 'habits-checklist', name: 'Habits', description: 'Taegliche Gewohnheiten abhaken', defaultSize: 'large', sizes: ['medium', 'large'] },
-  { type: 'today-progress', name: 'Heute', description: 'Aufgaben, Hausaufgaben, Habits', defaultSize: 'medium', sizes: ['small', 'medium', 'large'] },
-  { type: 'health-bar', name: 'Gesundheit', description: 'Taegliche Routinen', defaultSize: 'small', sizes: ['small', 'medium'] },
-  { type: 'quick-stats', name: 'Statistiken', description: 'Noten und Vermoegen', defaultSize: 'small', sizes: ['small', 'medium'] },
-  { type: 'motivation-quote', name: 'Motivation', description: 'Taeglicher Motivationsspruch', defaultSize: 'medium', sizes: ['small', 'medium', 'large'] },
   { type: 'tasks', name: 'Aufgaben', description: 'Aufgaben verwalten und abhaken', defaultSize: 'large', sizes: ['small', 'medium', 'large'] },
   { type: 'timetable', name: 'Stundenplan', description: 'Heutiger Stundenplan und Hausaufgaben', defaultSize: 'medium', sizes: ['small', 'medium', 'large'] },
   { type: 'finance', name: 'Finanzen', description: 'Kontostand, Investments und Buchungen', defaultSize: 'medium', sizes: ['small', 'medium', 'large'] },
-  { type: 'portal', name: 'LARA Portal', description: 'Schulportal direkt im Dashboard', defaultSize: 'large', sizes: ['small', 'medium', 'large'] },
 ];
 
 const DEFAULT_WIDGETS: DashboardWidget[] = [
   { id: 'w1', type: 'streak-ring', size: 'medium', order: 0, visible: true },
-  { id: 'w2', type: 'quick-stats', size: 'small', order: 1, visible: true },
-  { id: 'w3', type: 'today-progress', size: 'medium', order: 2, visible: true },
-  { id: 'w4', type: 'habits-checklist', size: 'large', order: 3, visible: true },
-  { id: 'w5', type: 'health-bar', size: 'small', order: 4, visible: true },
-  { id: 'w7', type: 'motivation-quote', size: 'medium', order: 6, visible: true },
-  { id: 'w8', type: 'quick-stats', size: 'small', order: 7, visible: true },
-  { id: 'w9', type: 'tasks', size: 'large', order: 8, visible: true },
+  { id: 'w4', type: 'habits-checklist', size: 'large', order: 1, visible: true },
+  { id: 'w9', type: 'tasks', size: 'large', order: 2, visible: true },
+  { id: 'w10', type: 'timetable', size: 'medium', order: 3, visible: true },
+  { id: 'w11', type: 'finance', size: 'medium', order: 4, visible: true },
 ];
 
 export interface DashboardSettings {

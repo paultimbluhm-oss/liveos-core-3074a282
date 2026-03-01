@@ -3,22 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { useDashboardV2Config, type DashboardSettings } from '@/hooks/useDashboardV2';
+import { useDashboardV2Config, WIDGET_CATALOG, type DashboardSettings } from '@/hooks/useDashboardV2';
 import { StreakRingWidget } from '@/components/dashboard-v2/StreakRingWidget';
 import { HabitsChecklistWidget } from '@/components/dashboard-v2/HabitsChecklistWidget';
-import { TodayProgressWidget } from '@/components/dashboard-v2/TodayProgressWidget';
-import { HealthBarWidget } from '@/components/dashboard-v2/HealthBarWidget';
-
-
-import { QuickStatsWidget } from '@/components/dashboard-v2/QuickStatsWidget';
-import { MotivationWidget } from '@/components/dashboard-v2/MotivationWidget';
-import { QuickStatsConfigSheet } from '@/components/dashboard-v2/QuickStatsConfigSheet';
 import { TasksWidget } from '@/components/dashboard-v2/TasksWidget';
 import { TimetableWidget } from '@/components/dashboard-v2/TimetableWidget';
 import { FinanceWidget } from '@/components/dashboard-v2/FinanceWidget';
-import { PortalWidget } from '@/components/dashboard-v2/PortalWidget';
 import { FinanceSheetWrapper } from '@/components/dashboard-v2/FinanceSheetWrapper';
-import { WIDGET_CATALOG } from '@/hooks/useDashboardV2';
 import { Settings2, X, Plus, Minus, EyeOff, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
@@ -28,14 +19,9 @@ import type { DashboardWidget, WidgetSize } from '@/hooks/useDashboardV2';
 const WIDGET_COMPONENTS: Record<string, React.FC<any>> = {
   'streak-ring': StreakRingWidget,
   'habits-checklist': HabitsChecklistWidget,
-  'today-progress': TodayProgressWidget,
-  'health-bar': HealthBarWidget,
-  'quick-stats': QuickStatsWidget,
-  'motivation-quote': MotivationWidget,
   'tasks': TasksWidget,
   'timetable': TimetableWidget,
   'finance': FinanceWidget,
-  'portal': PortalWidget,
 };
 
 function getGridClass(size: WidgetSize): string {
@@ -52,7 +38,6 @@ export default function Index() {
   const { widgets, visibleWidgets, loading: configLoading, updateWidgetSize, toggleWidget, moveWidget, resetToDefault, settings, updateSettings } = useDashboardV2Config();
   const navigate = useNavigate();
   const [editMode, setEditMode] = useState(false);
-  const [statsConfigOpen, setStatsConfigOpen] = useState(false);
   const [financeSheetOpen, setFinanceSheetOpen] = useState(false);
 
   useEffect(() => {
@@ -70,7 +55,6 @@ export default function Index() {
   if (!user) return null;
 
   const hiddenWidgets = widgets.filter(w => !w.visible);
-
   const getInfo = (type: string) => WIDGET_CATALOG.find(w => w.type === type);
 
   const cycleSizeUp = (widget: DashboardWidget) => {
@@ -87,6 +71,39 @@ export default function Index() {
     if (idx > 0) updateWidgetSize(widget.id, info.sizes[idx - 1]);
   };
 
+  const renderWidget = (widget: DashboardWidget) => {
+    const Component = WIDGET_COMPONENTS[widget.type];
+    if (!Component) return null;
+    if (widget.type === 'habits-checklist') return <Component size={widget.size} settings={settings} />;
+    if (widget.type === 'finance') return <Component size={widget.size} onOpenSheet={() => setFinanceSheetOpen(true)} />;
+    return <Component size={widget.size} />;
+  };
+
+  const renderEditOverlay = (widget: DashboardWidget, info: any, index: number, total: number) => (
+    <AnimatePresence>
+      {editMode && (
+        <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} className="absolute inset-0 z-10">
+          <button className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow-md"
+            onClick={(e) => { e.stopPropagation(); toggleWidget(widget.id); }}><EyeOff className="w-3 h-3" strokeWidth={2} /></button>
+          {info.sizes.length > 1 && (
+            <div className="absolute -top-2 -right-2 flex gap-1">
+              <button className="w-6 h-6 rounded-full bg-card border border-border shadow-md flex items-center justify-center disabled:opacity-30" disabled={info.sizes.indexOf(widget.size) <= 0}
+                onClick={(e) => { e.stopPropagation(); cycleSizeDown(widget); }}><Minus className="w-3 h-3" strokeWidth={2} /></button>
+              <button className="w-6 h-6 rounded-full bg-card border border-border shadow-md flex items-center justify-center disabled:opacity-30" disabled={info.sizes.indexOf(widget.size) >= info.sizes.length - 1}
+                onClick={(e) => { e.stopPropagation(); cycleSizeUp(widget); }}><Plus className="w-3 h-3" strokeWidth={2} /></button>
+            </div>
+          )}
+          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+            <button className="w-6 h-6 rounded-full bg-card border border-border shadow-md flex items-center justify-center disabled:opacity-30" disabled={index <= 0}
+              onClick={(e) => { e.stopPropagation(); moveWidget(index, index - 1); }}><ChevronUp className="w-3 h-3" strokeWidth={2} /></button>
+            <button className="w-6 h-6 rounded-full bg-card border border-border shadow-md flex items-center justify-center disabled:opacity-30" disabled={index >= total - 1}
+              onClick={(e) => { e.stopPropagation(); moveWidget(index, index + 1); }}><ChevronDown className="w-3 h-3" strokeWidth={2} /></button>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+
   return (
     <AppLayout>
       <div className="p-4 pb-24 mx-auto space-y-3 max-w-lg md:max-w-3xl lg:max-w-5xl">
@@ -102,14 +119,11 @@ export default function Index() {
           </Button>
         </div>
 
-        {/* Widget Grid - masonry-like with independent columns on desktop */}
+        {/* Mobile widget list */}
         <div className="md:hidden space-y-3">
           {visibleWidgets.map((widget, index) => {
-            const Component = WIDGET_COMPONENTS[widget.type];
             const info = getInfo(widget.type);
-            if (!Component || !info) return null;
-            const canSizeUp = info.sizes.indexOf(widget.size) < info.sizes.length - 1;
-            const canSizeDown = info.sizes.indexOf(widget.size) > 0;
+            if (!WIDGET_COMPONENTS[widget.type] || !info) return null;
             return (
               <motion.div
                 key={widget.id}
@@ -118,60 +132,26 @@ export default function Index() {
                 transition={editMode ? { repeat: Infinity, duration: 0.4, ease: 'easeInOut', delay: index * 0.05 } : { duration: 0.2 }}
               >
                 <div className={editMode ? 'pointer-events-none opacity-80' : ''}>
-                  {widget.type === 'habits-checklist'
-                    ? <Component size={widget.size} settings={settings} />
-                    : widget.type === 'quick-stats'
-                    ? <Component size={widget.size} editMode={editMode} statsConfig={{ visibleFields: settings.statsVisibleFields || ['grade', 'netWorth'] }} />
-                    : widget.type === 'finance'
-                    ? <Component size={widget.size} onOpenSheet={() => setFinanceSheetOpen(true)} />
-                    : <Component size={widget.size} />}
+                  {renderWidget(widget)}
                 </div>
-                <AnimatePresence>
-                  {editMode && (
-                    <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} className="absolute inset-0 z-10"
-                      onClick={(e) => { if (widget.type === 'quick-stats') { e.stopPropagation(); setStatsConfigOpen(true); } }}>
-                      <button className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow-md"
-                        onClick={(e) => { e.stopPropagation(); toggleWidget(widget.id); }}><EyeOff className="w-3 h-3" strokeWidth={2} /></button>
-                      {info.sizes.length > 1 && (
-                        <div className="absolute -top-2 -right-2 flex gap-1">
-                          <button className="w-6 h-6 rounded-full bg-card border border-border shadow-md flex items-center justify-center disabled:opacity-30" disabled={!canSizeDown}
-                            onClick={(e) => { e.stopPropagation(); cycleSizeDown(widget); }}><Minus className="w-3 h-3" strokeWidth={2} /></button>
-                          <button className="w-6 h-6 rounded-full bg-card border border-border shadow-md flex items-center justify-center disabled:opacity-30" disabled={!canSizeUp}
-                            onClick={(e) => { e.stopPropagation(); cycleSizeUp(widget); }}><Plus className="w-3 h-3" strokeWidth={2} /></button>
-                        </div>
-                      )}
-                      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
-                        <button className="w-6 h-6 rounded-full bg-card border border-border shadow-md flex items-center justify-center disabled:opacity-30" disabled={index <= 0}
-                          onClick={(e) => { e.stopPropagation(); moveWidget(index, index - 1); }}><ChevronUp className="w-3 h-3" strokeWidth={2} /></button>
-                        <button className="w-6 h-6 rounded-full bg-card border border-border shadow-md flex items-center justify-center disabled:opacity-30" disabled={index >= visibleWidgets.length - 1}
-                          onClick={(e) => { e.stopPropagation(); moveWidget(index, index + 1); }}><ChevronDown className="w-3 h-3" strokeWidth={2} /></button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                {renderEditOverlay(widget, info, index, visibleWidgets.length)}
               </motion.div>
             );
           })}
         </div>
 
-        {/* Desktop: two independent columns */}
+        {/* Desktop: two columns */}
         <div className="hidden md:flex gap-4">
           {(() => {
             const col1: typeof visibleWidgets = [];
             const col2: typeof visibleWidgets = [];
-            visibleWidgets.forEach((w, i) => {
-              if (i % 2 === 0) col1.push(w);
-              else col2.push(w);
-            });
+            visibleWidgets.forEach((w, i) => { (i % 2 === 0 ? col1 : col2).push(w); });
             const renderCol = (col: typeof visibleWidgets) => (
               <div className="flex-1 space-y-4">
                 {col.map((widget) => {
-                  const Component = WIDGET_COMPONENTS[widget.type];
                   const info = getInfo(widget.type);
                   const globalIndex = visibleWidgets.indexOf(widget);
-                  if (!Component || !info) return null;
-                  const canSizeUp = info.sizes.indexOf(widget.size) < info.sizes.length - 1;
-                  const canSizeDown = info.sizes.indexOf(widget.size) > 0;
+                  if (!WIDGET_COMPONENTS[widget.type] || !info) return null;
                   return (
                     <motion.div
                       key={widget.id}
@@ -180,37 +160,9 @@ export default function Index() {
                       transition={editMode ? { repeat: Infinity, duration: 0.4, ease: 'easeInOut', delay: globalIndex * 0.05 } : { duration: 0.2 }}
                     >
                       <div className={editMode ? 'pointer-events-none opacity-80' : ''}>
-                        {widget.type === 'habits-checklist'
-                          ? <Component size={widget.size} settings={settings} />
-                          : widget.type === 'quick-stats'
-                          ? <Component size={widget.size} editMode={editMode} statsConfig={{ visibleFields: settings.statsVisibleFields || ['grade', 'netWorth'] }} />
-                        : widget.type === 'finance'
-                        ? <Component size={widget.size} onOpenSheet={() => setFinanceSheetOpen(true)} />
-                        : <Component size={widget.size} />}
+                        {renderWidget(widget)}
                       </div>
-                      <AnimatePresence>
-                        {editMode && (
-                          <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} className="absolute inset-0 z-10"
-                            onClick={(e) => { if (widget.type === 'quick-stats') { e.stopPropagation(); setStatsConfigOpen(true); } }}>
-                            <button className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow-md"
-                              onClick={(e) => { e.stopPropagation(); toggleWidget(widget.id); }}><EyeOff className="w-3 h-3" strokeWidth={2} /></button>
-                            {info.sizes.length > 1 && (
-                              <div className="absolute -top-2 -right-2 flex gap-1">
-                                <button className="w-6 h-6 rounded-full bg-card border border-border shadow-md flex items-center justify-center disabled:opacity-30" disabled={!canSizeDown}
-                                  onClick={(e) => { e.stopPropagation(); cycleSizeDown(widget); }}><Minus className="w-3 h-3" strokeWidth={2} /></button>
-                                <button className="w-6 h-6 rounded-full bg-card border border-border shadow-md flex items-center justify-center disabled:opacity-30" disabled={!canSizeUp}
-                                  onClick={(e) => { e.stopPropagation(); cycleSizeUp(widget); }}><Plus className="w-3 h-3" strokeWidth={2} /></button>
-                              </div>
-                            )}
-                            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
-                              <button className="w-6 h-6 rounded-full bg-card border border-border shadow-md flex items-center justify-center disabled:opacity-30" disabled={globalIndex <= 0}
-                                onClick={(e) => { e.stopPropagation(); moveWidget(globalIndex, globalIndex - 1); }}><ChevronUp className="w-3 h-3" strokeWidth={2} /></button>
-                              <button className="w-6 h-6 rounded-full bg-card border border-border shadow-md flex items-center justify-center disabled:opacity-30" disabled={globalIndex >= visibleWidgets.length - 1}
-                                onClick={(e) => { e.stopPropagation(); moveWidget(globalIndex, globalIndex + 1); }}><ChevronDown className="w-3 h-3" strokeWidth={2} /></button>
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                      {renderEditOverlay(widget, info, globalIndex, visibleWidgets.length)}
                     </motion.div>
                   );
                 })}
@@ -220,26 +172,18 @@ export default function Index() {
           })()}
         </div>
 
-        {/* Hidden widgets (show in edit mode) */}
+        {/* Hidden widgets (edit mode) */}
         <AnimatePresence>
           {editMode && hiddenWidgets.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="space-y-2"
-            >
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="space-y-2">
               <p className="text-xs text-muted-foreground font-medium px-1">Ausgeblendete Widgets</p>
               <div className="grid grid-cols-2 gap-2">
                 {hiddenWidgets.map(widget => {
                   const info = getInfo(widget.type);
                   if (!info) return null;
                   return (
-                    <button
-                      key={widget.id}
-                      onClick={() => toggleWidget(widget.id)}
-                      className="flex items-center gap-2 p-3 rounded-xl bg-muted/50 border border-dashed border-border hover:bg-muted transition-colors text-left"
-                    >
+                    <button key={widget.id} onClick={() => toggleWidget(widget.id)}
+                      className="flex items-center gap-2 p-3 rounded-xl bg-muted/50 border border-dashed border-border hover:bg-muted transition-colors text-left">
                       <Plus className="w-4 h-4 text-primary shrink-0" strokeWidth={1.5} />
                       <div className="min-w-0">
                         <p className="text-xs font-medium truncate">{info.name}</p>
@@ -256,53 +200,28 @@ export default function Index() {
         {/* Edit mode footer */}
         <AnimatePresence>
           {editMode && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              className="space-y-3 pt-2"
-            >
-              {/* Habit display limit */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="space-y-3 pt-2">
               <div className="flex items-center justify-between p-3 rounded-xl bg-card border border-border/50">
                 <span className="text-xs font-medium">Sichtbare Habits</span>
                 <div className="flex items-center gap-2">
                   {[0, 3, 5, 7].map(n => (
-                    <button
-                      key={n}
-                      onClick={() => updateSettings({ habitDisplayLimit: n })}
+                    <button key={n} onClick={() => updateSettings({ habitDisplayLimit: n })}
                       className={`px-2 py-1 rounded-lg text-xs font-mono transition-colors ${
                         settings.habitDisplayLimit === n ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'
-                      }`}
-                    >
+                      }`}>
                       {n === 0 ? 'Alle' : n}
                     </button>
                   ))}
                 </div>
               </div>
-
-
               <div className="flex justify-center">
-                <Button variant="outline" size="sm" onClick={resetToDefault} className="text-xs">
-                  Zuruecksetzen
-                </Button>
+                <Button variant="outline" size="sm" onClick={resetToDefault} className="text-xs">Zuruecksetzen</Button>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      <QuickStatsConfigSheet
-        open={statsConfigOpen}
-        onOpenChange={setStatsConfigOpen}
-        visibleFields={(settings.statsVisibleFields || ['grade', 'netWorth']) as any}
-        onToggleField={(field) => {
-          const current = settings.statsVisibleFields || ['grade', 'netWorth'];
-          const next = current.includes(field)
-            ? current.filter(f => f !== field)
-            : [...current, field];
-          updateSettings({ statsVisibleFields: next });
-        }}
-      />
       <FinanceSheetWrapper open={financeSheetOpen} onOpenChange={setFinanceSheetOpen} />
     </AppLayout>
   );
