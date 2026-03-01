@@ -42,7 +42,7 @@ interface Snapshot {
   net_worth_eur: number;
 }
 
-export function FinanceWidget({ size }: { size: WidgetSize }) {
+export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenSheet?: () => void }) {
   const { user } = useAuth();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [investments, setInvestments] = useState<Investment[]>([]);
@@ -175,7 +175,7 @@ export function FinanceWidget({ size }: { size: WidgetSize }) {
           <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
             <Wallet className="w-4 h-4 text-primary" strokeWidth={1.5} />
           </div>
-          <span className="text-sm font-semibold">Finanzen</span>
+          <button onClick={onOpenSheet} className="text-sm font-semibold hover:text-primary transition-colors">Finanzen</button>
         </div>
         <p className="text-2xl font-bold">{fmt(netWorth)}</p>
         <p className="text-[10px] text-muted-foreground">Nettovermoegen</p>
@@ -192,7 +192,7 @@ export function FinanceWidget({ size }: { size: WidgetSize }) {
           <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
             <Wallet className="w-4 h-4 text-primary" strokeWidth={1.5} />
           </div>
-          <span className="text-sm font-semibold">Finanzen</span>
+          <button onClick={onOpenSheet} className="text-sm font-semibold hover:text-primary transition-colors">Finanzen</button>
         </div>
         <Button
           variant="ghost"
