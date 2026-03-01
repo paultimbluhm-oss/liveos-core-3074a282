@@ -59,6 +59,7 @@ export interface V2Investment {
   is_active: boolean;
 }
 
+// Keep type export for backward compatibility but won't load data
 export interface V2MaterialAsset {
   id: string;
   user_id: string;
@@ -143,42 +144,28 @@ export interface V2Loan {
 }
 
 interface FinanceV2ContextType {
-  // Data
   accounts: V2Account[];
   categories: V2Category[];
   transactions: V2Transaction[];
   investments: V2Investment[];
-  materialAssets: V2MaterialAsset[];
   automations: V2Automation[];
   snapshots: V2DailySnapshot[];
   cashDenominations: Record<string, V2CashDenomination[]>;
-  externalSavings: V2ExternalSaving[];
   loans: V2Loan[];
-  
-  // Loading states
   loading: boolean;
-  
-  // Computed values
   totalAccountsEur: number;
   totalInvestmentsEur: number;
   netWorthEur: number;
-  totalExternalSavingsEur: number;
-  
-  // Actions
   refreshData: () => Promise<void>;
   refreshAccounts: () => Promise<void>;
   refreshCategories: () => Promise<void>;
   refreshTransactions: () => Promise<void>;
   refreshInvestments: () => Promise<void>;
-  refreshMaterialAssets: () => Promise<void>;
   refreshAutomations: () => Promise<void>;
   refreshSnapshots: () => Promise<void>;
-  refreshExternalSavings: () => Promise<void>;
   refreshLoans: () => Promise<void>;
   createSnapshot: () => Promise<void>;
   recalculateSnapshotsFromDate: (fromDate: string) => Promise<void>;
-  
-  // EUR/USD rate
   eurUsdRate: number;
 }
 
@@ -191,11 +178,9 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
   const [categories, setCategories] = useState<V2Category[]>([]);
   const [transactions, setTransactions] = useState<V2Transaction[]>([]);
   const [investments, setInvestments] = useState<V2Investment[]>([]);
-  const [materialAssets, setMaterialAssets] = useState<V2MaterialAsset[]>([]);
   const [automations, setAutomations] = useState<V2Automation[]>([]);
   const [snapshots, setSnapshots] = useState<V2DailySnapshot[]>([]);
   const [cashDenominations, setCashDenominations] = useState<Record<string, V2CashDenomination[]>>({});
-  const [externalSavings, setExternalSavings] = useState<V2ExternalSaving[]>([]);
   const [loans, setLoans] = useState<V2Loan[]>([]);
   const [loading, setLoading] = useState(true);
   const [eurUsdRate, setEurUsdRate] = useState(1.08);
@@ -211,7 +196,6 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
     if (data) {
       setAccounts(data as V2Account[]);
       
-      // Load cash denominations for cash accounts
       const cashAccounts = data.filter(a => a.account_type === 'cash');
       if (cashAccounts.length > 0) {
         const { data: denoms } = await supabase
@@ -245,7 +229,6 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
   const refreshTransactions = useCallback(async () => {
     if (!user) return;
     const supabase = getSupabase();
-    // Load ALL transactions for accurate historical calculations
     const { data } = await supabase
       .from('v2_transactions')
       .select('*')
@@ -267,10 +250,8 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
     
     const investments = data as V2Investment[];
     
-    // Fetch current prices for crypto investments (and optionally stocks/ETFs)
     const updatedInvestments = await Promise.all(
       investments.map(async (inv) => {
-        // Only update if no recent price (older than 1 hour) or no price at all
         const lastUpdate = inv.current_price_updated_at ? new Date(inv.current_price_updated_at) : null;
         const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
         const needsUpdate = !lastUpdate || lastUpdate < oneHourAgo;
@@ -281,7 +262,6 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
         
         try {
           if (inv.asset_type === 'crypto' && inv.symbol) {
-            // CoinGecko API for crypto - symbol is the coin id
             const vsCurrency = inv.currency.toLowerCase();
             const res = await fetch(
               `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(inv.symbol)}&vs_currencies=${vsCurrency}`
@@ -290,7 +270,6 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
             const newPrice = priceData[inv.symbol]?.[vsCurrency];
             
             if (newPrice) {
-              // Update price in database
               await supabase
                 .from('v2_investments')
                 .update({
@@ -302,7 +281,6 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
               return { ...inv, current_price: newPrice, current_price_updated_at: new Date().toISOString() };
             }
           } else if ((inv.asset_type === 'etf' || inv.asset_type === 'stock') && inv.symbol) {
-            // Yahoo Finance via Edge Function
             const { data: priceData, error } = await supabase.functions.invoke('get-stock-price', {
               body: { symbol: inv.symbol, targetCurrency: inv.currency },
             });
@@ -330,17 +308,6 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
     setInvestments(updatedInvestments as V2Investment[]);
   }, [user]);
 
-  const refreshMaterialAssets = useCallback(async () => {
-    if (!user) return;
-    const supabase = getSupabase();
-    const { data } = await supabase
-      .from('v2_material_assets')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('name');
-    if (data) setMaterialAssets(data as V2MaterialAsset[]);
-  }, [user]);
-
   const refreshAutomations = useCallback(async () => {
     if (!user) return;
     const supabase = getSupabase();
@@ -364,17 +331,6 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
     if (data) setSnapshots(data as V2DailySnapshot[]);
   }, [user]);
 
-  const refreshExternalSavings = useCallback(async () => {
-    if (!user) return;
-    const supabase = getSupabase();
-    const { data } = await supabase
-      .from('v2_external_savings')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-    if (data) setExternalSavings(data as V2ExternalSaving[]);
-  }, [user]);
-
   const refreshLoans = useCallback(async () => {
     if (!user) return;
     const supabase = getSupabase();
@@ -386,6 +342,23 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
     if (data) setLoans(data as V2Loan[]);
   }, [user]);
 
+  // Trigger automations edge function to process pending automations
+  const triggerAutomations = useCallback(async () => {
+    if (!user) return;
+    const supabase = getSupabase();
+    try {
+      const { error } = await supabase.functions.invoke('v2-process-automations');
+      if (error) {
+        console.error('Failed to trigger automations:', error);
+      } else {
+        // Refresh data after automations ran
+        await Promise.all([refreshAccounts(), refreshTransactions(), refreshAutomations()]);
+      }
+    } catch (err) {
+      console.error('Automation trigger error:', err);
+    }
+  }, [user, refreshAccounts, refreshTransactions, refreshAutomations]);
+
   const refreshData = useCallback(async () => {
     setLoading(true);
     await Promise.all([
@@ -393,14 +366,12 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
       refreshCategories(),
       refreshTransactions(),
       refreshInvestments(),
-      refreshMaterialAssets(),
       refreshAutomations(),
       refreshSnapshots(),
-      refreshExternalSavings(),
       refreshLoans(),
     ]);
     setLoading(false);
-  }, [refreshAccounts, refreshCategories, refreshTransactions, refreshInvestments, refreshMaterialAssets, refreshAutomations, refreshSnapshots, refreshExternalSavings, refreshLoans]);
+  }, [refreshAccounts, refreshCategories, refreshTransactions, refreshInvestments, refreshAutomations, refreshSnapshots, refreshLoans]);
 
   // Create/update today's snapshot
   const createSnapshot = useCallback(async () => {
@@ -408,7 +379,6 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
     const supabase = getSupabase();
     const today = format(new Date(), 'yyyy-MM-dd');
     
-    // Calculate totals
     const accountBalances: Record<string, number> = {};
     let totalAccountsEurCalc = 0;
     
@@ -431,7 +401,6 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
       }
     });
     
-    // Calculate today's income/expenses
     const todayTx = transactions.filter(tx => tx.date === today);
     let incomeEur = 0;
     let expensesEur = 0;
@@ -467,13 +436,10 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
     const today = startOfDay(new Date());
     const startDate = startOfDay(parseISO(fromDate));
     
-    // Don't recalculate if the date is in the future
     if (isBefore(today, startDate)) return;
     
-    // Get all days from fromDate to today
     const daysToRecalculate = eachDayOfInterval({ start: startDate, end: today });
     
-    // Load ALL transactions without limit for accurate calculations
     const { data: allTransactions } = await supabase
       .from('v2_transactions')
       .select('*')
@@ -482,7 +448,6 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
     
     if (!allTransactions) return;
     
-    // Get current account data (we need to work backwards from current balances)
     const { data: currentAccounts } = await supabase
       .from('v2_accounts')
       .select('*')
@@ -490,58 +455,44 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
     
     if (!currentAccounts) return;
     
-    // Get current investments for value calculation
     const { data: currentInvestments } = await supabase
       .from('v2_investments')
       .select('*')
       .eq('user_id', user.id)
       .eq('is_active', true);
     
-    // Calculate historical balance for each account on each day
-    // Strategy: Start with current balance, then subtract transactions that happened after each day
     for (const day of daysToRecalculate) {
       const dayStr = format(day, 'yyyy-MM-dd');
       
-      // Calculate income/expenses for this specific day from transactions
       const dayTx = allTransactions.filter(tx => tx.date === dayStr);
       let incomeEur = 0;
       let expensesEur = 0;
       
       dayTx.forEach(tx => {
         const amt = tx.currency === 'USD' ? tx.amount / eurUsdRate : tx.amount;
-        // Income and investment sells count as income
         if (tx.transaction_type === 'income' || tx.transaction_type === 'investment_sell') {
           incomeEur += amt;
-        // Expenses and investment buys count as expenses
         } else if (tx.transaction_type === 'expense' || tx.transaction_type === 'investment_buy') {
           expensesEur += amt;
         }
-        // Transfers are NOT counted as income/expense (internal movement)
       });
       
-      // Calculate what the account balances were at the END of this day
-      // Start with current balance and subtract the effect of all transactions AFTER this day
       const accountBalances: Record<string, number> = {};
       let totalAccountsEurCalc = 0;
       
       currentAccounts.forEach(acc => {
-        // Start with current balance
         let historicalBalance = acc.balance;
         
-        // Subtract the effect of all transactions that happened AFTER this day
         allTransactions
           .filter(tx => tx.date > dayStr)
           .forEach(tx => {
             if (tx.account_id === acc.id) {
-              // Income and investment_sell add to account, so reverse by subtracting
               if (tx.transaction_type === 'income' || tx.transaction_type === 'investment_sell') {
                 historicalBalance -= tx.amount;
-              // Expense, investment_buy, and transfer (out) subtract from account, so reverse by adding
               } else if (tx.transaction_type === 'expense' || tx.transaction_type === 'investment_buy' || tx.transaction_type === 'transfer') {
                 historicalBalance += tx.amount;
               }
             }
-            // Transfer (in) adds to target account, so reverse by subtracting
             if (tx.to_account_id === acc.id && tx.transaction_type === 'transfer') {
               historicalBalance -= tx.amount;
             }
@@ -555,7 +506,6 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
         }
       });
       
-      // For investments, use current values (historical price tracking would require external data)
       let totalInvestmentsEurCalc = 0;
       if (currentInvestments) {
         currentInvestments.forEach((inv) => {
@@ -591,8 +541,17 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
     }
   }, [user]);
 
-  // Create/update snapshot when data changes (after initial load)
-  // Also repair historical snapshots if needed (one-time on load)
+  // Trigger automations after initial load
+  const [automationsTriggered, setAutomationsTriggered] = useState(false);
+  
+  useEffect(() => {
+    if (user && !loading && !automationsTriggered) {
+      setAutomationsTriggered(true);
+      triggerAutomations();
+    }
+  }, [user, loading, automationsTriggered, triggerAutomations]);
+
+  // Create/update snapshot when data changes
   const [snapshotsRepaired, setSnapshotsRepaired] = useState(false);
   
   useEffect(() => {
@@ -601,11 +560,10 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
     }
   }, [user, loading, accounts.length, investments.length]);
 
-  // One-time repair of all historical snapshots after initial load
+  // One-time repair of historical snapshots
   useEffect(() => {
     if (user && !loading && transactions.length > 0 && !snapshotsRepaired) {
       setSnapshotsRepaired(true);
-      // Find oldest transaction date and recalculate from there
       const oldestDate = transactions.reduce(
         (min, tx) => (tx.date < min ? tx.date : min),
         format(new Date(), 'yyyy-MM-dd')
@@ -632,41 +590,27 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
 
   const netWorthEur = totalAccountsEur + totalInvestmentsEur;
 
-  const totalExternalSavingsEur = externalSavings
-    .filter(s => !s.is_received)
-    .reduce((sum, s) => {
-      if (s.currency === 'USD') {
-        return sum + s.amount / eurUsdRate;
-      }
-      return sum + s.amount;
-    }, 0);
-
   return (
     <FinanceV2Context.Provider value={{
       accounts,
       categories,
       transactions,
       investments,
-      materialAssets,
       automations,
       snapshots,
       cashDenominations,
-      externalSavings,
       loans,
       loading,
       totalAccountsEur,
       totalInvestmentsEur,
       netWorthEur,
-      totalExternalSavingsEur,
       refreshData,
       refreshAccounts,
       refreshCategories,
       refreshTransactions,
       refreshInvestments,
-      refreshMaterialAssets,
       refreshAutomations,
       refreshSnapshots,
-      refreshExternalSavings,
       refreshLoans,
       createSnapshot,
       recalculateSnapshotsFromDate,

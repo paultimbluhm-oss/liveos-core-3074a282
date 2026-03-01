@@ -4,16 +4,14 @@ import { DashboardTab } from '@/components/finanzen-v2/tabs/DashboardTab';
 import { AccountsTab } from '@/components/finanzen-v2/tabs/AccountsTab';
 import { InvestmentsTab } from '@/components/finanzen-v2/tabs/InvestmentsTab';
 import { TransactionsTab } from '@/components/finanzen-v2/tabs/TransactionsTab';
-import { StatisticsTab } from '@/components/finanzen-v2/tabs/StatisticsTab';
 import { useState } from 'react';
-import { LayoutDashboard, Wallet, TrendingUp, Receipt, BarChart3 } from 'lucide-react';
+import { LayoutDashboard, Wallet, TrendingUp, Receipt } from 'lucide-react';
 
 const tabs = [
   { id: 'dashboard', icon: LayoutDashboard, label: 'Uebersicht' },
   { id: 'accounts', icon: Wallet, label: 'Konten' },
   { id: 'investments', icon: TrendingUp, label: 'Invest' },
   { id: 'transactions', icon: Receipt, label: 'Buchungen' },
-  { id: 'statistics', icon: BarChart3, label: 'Statistik' },
 ];
 
 interface FinanceSheetWrapperProps {
@@ -30,7 +28,6 @@ export function FinanceSheetWrapper({ open, onOpenChange }: FinanceSheetWrapperP
       case 'accounts': return <AccountsTab />;
       case 'investments': return <InvestmentsTab />;
       case 'transactions': return <TransactionsTab />;
-      case 'statistics': return <StatisticsTab />;
       default: return <DashboardTab />;
     }
   };
