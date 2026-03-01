@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { CalendarDays, BookOpen, Check, ChevronDown, AlertTriangle } from 'lucide-react';
+import { CalendarDays, BookOpen, Check, ChevronDown, AlertTriangle, ExternalLink } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
@@ -353,9 +353,18 @@ function TimetableWidgetInner({ size }: { size: WidgetSize }) {
             <CalendarDays className="w-4 h-4 text-primary" strokeWidth={1.5} />
           </div>
           <span className="text-sm font-semibold">Stundenplan</span>
-          <span className="text-xs text-muted-foreground ml-auto">
+          <span className="text-xs text-muted-foreground ml-auto mr-1">
             {format(new Date(), 'EEEE', { locale: de })}
           </span>
+          <a
+            href="https://portal.hls-ol.de"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-7 h-7 rounded-lg bg-muted/50 flex items-center justify-center hover:bg-muted transition-colors"
+            title="LARA Portal"
+          >
+            <ExternalLink className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
+          </a>
         </div>
 
         {/* Today's schedule - 2 column grid */}
