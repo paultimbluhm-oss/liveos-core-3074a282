@@ -29,18 +29,13 @@ export function TaskCard({ task, onToggle, onDelete, onUpdate }: TaskCardProps) 
   const isOverdue = task.due_date && isPast(parseISO(task.due_date)) && !task.completed;
   const isDueToday = task.due_date && isToday(parseISO(task.due_date));
 
-  const priorityIndicator = {
-    high: 'bg-rose-500',
-    medium: 'bg-amber-500',
-    low: 'bg-emerald-500',
-  };
 
   return (
     <>
       <div className={`flex items-center gap-3 p-3 rounded-xl transition-all group ${
         task.completed ? 'bg-secondary/20 opacity-60' : isOverdue ? 'bg-rose-500/5 border border-rose-500/20' : 'bg-secondary/40 hover:bg-secondary/60'
       }`}>
-        <div className={`w-1 h-8 rounded-full ${priorityIndicator[task.priority as keyof typeof priorityIndicator] || priorityIndicator.medium}`} />
+        
         <Checkbox checked={task.completed} onCheckedChange={onToggle} className="shrink-0" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
