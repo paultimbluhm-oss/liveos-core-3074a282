@@ -106,15 +106,10 @@ export function TasksWidget({ size }: { size: WidgetSize }) {
     return format(date, 'EEE, d. MMM', { locale: de });
   };
 
-  const priorityConfig: Record<string, { color: string; bg: string; label: string }> = {
-    high: { color: 'text-rose-500', bg: 'bg-rose-500', label: 'Hoch' },
-    medium: { color: 'text-amber-500', bg: 'bg-amber-500', label: 'Mittel' },
-    low: { color: 'text-emerald-500', bg: 'bg-emerald-500', label: 'Niedrig' },
-  };
 
   const TaskRow = ({ task, showDate = true }: { task: Task; showDate?: boolean }) => {
     const isOverdue = task.due_date && isPast(parseISO(task.due_date)) && !isToday(parseISO(task.due_date)) && !task.completed;
-    const prio = priorityConfig[task.priority] || priorityConfig.medium;
+    
     return (
       <button
         onClick={() => setDetailTask(task)}
@@ -126,7 +121,7 @@ export function TasksWidget({ size }: { size: WidgetSize }) {
               : 'bg-card border border-border/40 shadow-sm hover:shadow-md'
         }`}
       >
-        <div className={`w-1 self-stretch rounded-full shrink-0 ${prio.bg}`} />
+        
         <Checkbox
           checked={task.completed}
           onCheckedChange={() => toggleComplete(task)}
@@ -296,13 +291,13 @@ export function TasksWidget({ size }: { size: WidgetSize }) {
       <Sheet open={!!detailTask} onOpenChange={(o) => { if (!o) setDetailTask(null); }}>
         <SheetContent side="bottom" className="rounded-t-2xl max-h-[60vh]">
           {detailTask && (() => {
-            const prio = priorityConfig[detailTask.priority] || priorityConfig.medium;
+            
             const isOverdue = detailTask.due_date && isPast(parseISO(detailTask.due_date)) && !isToday(parseISO(detailTask.due_date)) && !detailTask.completed;
             return (
               <>
                 <SheetHeader className="pb-4">
                   <SheetTitle className="text-left flex items-start gap-3">
-                    <div className={`w-1.5 h-8 rounded-full shrink-0 mt-0.5 ${prio.bg}`} />
+                    <div className="w-1.5 h-8 rounded-full shrink-0 mt-0.5 bg-primary" />
                     <span className={`${detailTask.completed ? 'line-through text-muted-foreground' : ''}`}>
                       {detailTask.title}
                     </span>
@@ -312,9 +307,6 @@ export function TasksWidget({ size }: { size: WidgetSize }) {
                 <div className="space-y-4">
                   {/* Meta info */}
                   <div className="flex flex-wrap gap-2">
-                    <span className={`text-xs px-2 py-1 rounded-lg ${prio.bg}/10 ${prio.color} font-medium`}>
-                      {prio.label}
-                    </span>
                     {detailTask.due_date && (
                       <span className={`text-xs px-2 py-1 rounded-lg font-medium ${
                         isOverdue ? 'bg-rose-500/10 text-rose-500' : 'bg-muted text-muted-foreground'
