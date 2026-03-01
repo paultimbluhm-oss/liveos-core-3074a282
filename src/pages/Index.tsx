@@ -10,6 +10,7 @@ import { TasksWidget } from '@/components/dashboard-v2/TasksWidget';
 import { TimetableWidget } from '@/components/dashboard-v2/TimetableWidget';
 import { FinanceWidget } from '@/components/dashboard-v2/FinanceWidget';
 import { FinanceSheetWrapper } from '@/components/dashboard-v2/FinanceSheetWrapper';
+import { SchoolSheetWrapper } from '@/components/dashboard-v2/SchoolSheetWrapper';
 import { Settings2, X, Plus, Minus, EyeOff, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
@@ -39,6 +40,7 @@ export default function Index() {
   const navigate = useNavigate();
   const [editMode, setEditMode] = useState(false);
   const [financeSheetOpen, setFinanceSheetOpen] = useState(false);
+  const [schoolSheetOpen, setSchoolSheetOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) navigate('/auth');
@@ -76,6 +78,7 @@ export default function Index() {
     if (!Component) return null;
     if (widget.type === 'habits-checklist') return <Component size={widget.size} settings={settings} />;
     if (widget.type === 'finance') return <Component size={widget.size} onOpenSheet={() => setFinanceSheetOpen(true)} />;
+    if (widget.type === 'timetable') return <Component size={widget.size} onOpenSheet={() => setSchoolSheetOpen(true)} />;
     return <Component size={widget.size} />;
   };
 
@@ -223,6 +226,7 @@ export default function Index() {
       </div>
 
       <FinanceSheetWrapper open={financeSheetOpen} onOpenChange={setFinanceSheetOpen} />
+      <SchoolSheetWrapper open={schoolSheetOpen} onOpenChange={setSchoolSheetOpen} />
     </AppLayout>
   );
 }
