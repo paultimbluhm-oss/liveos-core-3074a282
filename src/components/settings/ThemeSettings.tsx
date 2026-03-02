@@ -28,7 +28,7 @@ function ColorInput({ label, value, onChange }: { label: string; value: string; 
 }
 
 export function ThemeSettings() {
-  const { theme, setTheme, customColors, setCustomColors, liquidGlass, setLiquidGlass } = useTheme();
+  const { theme, setTheme, customColors, setCustomColors, liquidGlass, setLiquidGlass, liquidGlassMode, setLiquidGlassMode } = useTheme();
   const [localCustom, setLocalCustom] = useState<CustomThemeColors>(customColors);
   const [showCustomEditor, setShowCustomEditor] = useState(theme === 'custom');
 
@@ -82,79 +82,126 @@ export function ThemeSettings() {
         <Switch checked={liquidGlass} onCheckedChange={setLiquidGlass} />
       </div>
 
-      {/* Preset themes */}
-      <div className="space-y-2">
-        {presetThemes.map((t) => (
+      {liquidGlass ? (
+        /* Light/Dark toggle for Liquid Glass */
+        <div className="space-y-2">
           <button
-            key={t.id}
-            onClick={() => handleSelectTheme(t.id)}
+            onClick={() => setLiquidGlassMode('light')}
             className={`w-full flex items-center gap-4 p-3.5 rounded-xl border transition-all ${
-              theme === t.id
+              liquidGlassMode === 'light'
                 ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
                 : 'border-border bg-card hover:border-primary/40'
             }`}
           >
             <div className="flex gap-1.5 shrink-0">
-              {t.preview.map((color, i) => (
-                <div
-                  key={i}
-                  className="w-6 h-6 rounded-full border border-border/50"
-                  style={{ backgroundColor: color }}
-                />
-              ))}
+              <div className="w-6 h-6 rounded-full border border-border/50" style={{ backgroundColor: '#e4e7ed' }} />
+              <div className="w-6 h-6 rounded-full border border-border/50" style={{ backgroundColor: '#ffffff' }} />
+              <div className="w-6 h-6 rounded-full border border-border/50" style={{ backgroundColor: '#3b82f6' }} />
+              <div className="w-6 h-6 rounded-full border border-border/50" style={{ backgroundColor: '#06b6d4' }} />
             </div>
             <div className="flex-1 text-left">
-              <p className="text-sm font-medium">{t.name}</p>
-              <p className="text-[11px] text-muted-foreground">{t.description}</p>
+              <p className="text-sm font-medium">Light</p>
+              <p className="text-[11px] text-muted-foreground">Helles Glas-Design</p>
             </div>
-            {theme === t.id && (
-              <Check className="w-4 h-4 text-primary shrink-0" strokeWidth={2} />
-            )}
+            {liquidGlassMode === 'light' && <Check className="w-4 h-4 text-primary shrink-0" strokeWidth={2} />}
           </button>
-        ))}
-      </div>
 
-      {/* Custom theme option */}
-      <div>
-        <button
-          onClick={() => handleSelectTheme('custom')}
-          className={`w-full flex items-center gap-4 p-3.5 rounded-xl border transition-all ${
-            theme === 'custom'
-              ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
-              : 'border-border bg-card hover:border-primary/40'
-          }`}
-        >
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center shrink-0">
-            <Palette className="w-5 h-5 text-primary" />
+          <button
+            onClick={() => setLiquidGlassMode('dark')}
+            className={`w-full flex items-center gap-4 p-3.5 rounded-xl border transition-all ${
+              liquidGlassMode === 'dark'
+                ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
+                : 'border-border bg-card hover:border-primary/40'
+            }`}
+          >
+            <div className="flex gap-1.5 shrink-0">
+              <div className="w-6 h-6 rounded-full border border-border/50" style={{ backgroundColor: '#141c2b' }} />
+              <div className="w-6 h-6 rounded-full border border-border/50" style={{ backgroundColor: '#1e293b' }} />
+              <div className="w-6 h-6 rounded-full border border-border/50" style={{ backgroundColor: '#60a5fa' }} />
+              <div className="w-6 h-6 rounded-full border border-border/50" style={{ backgroundColor: '#38bdf8' }} />
+            </div>
+            <div className="flex-1 text-left">
+              <p className="text-sm font-medium">Dark</p>
+              <p className="text-[11px] text-muted-foreground">Dunkles Glas-Design</p>
+            </div>
+            {liquidGlassMode === 'dark' && <Check className="w-4 h-4 text-primary shrink-0" strokeWidth={2} />}
+          </button>
+        </div>
+      ) : (
+        /* Normal theme selection */
+        <>
+          <div className="space-y-2">
+            {presetThemes.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => handleSelectTheme(t.id)}
+                className={`w-full flex items-center gap-4 p-3.5 rounded-xl border transition-all ${
+                  theme === t.id
+                    ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
+                    : 'border-border bg-card hover:border-primary/40'
+                }`}
+              >
+                <div className="flex gap-1.5 shrink-0">
+                  {t.preview.map((color, i) => (
+                    <div
+                      key={i}
+                      className="w-6 h-6 rounded-full border border-border/50"
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-sm font-medium">{t.name}</p>
+                  <p className="text-[11px] text-muted-foreground">{t.description}</p>
+                </div>
+                {theme === t.id && (
+                  <Check className="w-4 h-4 text-primary shrink-0" strokeWidth={2} />
+                )}
+              </button>
+            ))}
           </div>
-          <div className="flex-1 text-left">
-            <p className="text-sm font-medium">{customTheme.name}</p>
-            <p className="text-[11px] text-muted-foreground">{customTheme.description}</p>
-          </div>
-          {theme === 'custom' && (
-            <Check className="w-4 h-4 text-primary shrink-0" strokeWidth={2} />
-          )}
-        </button>
-      </div>
 
-      {/* Custom editor */}
-      {showCustomEditor && (
-        <div className="space-y-4 p-4 rounded-xl border border-border bg-card">
-          <div className="flex items-center justify-between">
-            <Label className="text-sm font-semibold">Eigene Farben</Label>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={toggleCustomMode}
-              className="h-8 gap-1.5 text-xs"
+          {/* Custom theme option */}
+          <div>
+            <button
+              onClick={() => handleSelectTheme('custom')}
+              className={`w-full flex items-center gap-4 p-3.5 rounded-xl border transition-all ${
+                theme === 'custom'
+                  ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
+                  : 'border-border bg-card hover:border-primary/40'
+              }`}
             >
-              {localCustom.mode === 'light' ? (
-                <><Sun className="w-3.5 h-3.5" /> Hell</>
-              ) : (
-                <><Moon className="w-3.5 h-3.5" /> Dunkel</>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center shrink-0">
+                <Palette className="w-5 h-5 text-primary" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="text-sm font-medium">{customTheme.name}</p>
+                <p className="text-[11px] text-muted-foreground">{customTheme.description}</p>
+              </div>
+              {theme === 'custom' && (
+                <Check className="w-4 h-4 text-primary shrink-0" strokeWidth={2} />
               )}
-            </Button>
+            </button>
           </div>
+
+          {/* Custom editor */}
+          {showCustomEditor && (
+            <div className="space-y-4 p-4 rounded-xl border border-border bg-card">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-semibold">Eigene Farben</Label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={toggleCustomMode}
+                  className="h-8 gap-1.5 text-xs"
+                >
+                  {localCustom.mode === 'light' ? (
+                    <><Sun className="w-3.5 h-3.5" /> Hell</>
+                  ) : (
+                    <><Moon className="w-3.5 h-3.5" /> Dunkel</>
+                  )}
+                </Button>
+              </div>
 
           <div className="grid grid-cols-1 gap-3">
             <ColorInput label="Primaerfarbe" value={localCustom.primary} onChange={(v) => updateCustomColor('primary', v)} />
@@ -189,6 +236,8 @@ export function ThemeSettings() {
             </div>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );
