@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useTheme, THEMES, ThemeName, CustomThemeColors } from '@/contexts/ThemeContext';
+import { useTheme, THEMES, ThemeName, CustomThemeColors, LiquidGlassConfig } from '@/contexts/ThemeContext';
 import { Check, Palette, Sun, Moon, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -28,8 +28,9 @@ function ColorInput({ label, value, onChange }: { label: string; value: string; 
 }
 
 export function ThemeSettings() {
-  const { theme, setTheme, customColors, setCustomColors, liquidGlass, setLiquidGlass } = useTheme();
+  const { theme, setTheme, customColors, setCustomColors, liquidGlass, setLiquidGlass, liquidGlassConfig, setLiquidGlassConfig } = useTheme();
   const [localCustom, setLocalCustom] = useState<CustomThemeColors>(customColors);
+  const [localGlass, setLocalGlass] = useState<LiquidGlassConfig>(liquidGlassConfig);
   const [showCustomEditor, setShowCustomEditor] = useState(theme === 'custom');
 
   const presetThemes = THEMES.filter(t => t.id !== 'custom');
@@ -71,15 +72,47 @@ export function ThemeSettings() {
       </div>
 
       {/* Liquid Glass Toggle */}
-      <div className="flex items-center gap-4 p-3.5 rounded-xl border border-border bg-card">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center shrink-0 backdrop-blur-sm border border-border/50">
-          <Sparkles className="w-5 h-5 text-primary" strokeWidth={1.5} />
+      <div className="space-y-3">
+        <div className="flex items-center gap-4 p-3.5 rounded-xl border border-border bg-card">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center shrink-0 backdrop-blur-sm border border-border/50">
+            <Sparkles className="w-5 h-5 text-primary" strokeWidth={1.5} />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-medium">Liquid Glass</p>
+            <p className="text-[11px] text-muted-foreground">iOS 26 Glassmorphism-Effekt</p>
+          </div>
+          <Switch checked={liquidGlass} onCheckedChange={setLiquidGlass} />
         </div>
-        <div className="flex-1">
-          <p className="text-sm font-medium">Liquid Glass</p>
-          <p className="text-[11px] text-muted-foreground">iOS 26 Glassmorphism-Effekt</p>
-        </div>
-        <Switch checked={liquidGlass} onCheckedChange={setLiquidGlass} />
+
+        {liquidGlass && (
+          <div className="p-4 rounded-xl border border-border bg-card space-y-3">
+            <Label className="text-sm font-semibold">Hintergrund-Gradient</Label>
+            <div className="grid grid-cols-1 gap-3">
+              <ColorInput
+                label="Farbe 1"
+                value={localGlass.gradientColor1}
+                onChange={(v) => {
+                  const updated = { ...localGlass, gradientColor1: v };
+                  setLocalGlass(updated);
+                  setLiquidGlassConfig(updated);
+                }}
+              />
+              <ColorInput
+                label="Farbe 2"
+                value={localGlass.gradientColor2}
+                onChange={(v) => {
+                  const updated = { ...localGlass, gradientColor2: v };
+                  setLocalGlass(updated);
+                  setLiquidGlassConfig(updated);
+                }}
+              />
+            </div>
+            <div
+              className="h-12 rounded-xl border border-border"
+              style={{ background: `linear-gradient(145deg, ${localGlass.gradientColor1}, ${localGlass.gradientColor2})` }}
+            />
+          </div>
+        )}
       </div>
 
       {/* Preset themes */}

@@ -29,6 +29,16 @@ const DEFAULT_CUSTOM_DARK: CustomThemeColors = {
   foreground: '#e2e8f0',
 };
 
+export interface LiquidGlassConfig {
+  gradientColor1: string; // hex
+  gradientColor2: string; // hex
+}
+
+const DEFAULT_GLASS_CONFIG: LiquidGlassConfig = {
+  gradientColor1: '#e8eaf0',
+  gradientColor2: '#dce4ed',
+};
+
 interface ThemeContextType {
   theme: ThemeName;
   setTheme: (theme: ThemeName) => void;
@@ -36,6 +46,8 @@ interface ThemeContextType {
   setCustomColors: (colors: CustomThemeColors) => void;
   liquidGlass: boolean;
   setLiquidGlass: (enabled: boolean) => void;
+  liquidGlassConfig: LiquidGlassConfig;
+  setLiquidGlassConfig: (config: LiquidGlassConfig) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType>({
@@ -45,6 +57,8 @@ const ThemeContext = createContext<ThemeContextType>({
   setCustomColors: () => {},
   liquidGlass: false,
   setLiquidGlass: () => {},
+  liquidGlassConfig: DEFAULT_GLASS_CONFIG,
+  setLiquidGlassConfig: () => {},
 });
 
 export const useTheme = () => useContext(ThemeContext);
@@ -223,9 +237,22 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     return localStorage.getItem('app-liquid-glass') === 'true';
   });
 
+  const [liquidGlassConfig, setLiquidGlassConfigState] = useState<LiquidGlassConfig>(() => {
+    const saved = localStorage.getItem('app-liquid-glass-config');
+    if (saved) {
+      try { return JSON.parse(saved); } catch { /* ignore */ }
+    }
+    return DEFAULT_GLASS_CONFIG;
+  });
+
   const setLiquidGlass = useCallback((enabled: boolean) => {
     setLiquidGlassState(enabled);
     localStorage.setItem('app-liquid-glass', String(enabled));
+  }, []);
+
+  const setLiquidGlassConfig = useCallback((config: LiquidGlassConfig) => {
+    setLiquidGlassConfigState(config);
+    localStorage.setItem('app-liquid-glass-config', JSON.stringify(config));
   }, []);
 
   const setTheme = (t: ThemeName) => {
@@ -249,10 +276,18 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     document.documentElement.setAttribute('data-liquid-glass', String(liquidGlass));
-  }, [liquidGlass]);
+    if (liquidGlass) {
+      const root = document.documentElement;
+      root.style.setProperty('--liquid-gradient-1', liquidGlassConfig.gradientColor1);
+      root.style.setProperty('--liquid-gradient-2', liquidGlassConfig.gradientColor2);
+    } else {
+      document.documentElement.style.removeProperty('--liquid-gradient-1');
+      document.documentElement.style.removeProperty('--liquid-gradient-2');
+    }
+  }, [liquidGlass, liquidGlassConfig]);
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, customColors, setCustomColors, liquidGlass, setLiquidGlass }}>
+    <ThemeContext.Provider value={{ theme, setTheme, customColors, setCustomColors, liquidGlass, setLiquidGlass, liquidGlassConfig, setLiquidGlassConfig }}>
       {children}
     </ThemeContext.Provider>
   );
