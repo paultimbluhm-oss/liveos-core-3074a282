@@ -422,10 +422,12 @@
   --sidebar-accent-foreground: 210 20% 90%;
   --sidebar-border: 220 15% 20%;
   --sidebar-ring: 217 70% 60%;
-  --glass-bg: 0.28;
-  --glass-border-light: 0.12;
-  --glass-shine: 0.15;
-  --glass-shadow: 0 8px 32px -8px hsl(0 0% 0% / 0.4);
+  --glass-blur: 0px;
+  --glass-saturation: 1;
+  --glass-bg: 0.96;
+  --glass-border-light: 0;
+  --glass-shine: 0;
+  --glass-shadow: none;
 }
 
 /* ---- Light Mode ---- */
@@ -827,4 +829,33 @@
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   box-shadow: none !important;
+}
+
+/* ---- GLOBAL HAZE GUARD (Dark) ---- */
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [class*="bg-card"],
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [class*="bg-muted"],
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [class*="bg-secondary"],
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [class*="bg-popover"],
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-sonner-toast],
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] button[role="switch"],
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] button[role="checkbox"],
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] button[role="combobox"],
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-radix-select-trigger],
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="progressbar"],
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] .inline-flex.items-center.rounded-full,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] .inline-flex.items-center.rounded-md {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+  border-color: hsl(var(--border) / 0.45) !important;
+}
+
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [class*="bg-card"],
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [class*="bg-popover"] {
+  background: hsl(var(--card) / 0.96) !important;
+}
+
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [class*="bg-muted"],
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [class*="bg-secondary"] {
+  background: hsl(var(--muted) / 0.85) !important;
 }
