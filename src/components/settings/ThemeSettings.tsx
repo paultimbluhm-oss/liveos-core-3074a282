@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useTheme, THEMES, ThemeName, CustomThemeColors } from '@/contexts/ThemeContext';
-import { Check, Palette, Sun, Moon } from 'lucide-react';
+import { Check, Palette, Sun, Moon, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 
 function ColorInput({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
@@ -27,7 +28,7 @@ function ColorInput({ label, value, onChange }: { label: string; value: string; 
 }
 
 export function ThemeSettings() {
-  const { theme, setTheme, customColors, setCustomColors } = useTheme();
+  const { theme, setTheme, customColors, setCustomColors, liquidGlass, setLiquidGlass } = useTheme();
   const [localCustom, setLocalCustom] = useState<CustomThemeColors>(customColors);
   const [showCustomEditor, setShowCustomEditor] = useState(theme === 'custom');
 
@@ -67,6 +68,18 @@ export function ThemeSettings() {
       <div>
         <h3 className="font-semibold">Farbdesign</h3>
         <p className="text-sm text-muted-foreground">Waehle ein Theme oder erstelle dein eigenes</p>
+      </div>
+
+      {/* Liquid Glass Toggle */}
+      <div className="flex items-center gap-4 p-3.5 rounded-xl border border-border bg-card">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center shrink-0 backdrop-blur-sm border border-border/50">
+          <Sparkles className="w-5 h-5 text-primary" strokeWidth={1.5} />
+        </div>
+        <div className="flex-1">
+          <p className="text-sm font-medium">Liquid Glass</p>
+          <p className="text-[11px] text-muted-foreground">iOS 26 Glassmorphism-Effekt</p>
+        </div>
+        <Switch checked={liquidGlass} onCheckedChange={setLiquidGlass} />
       </div>
 
       {/* Preset themes */}
