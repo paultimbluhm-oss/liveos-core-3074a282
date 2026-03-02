@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Check, Flame, Plus, Minus, Settings, ChevronDown, Sparkles } from 'lucide-react';
+import { Check, Flame, Plus, Minus, ChevronDown, Sparkles } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -262,9 +262,6 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
           <span className={`text-xs font-bold font-mono ${allDone ? 'text-success' : 'text-primary'}`}>{pct}%</span>
           <button onClick={() => setShowWizard(true)} className="p-1 rounded-lg hover:bg-muted/50 transition-colors">
             <Plus className="w-3.5 h-3.5 text-muted-foreground" />
-          </button>
-          <button onClick={() => setShowManagement(true)} className="p-1 rounded-lg hover:bg-muted/50 transition-colors">
-            <Settings className="w-3.5 h-3.5 text-muted-foreground" />
           </button>
         </div>
       </div>
