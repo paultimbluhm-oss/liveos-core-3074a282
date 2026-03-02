@@ -515,12 +515,12 @@
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-radix-popper-content-wrapper] > *,
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"]:not([data-vaul-drawer-wrapper] *),
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] {
-  background: hsl(220 20% 14% / 0.6) !important;
-  backdrop-filter: blur(60px) saturate(2.5) brightness(1.1) !important;
-  -webkit-backdrop-filter: blur(60px) saturate(2.5) brightness(1.1) !important;
-  border: 0.5px solid hsl(0 0% 100% / 0.1) !important;
+  background: hsl(var(--background) / 0.96) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid hsl(var(--border) / 0.55) !important;
   border-radius: var(--glass-radius) !important;
-  box-shadow: 0 16px 64px -12px hsl(0 0% 0% / 0.5), inset 0 0.5px 0 hsl(0 0% 100% / 0.12) !important;
+  box-shadow: none !important;
 }
 
 [data-liquid-glass="true"][data-liquid-glass-mode="light"] [data-radix-popper-content-wrapper] > *,
@@ -553,23 +553,23 @@
 
 /* ---- Tabs (Dark) ---- */
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="tablist"] {
-  background: hsl(220 15% 15% / 0.4) !important;
-  backdrop-filter: blur(24px) saturate(2) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(2) !important;
-  border: 0.5px solid hsl(0 0% 100% / 0.08) !important;
+  background: hsl(var(--muted) / 0.7) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid hsl(var(--border) / 0.55) !important;
   border-radius: var(--glass-radius) !important;
-  box-shadow: inset 0 0.5px 0 hsl(0 0% 100% / 0.06) !important;
+  box-shadow: none !important;
   padding: 3px !important;
 }
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="tablist"] [role="tab"] {
   border-radius: calc(var(--glass-radius) - 3px) !important;
-  color: hsl(210 20% 70%) !important;
+  color: hsl(var(--muted-foreground)) !important;
 }
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="tablist"] [data-state="active"] {
-  background: hsl(220 20% 20% / 0.6) !important;
-  backdrop-filter: blur(12px) !important;
-  color: hsl(210 20% 95%) !important;
-  box-shadow: 0 2px 8px hsl(0 0% 0% / 0.2), inset 0 0.5px 0 hsl(0 0% 100% / 0.1) !important;
+  background: hsl(var(--card) / 0.95) !important;
+  backdrop-filter: none !important;
+  color: hsl(var(--foreground)) !important;
+  box-shadow: none !important;
 }
 
 /* ---- Tabs (Light) ---- */
@@ -597,21 +597,21 @@
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] input,
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] textarea,
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] select {
-  background: hsl(220 15% 15% / 0.4) !important;
-  backdrop-filter: blur(20px) saturate(1.6) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(1.6) !important;
-  border: 0.5px solid hsl(0 0% 100% / 0.08) !important;
+  background: hsl(var(--card) / 0.92) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid hsl(var(--border) / 0.55) !important;
   border-radius: 1rem !important;
-  color: hsl(210 20% 92%) !important;
+  color: hsl(var(--foreground)) !important;
 }
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] input::placeholder,
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] textarea::placeholder {
-  color: hsl(215 15% 50%) !important;
+  color: hsl(var(--muted-foreground)) !important;
 }
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] input:focus,
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] textarea:focus {
-  border-color: hsl(var(--primary) / 0.4) !important;
-  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.15), inset 0 0.5px 0 hsl(0 0% 100% / 0.1) !important;
+  border-color: hsl(var(--ring) / 0.6) !important;
+  box-shadow: 0 0 0 2px hsl(var(--ring) / 0.18) !important;
 }
 
 /* ---- Inputs (Light) ---- */
@@ -639,10 +639,10 @@
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer],
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] [class*="SheetContent"],
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] .fixed [role="dialog"] {
-  background: hsl(220 25% 10% / 0.75) !important;
-  backdrop-filter: blur(72px) saturate(2.5) brightness(1.05) !important;
-  -webkit-backdrop-filter: blur(72px) saturate(2.5) brightness(1.05) !important;
-  border: 0.5px solid hsl(0 0% 100% / 0.08) !important;
+  background: hsl(var(--background) / 0.97) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid hsl(var(--border) / 0.55) !important;
 }
 
 /* ---- Sheet / Bottom sheet (Light) ---- */
