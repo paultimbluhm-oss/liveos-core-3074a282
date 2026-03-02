@@ -34,6 +34,8 @@ interface ThemeContextType {
   setTheme: (theme: ThemeName) => void;
   customColors: CustomThemeColors;
   setCustomColors: (colors: CustomThemeColors) => void;
+  liquidGlass: boolean;
+  setLiquidGlass: (enabled: boolean) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType>({
@@ -41,6 +43,8 @@ const ThemeContext = createContext<ThemeContextType>({
   setTheme: () => {},
   customColors: DEFAULT_CUSTOM_LIGHT,
   setCustomColors: () => {},
+  liquidGlass: false,
+  setLiquidGlass: () => {},
 });
 
 export const useTheme = () => useContext(ThemeContext);
@@ -215,6 +219,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     return DEFAULT_CUSTOM_LIGHT;
   });
 
+  const [liquidGlass, setLiquidGlassState] = useState<boolean>(() => {
+    return localStorage.getItem('app-liquid-glass') === 'true';
+  });
+
+  const setLiquidGlass = useCallback((enabled: boolean) => {
+    setLiquidGlassState(enabled);
+    localStorage.setItem('app-liquid-glass', String(enabled));
+  }, []);
+
   const setTheme = (t: ThemeName) => {
     setThemeState(t);
     localStorage.setItem('app-theme', t);
@@ -234,8 +247,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
   }, [theme, customColors]);
 
+  useEffect(() => {
+    document.documentElement.setAttribute('data-liquid-glass', String(liquidGlass));
+  }, [liquidGlass]);
+
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, customColors, setCustomColors }}>
+    <ThemeContext.Provider value={{ theme, setTheme, customColors, setCustomColors, liquidGlass, setLiquidGlass }}>
       {children}
     </ThemeContext.Provider>
   );
