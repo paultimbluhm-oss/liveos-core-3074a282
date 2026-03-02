@@ -794,3 +794,37 @@
 [data-liquid-glass="true"] .overflow-auto {
   overflow: auto !important;
 }
+
+/* ---- RESET: Kill glass effects on nested elements inside dialogs/sheets (Dark) ---- */
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] .bg-card,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] .bg-muted,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] .bg-muted\/50,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] .bg-card,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] .bg-muted,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] .bg-muted\/50 {
+  background: hsl(var(--muted) / 0.35) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid hsl(var(--border) / 0.3) !important;
+  box-shadow: none !important;
+}
+
+/* Reset badges inside dialogs/sheets (Dark) */
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] .inline-flex.items-center.rounded-full,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] .inline-flex.items-center.rounded-md,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] .inline-flex.items-center.rounded-full,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] .inline-flex.items-center.rounded-md {
+  background: hsl(var(--muted) / 0.4) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid hsl(var(--border) / 0.3) !important;
+  box-shadow: none !important;
+}
+
+/* Reset outline buttons inside dialogs/sheets (Dark) */
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] button[class*="border"],
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] button[class*="border"] {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+}
