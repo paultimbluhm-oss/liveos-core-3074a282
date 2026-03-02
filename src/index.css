@@ -381,8 +381,16 @@
 }
 
 /* ===== iOS 26 Liquid Glass Mode ===== */
-/* Liquid Glass forces its own dark color scheme */
+
+/* Glass shared variables */
 [data-liquid-glass="true"] {
+  --glass-blur: 48px;
+  --glass-saturation: 2.2;
+  --glass-radius: 1.5rem;
+}
+
+/* ---- Dark Mode (default) ---- */
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] {
   --background: 220 25% 8%;
   --foreground: 210 20% 92%;
   --card: 220 20% 14%;
@@ -414,14 +422,49 @@
   --sidebar-accent-foreground: 210 20% 90%;
   --sidebar-border: 220 15% 20%;
   --sidebar-ring: 217 70% 60%;
-
-  --glass-blur: 48px;
-  --glass-saturation: 2.2;
   --glass-bg: 0.28;
   --glass-border-light: 0.12;
   --glass-shine: 0.15;
-  --glass-radius: 1.5rem;
   --glass-shadow: 0 8px 32px -8px hsl(0 0% 0% / 0.4);
+}
+
+/* ---- Light Mode ---- */
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] {
+  --background: 220 15% 94%;
+  --foreground: 220 20% 14%;
+  --card: 0 0% 100%;
+  --card-foreground: 220 20% 14%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 220 20% 14%;
+  --primary: 217 70% 50%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 220 12% 88%;
+  --secondary-foreground: 220 15% 30%;
+  --muted: 220 10% 90%;
+  --muted-foreground: 220 10% 42%;
+  --accent: 195 70% 45%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 65% 52%;
+  --destructive-foreground: 0 0% 100%;
+  --success: 155 55% 40%;
+  --success-foreground: 0 0% 100%;
+  --warning: 40 85% 50%;
+  --warning-foreground: 220 20% 14%;
+  --border: 220 10% 85%;
+  --input: 220 10% 88%;
+  --ring: 217 70% 50%;
+  --sidebar-background: 220 12% 95%;
+  --sidebar-foreground: 220 15% 25%;
+  --sidebar-primary: 217 70% 50%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 220 12% 90%;
+  --sidebar-accent-foreground: 220 15% 18%;
+  --sidebar-border: 220 10% 85%;
+  --sidebar-ring: 217 70% 50%;
+  --glass-bg: 0.45;
+  --glass-border-light: 0.35;
+  --glass-shine: 0.45;
+  --glass-shadow: 0 4px 24px -4px hsl(220 20% 30% / 0.1);
 }
 
 /* Smooth transitions */
@@ -449,8 +492,8 @@
     inset 0 -0.5px 0 0 hsl(0 0% 0% / 0.1) !important;
 }
 
-/* ---- Background: dark gradient ---- */
-[data-liquid-glass="true"] .bg-background {
+/* ---- Background gradients ---- */
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] .bg-background {
   background: linear-gradient(
     155deg,
     hsl(220 30% 10%) 0%,
@@ -459,10 +502,19 @@
   ) !important;
 }
 
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] .bg-background {
+  background: linear-gradient(
+    155deg,
+    hsl(220 15% 92%) 0%,
+    hsl(215 12% 94%) 40%,
+    hsl(225 10% 95%) 100%
+  ) !important;
+}
+
 /* ---- Popover / Dropdown ---- */
-[data-liquid-glass="true"] [data-radix-popper-content-wrapper] > *,
-[data-liquid-glass="true"] [role="dialog"]:not([data-vaul-drawer-wrapper] *),
-[data-liquid-glass="true"] [data-vaul-drawer] {
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-radix-popper-content-wrapper] > *,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"]:not([data-vaul-drawer-wrapper] *),
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] {
   background: hsl(220 20% 14% / 0.6) !important;
   backdrop-filter: blur(60px) saturate(2.5) brightness(1.1) !important;
   -webkit-backdrop-filter: blur(60px) saturate(2.5) brightness(1.1) !important;
@@ -471,13 +523,32 @@
   box-shadow: 0 16px 64px -12px hsl(0 0% 0% / 0.5), inset 0 0.5px 0 hsl(0 0% 100% / 0.12) !important;
 }
 
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] [data-radix-popper-content-wrapper] > *,
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] [role="dialog"]:not([data-vaul-drawer-wrapper] *),
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] [data-vaul-drawer] {
+  background: hsl(0 0% 100% / 0.5) !important;
+  backdrop-filter: blur(60px) saturate(2) brightness(1.05) !important;
+  -webkit-backdrop-filter: blur(60px) saturate(2) brightness(1.05) !important;
+  border: 0.5px solid hsl(220 15% 50% / 0.12) !important;
+  border-radius: var(--glass-radius) !important;
+  box-shadow: 0 16px 64px -12px hsl(220 15% 30% / 0.12), inset 0 0.5px 0 hsl(0 0% 100% / 0.5) !important;
+}
+
 /* ---- Sidebar ---- */
-[data-liquid-glass="true"] aside,
-[data-liquid-glass="true"] nav {
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] aside,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] nav {
   background: hsl(220 25% 9% / 0.6) !important;
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation)) !important;
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation)) !important;
   border-right: 0.5px solid hsl(0 0% 100% / 0.08) !important;
+}
+
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] aside,
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] nav {
+  background: hsl(220 15% 96% / 0.5) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation)) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation)) !important;
+  border-right: 0.5px solid hsl(220 15% 50% / 0.08) !important;
 }
 
 /* ---- Tabs ---- */

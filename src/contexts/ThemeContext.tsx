@@ -29,6 +29,8 @@ const DEFAULT_CUSTOM_DARK: CustomThemeColors = {
   foreground: '#e2e8f0',
 };
 
+export type LiquidGlassMode = 'light' | 'dark';
+
 interface ThemeContextType {
   theme: ThemeName;
   setTheme: (theme: ThemeName) => void;
@@ -36,6 +38,8 @@ interface ThemeContextType {
   setCustomColors: (colors: CustomThemeColors) => void;
   liquidGlass: boolean;
   setLiquidGlass: (enabled: boolean) => void;
+  liquidGlassMode: LiquidGlassMode;
+  setLiquidGlassMode: (mode: LiquidGlassMode) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType>({
@@ -45,6 +49,8 @@ const ThemeContext = createContext<ThemeContextType>({
   setCustomColors: () => {},
   liquidGlass: false,
   setLiquidGlass: () => {},
+  liquidGlassMode: 'dark',
+  setLiquidGlassMode: () => {},
 });
 
 export const useTheme = () => useContext(ThemeContext);
@@ -223,9 +229,18 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     return localStorage.getItem('app-liquid-glass') === 'true';
   });
 
+  const [liquidGlassMode, setLiquidGlassModeState] = useState<LiquidGlassMode>(() => {
+    return (localStorage.getItem('app-liquid-glass-mode') as LiquidGlassMode) || 'dark';
+  });
+
   const setLiquidGlass = useCallback((enabled: boolean) => {
     setLiquidGlassState(enabled);
     localStorage.setItem('app-liquid-glass', String(enabled));
+  }, []);
+
+  const setLiquidGlassMode = useCallback((mode: LiquidGlassMode) => {
+    setLiquidGlassModeState(mode);
+    localStorage.setItem('app-liquid-glass-mode', mode);
   }, []);
 
   const setTheme = (t: ThemeName) => {
@@ -249,10 +264,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     document.documentElement.setAttribute('data-liquid-glass', String(liquidGlass));
-  }, [liquidGlass]);
+    if (liquidGlass) {
+      document.documentElement.setAttribute('data-liquid-glass-mode', liquidGlassMode);
+    } else {
+      document.documentElement.removeAttribute('data-liquid-glass-mode');
+    }
+  }, [liquidGlass, liquidGlassMode]);
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, customColors, setCustomColors, liquidGlass, setLiquidGlass }}>
+    <ThemeContext.Provider value={{ theme, setTheme, customColors, setCustomColors, liquidGlass, setLiquidGlass, liquidGlassMode, setLiquidGlassMode }}>
       {children}
     </ThemeContext.Provider>
   );
