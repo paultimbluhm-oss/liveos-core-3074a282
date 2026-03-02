@@ -382,99 +382,189 @@
 
 /* ===== iOS 26 Liquid Glass Mode ===== */
 [data-liquid-glass="true"] {
-  --glass-blur: 24px;
-  --glass-saturation: 1.8;
-  --glass-opacity: 0.55;
-  --glass-border-opacity: 0.25;
-  --glass-shine-opacity: 0.12;
-  --glass-radius: 1.25rem;
+  --glass-blur: 48px;
+  --glass-saturation: 2.2;
+  --glass-bg: 0.12;
+  --glass-border-light: 0.18;
+  --glass-shine: 0.22;
+  --glass-radius: 1.5rem;
+  --glass-shadow: 0 8px 40px -8px hsl(var(--foreground) / 0.15);
 }
 
-/* Cards become glass panels */
+/* Smooth transitions */
+[data-liquid-glass="true"] *:not(svg):not(path) {
+  transition: background 0.35s ease, backdrop-filter 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease, border-radius 0.35s ease;
+}
+
+/* Rounder corners globally */
+[data-liquid-glass="true"] .rounded-lg { border-radius: var(--glass-radius) !important; }
+[data-liquid-glass="true"] .rounded-md { border-radius: 1rem !important; }
+[data-liquid-glass="true"] .rounded-xl { border-radius: 1.75rem !important; }
+
+/* ---- Glass Card ---- */
 [data-liquid-glass="true"] .rounded-lg.border.bg-card,
 [data-liquid-glass="true"] [class*="glass-card"],
 [data-liquid-glass="true"] .bg-card {
-  background: hsl(var(--card) / var(--glass-opacity)) !important;
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation)) !important;
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation)) !important;
-  border: 1px solid hsl(var(--foreground) / var(--glass-border-opacity)) !important;
+  background: hsl(var(--card) / var(--glass-bg)) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation)) brightness(1.05) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation)) brightness(1.05) !important;
+  border: 0.5px solid hsl(0 0% 100% / var(--glass-border-light)) !important;
   border-radius: var(--glass-radius) !important;
   box-shadow:
-    0 0 0 0.5px hsl(var(--foreground) / 0.06),
-    0 2px 8px hsl(var(--foreground) / 0.06),
-    inset 0 1px 0 hsl(0 0% 100% / var(--glass-shine-opacity)) !important;
+    var(--glass-shadow),
+    inset 0 0.5px 0 0 hsl(0 0% 100% / var(--glass-shine)),
+    inset 0 -0.5px 0 0 hsl(var(--foreground) / 0.05) !important;
+  position: relative;
+  overflow: hidden;
 }
 
-/* Popover / dropdown glass */
+/* Specular top-edge highlight */
+[data-liquid-glass="true"] .rounded-lg.border.bg-card::before,
+[data-liquid-glass="true"] .bg-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 10%; right: 10%; height: 1px;
+  background: linear-gradient(90deg, transparent, hsl(0 0% 100% / 0.4) 30%, hsl(0 0% 100% / 0.55) 50%, hsl(0 0% 100% / 0.4) 70%, transparent);
+  pointer-events: none; z-index: 1;
+}
+
+/* Inner ambient glow */
+[data-liquid-glass="true"] .rounded-lg.border.bg-card::after,
+[data-liquid-glass="true"] .bg-card::after {
+  content: '';
+  position: absolute; inset: 0; border-radius: inherit;
+  background: linear-gradient(180deg, hsl(0 0% 100% / 0.06) 0%, transparent 40%, hsl(var(--primary) / 0.03) 100%);
+  pointer-events: none; z-index: 0;
+}
+
+/* ---- Background subtle gradient ---- */
+[data-liquid-glass="true"] .bg-background {
+  background: linear-gradient(160deg, hsl(var(--background)) 0%, hsl(var(--primary) / 0.03) 50%, hsl(var(--accent) / 0.04) 100%) !important;
+}
+
+/* ---- Popover / Dropdown ---- */
 [data-liquid-glass="true"] [data-radix-popper-content-wrapper] > *,
-[data-liquid-glass="true"] [role="dialog"],
+[data-liquid-glass="true"] [role="dialog"]:not([data-vaul-drawer-wrapper] *),
 [data-liquid-glass="true"] [data-vaul-drawer] {
-  background: hsl(var(--popover) / var(--glass-opacity)) !important;
-  backdrop-filter: blur(calc(var(--glass-blur) * 1.5)) saturate(var(--glass-saturation)) !important;
-  -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 1.5)) saturate(var(--glass-saturation)) !important;
-  border: 1px solid hsl(var(--foreground) / var(--glass-border-opacity)) !important;
-  box-shadow:
-    0 8px 32px hsl(var(--foreground) / 0.12),
-    inset 0 1px 0 hsl(0 0% 100% / var(--glass-shine-opacity)) !important;
+  background: hsl(var(--popover) / 0.15) !important;
+  backdrop-filter: blur(60px) saturate(2.5) brightness(1.1) !important;
+  -webkit-backdrop-filter: blur(60px) saturate(2.5) brightness(1.1) !important;
+  border: 0.5px solid hsl(0 0% 100% / 0.2) !important;
+  border-radius: var(--glass-radius) !important;
+  box-shadow: 0 16px 64px -12px hsl(var(--foreground) / 0.2), 0 4px 16px hsl(var(--foreground) / 0.08), inset 0 0.5px 0 hsl(0 0% 100% / 0.3) !important;
 }
 
-/* Sidebar glass */
+/* ---- Sidebar ---- */
 [data-liquid-glass="true"] aside,
 [data-liquid-glass="true"] nav {
-  background: hsl(var(--sidebar-background) / var(--glass-opacity)) !important;
+  background: hsl(var(--sidebar-background) / 0.1) !important;
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation)) !important;
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation)) !important;
+  border-right: 0.5px solid hsl(0 0% 100% / 0.12) !important;
 }
 
-/* Buttons get a glass treatment */
-[data-liquid-glass="true"] button:not([data-state]):not(.bg-primary):not(.bg-destructive) {
-  backdrop-filter: blur(8px) saturate(1.4);
-  -webkit-backdrop-filter: blur(8px) saturate(1.4);
-}
-
-/* Tabs get glass pill style */
+/* ---- Tabs ---- */
 [data-liquid-glass="true"] [role="tablist"] {
-  background: hsl(var(--muted) / 0.4) !important;
-  backdrop-filter: blur(16px) saturate(1.6) !important;
-  -webkit-backdrop-filter: blur(16px) saturate(1.6) !important;
-  border: 1px solid hsl(var(--foreground) / 0.08) !important;
+  background: hsl(var(--muted) / 0.15) !important;
+  backdrop-filter: blur(24px) saturate(2) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(2) !important;
+  border: 0.5px solid hsl(0 0% 100% / 0.15) !important;
   border-radius: var(--glass-radius) !important;
+  box-shadow: inset 0 0.5px 0 hsl(0 0% 100% / 0.12) !important;
+  padding: 3px !important;
 }
-
+[data-liquid-glass="true"] [role="tablist"] [role="tab"] {
+  border-radius: calc(var(--glass-radius) - 3px) !important;
+}
 [data-liquid-glass="true"] [role="tablist"] [data-state="active"] {
-  background: hsl(var(--background) / 0.7) !important;
-  box-shadow: 0 1px 4px hsl(var(--foreground) / 0.08), inset 0 1px 0 hsl(0 0% 100% / 0.15) !important;
+  background: hsl(var(--background) / 0.45) !important;
+  backdrop-filter: blur(12px) !important;
+  box-shadow: 0 2px 8px hsl(var(--foreground) / 0.06), inset 0 0.5px 0 hsl(0 0% 100% / 0.25) !important;
 }
 
-/* Input fields */
+/* ---- Inputs ---- */
 [data-liquid-glass="true"] input,
 [data-liquid-glass="true"] textarea,
 [data-liquid-glass="true"] select {
-  background: hsl(var(--input) / 0.35) !important;
-  backdrop-filter: blur(12px) saturate(1.4) !important;
-  -webkit-backdrop-filter: blur(12px) saturate(1.4) !important;
-  border: 1px solid hsl(var(--foreground) / 0.1) !important;
+  background: hsl(var(--input) / 0.12) !important;
+  backdrop-filter: blur(20px) saturate(1.6) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.6) !important;
+  border: 0.5px solid hsl(0 0% 100% / 0.12) !important;
+  border-radius: 1rem !important;
+}
+[data-liquid-glass="true"] input:focus,
+[data-liquid-glass="true"] textarea:focus {
+  border-color: hsl(var(--primary) / 0.4) !important;
+  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1), inset 0 0.5px 0 hsl(0 0% 100% / 0.15) !important;
 }
 
-/* Sheet / Bottom sheet glass */
+/* ---- Sheet / Bottom sheet ---- */
 [data-liquid-glass="true"] [data-vaul-drawer],
-[data-liquid-glass="true"] .fixed.inset-0 + div,
-[data-liquid-glass="true"] [class*="SheetContent"] {
-  background: hsl(var(--background) / 0.6) !important;
-  backdrop-filter: blur(40px) saturate(2) !important;
-  -webkit-backdrop-filter: blur(40px) saturate(2) !important;
+[data-liquid-glass="true"] [class*="SheetContent"],
+[data-liquid-glass="true"] .fixed [role="dialog"] {
+  background: hsl(var(--background) / 0.18) !important;
+  backdrop-filter: blur(72px) saturate(2.5) brightness(1.05) !important;
+  -webkit-backdrop-filter: blur(72px) saturate(2.5) brightness(1.05) !important;
+  border: 0.5px solid hsl(0 0% 100% / 0.15) !important;
 }
 
-/* Badge / chip glass */
-[data-liquid-glass="true"] .inline-flex.items-center.rounded-full {
-  background: hsl(var(--secondary) / 0.4) !important;
+/* ---- Primary button glow ---- */
+[data-liquid-glass="true"] .bg-primary {
+  box-shadow: 0 4px 16px hsl(var(--primary) / 0.3), inset 0 0.5px 0 hsl(0 0% 100% / 0.2) !important;
+  border-radius: 1rem !important;
+}
+
+/* ---- Badges ---- */
+[data-liquid-glass="true"] .inline-flex.items-center.rounded-full,
+[data-liquid-glass="true"] .inline-flex.items-center.rounded-md {
+  background: hsl(var(--secondary) / 0.15) !important;
+  backdrop-filter: blur(16px) saturate(1.8) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(1.8) !important;
+  border: 0.5px solid hsl(0 0% 100% / 0.12) !important;
+}
+
+/* ---- Progress bars ---- */
+[data-liquid-glass="true"] [role="progressbar"] {
+  background: hsl(var(--muted) / 0.15) !important;
   backdrop-filter: blur(8px) !important;
-  border: 1px solid hsl(var(--foreground) / 0.08) !important;
+  border-radius: 999px !important;
 }
 
-/* Smooth transitions for all glass elements */
-[data-liquid-glass="true"] * {
-  transition-property: background, backdrop-filter, border-color, box-shadow;
-  transition-duration: 0.3s;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+/* ---- Switch ---- */
+[data-liquid-glass="true"] button[role="switch"] {
+  background: hsl(var(--muted) / 0.2) !important;
+  backdrop-filter: blur(12px) !important;
+  border: 0.5px solid hsl(0 0% 100% / 0.12) !important;
+}
+[data-liquid-glass="true"] button[role="switch"][data-state="checked"] {
+  background: hsl(var(--primary) / 0.6) !important;
+  border-color: hsl(var(--primary) / 0.3) !important;
+  box-shadow: 0 2px 12px hsl(var(--primary) / 0.25), inset 0 0.5px 0 hsl(0 0% 100% / 0.2) !important;
+}
+
+/* ---- Checkbox ---- */
+[data-liquid-glass="true"] button[role="checkbox"] {
+  background: hsl(var(--muted) / 0.15) !important;
+  backdrop-filter: blur(8px) !important;
+  border: 0.5px solid hsl(0 0% 100% / 0.15) !important;
+  border-radius: 0.5rem !important;
+}
+[data-liquid-glass="true"] button[role="checkbox"][data-state="checked"] {
+  background: hsl(var(--primary) / 0.7) !important;
+  border-color: hsl(var(--primary) / 0.4) !important;
+}
+
+/* ---- Separator ---- */
+[data-liquid-glass="true"] [data-orientation="horizontal"] {
+  background: hsl(0 0% 100% / 0.08) !important;
+}
+
+/* ---- Toast ---- */
+[data-liquid-glass="true"] [data-sonner-toast] {
+  background: hsl(var(--card) / 0.15) !important;
+  backdrop-filter: blur(48px) saturate(2.2) !important;
+  -webkit-backdrop-filter: blur(48px) saturate(2.2) !important;
+  border: 0.5px solid hsl(0 0% 100% / 0.18) !important;
+  border-radius: var(--glass-radius) !important;
+  box-shadow: 0 8px 32px hsl(var(--foreground) / 0.12), inset 0 0.5px 0 hsl(0 0% 100% / 0.2) !important;
 }
