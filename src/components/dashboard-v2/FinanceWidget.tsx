@@ -151,7 +151,7 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
     [snapshots]
   );
 
-  const fmt = (v: number) => v.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
+  const fmt = (v: number) => v.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
 
   const startEditBalances = () => {
     const edits: Record<string, string> = {};
@@ -392,7 +392,7 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
                 />
               ) : (
                 <span className="text-xs font-mono font-medium">
-                  {acc.balance.toLocaleString('de-DE', { style: 'currency', currency: acc.currency, maximumFractionDigits: 0 })}
+                  {acc.balance.toLocaleString('de-DE', { style: 'currency', currency: acc.currency })}
                 </span>
               )}
             </div>
@@ -412,7 +412,7 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
                 <span className="text-xs">{inv.name}</span>
                 <div className="text-right">
                   <span className="text-xs font-mono font-medium">
-                    {val.toLocaleString('de-DE', { style: 'currency', currency: inv.currency, maximumFractionDigits: 0 })}
+                    {val.toLocaleString('de-DE', { style: 'currency', currency: inv.currency })}
                   </span>
                   {pnl !== 0 && (
                     <span className={`text-[9px] font-mono ml-1.5 ${pnl >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>
@@ -445,7 +445,7 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <span className={`text-xs font-mono font-medium ${loan.loan_type === 'lent' ? 'text-amber-500' : 'text-violet-500'}`}>
-                    {loan.amount.toLocaleString('de-DE', { style: 'currency', currency: loan.currency, maximumFractionDigits: 0 })}
+                    {loan.amount.toLocaleString('de-DE', { style: 'currency', currency: loan.currency })}
                   </span>
                   <button
                     onClick={() => { setSettlingLoanId(settlingLoanId === loan.id ? null : loan.id); setSettleAccountId(''); }}
