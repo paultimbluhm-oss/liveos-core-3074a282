@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,8 +7,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth, getSupabase } from '@/hooks/useAuth';
 import { useFinanceV2 } from '../context/FinanceV2Context';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+
+interface Friend {
+  user_id: string;
+  display_name: string | null;
+  username: string | null;
+}
 
 interface AddLoanDialogProps {
   open: boolean;
@@ -26,6 +33,43 @@ export function AddLoanDialog({ open, onOpenChange }: AddLoanDialogProps) {
   const [accountId, setAccountId] = useState('');
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [note, setNote] = useState('');
+  const [friends, setFriends] = useState<Friend[]>([]);
+  const [selectedFriendId, setSelectedFriendId] = useState<string>('');
+
+  useEffect(() => {
+    if (!open || !user) return;
+    // Fetch accepted friends
+    const fetchFriends = async () => {
+      const { data: friendships } = await supabase
+        .from('friendships')
+        .select('requester_id, addressee_id')
+        .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`)
+        .eq('status', 'accepted');
+
+      if (!friendships?.length) return;
+
+      const friendIds = friendships.map(f => f.requester_id === user.id ? f.addressee_id : f.requester_id);
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, display_name, username')
+        .in('user_id', friendIds);
+
+      setFriends(profiles || []);
+    };
+    fetchFriends();
+  }, [open, user]);
+
+  const handleFriendSelect = (friendUserId: string) => {
+    if (friendUserId === 'none') {
+      setSelectedFriendId('');
+      return;
+    }
+    setSelectedFriendId(friendUserId);
+    const friend = friends.find(f => f.user_id === friendUserId);
+    if (friend) {
+      setPersonName(friend.display_name || friend.username || '');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,6 +88,7 @@ export function AddLoanDialog({ open, onOpenChange }: AddLoanDialogProps) {
       account_id: accountId || null,
       date,
       note: note.trim() || null,
+      friend_user_id: selectedFriendId || null,
     });
 
     if (error) {
@@ -74,6 +119,7 @@ export function AddLoanDialog({ open, onOpenChange }: AddLoanDialogProps) {
     setAmount('');
     setNote('');
     setAccountId('');
+    setSelectedFriendId('');
   };
 
   return (
@@ -106,6 +152,24 @@ export function AddLoanDialog({ open, onOpenChange }: AddLoanDialogProps) {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 mt-2">
+          {/* Friend select */}
+          {friends.length > 0 && (
+            <div className="space-y-2">
+              <Label>Freund verknuepfen</Label>
+              <Select value={selectedFriendId || 'none'} onValueChange={handleFriendSelect}>
+                <SelectTrigger><SelectValue placeholder="Optional" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Kein Freund</SelectItem>
+                  {friends.map(f => (
+                    <SelectItem key={f.user_id} value={f.user_id}>
+                      {f.display_name || f.username || 'Unbekannt'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label>Person</Label>
             <Input

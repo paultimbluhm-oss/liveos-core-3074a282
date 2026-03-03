@@ -139,6 +139,7 @@ export interface V2Loan {
   is_settled: boolean;
   settled_date?: string;
   settled_account_id?: string;
+  friend_user_id?: string;
   created_at: string;
   updated_at: string;
 }
