@@ -23,7 +23,7 @@ export function DashboardTab() {
   const [period, setPeriod] = useState<TimePeriod>('month');
 
   const formatCurrency = (value: number) => 
-    value.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
+    value.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
 
   const dateRange = useMemo(() => {
     const now = new Date();

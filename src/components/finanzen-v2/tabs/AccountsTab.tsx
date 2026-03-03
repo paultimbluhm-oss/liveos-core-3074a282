@@ -43,7 +43,7 @@ export function AccountsTab() {
   const [savingCash, setSavingCash] = useState(false);
 
   const formatCurrency = (value: number, currency: string = 'EUR') => 
-    value.toLocaleString('de-DE', { style: 'currency', currency, maximumFractionDigits: 0 });
+    value.toLocaleString('de-DE', { style: 'currency', currency });
 
   // Group accounts by type
   const groupedAccounts = accounts.reduce((acc, account) => {

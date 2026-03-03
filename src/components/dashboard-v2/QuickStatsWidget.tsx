@@ -155,7 +155,7 @@ export function QuickStatsWidget({ size, editMode, statsConfig }: QuickStatsWidg
               <span className="text-lg font-bold font-mono">
                 {loadingPrices || netWorth === null
                   ? '...'
-                  : `${netWorth.toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} EUR`}
+                  : `${netWorth.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} EUR`}
               </span>
               <TrendingUp className="w-3 h-3 text-muted-foreground" />
             </div>
