@@ -1989,6 +1989,51 @@ export type Database = {
           },
         ]
       }
+      shared_habits: {
+        Row: {
+          created_at: string
+          friend_habit_id: string | null
+          friend_id: string
+          habit_id: string
+          id: string
+          owner_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          friend_habit_id?: string | null
+          friend_id: string
+          habit_id: string
+          id?: string
+          owner_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          friend_habit_id?: string | null
+          friend_id?: string
+          habit_id?: string
+          id?: string
+          owner_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_habits_friend_habit_id_fkey"
+            columns: ["friend_habit_id"]
+            isOneToOne: false
+            referencedRelation: "habits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_habits_habit_id_fkey"
+            columns: ["habit_id"]
+            isOneToOne: false
+            referencedRelation: "habits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shared_homework: {
         Row: {
           course_id: string
@@ -3148,6 +3193,7 @@ export type Database = {
           created_at: string | null
           currency: string
           date: string
+          friend_user_id: string | null
           id: string
           is_settled: boolean | null
           loan_type: string
@@ -3164,6 +3210,7 @@ export type Database = {
           created_at?: string | null
           currency?: string
           date?: string
+          friend_user_id?: string | null
           id?: string
           is_settled?: boolean | null
           loan_type: string
@@ -3180,6 +3227,7 @@ export type Database = {
           created_at?: string | null
           currency?: string
           date?: string
+          friend_user_id?: string | null
           id?: string
           is_settled?: boolean | null
           loan_type?: string
@@ -3633,6 +3681,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      are_friends: {
+        Args: { _user_id_1: string; _user_id_2: string }
+        Returns: boolean
+      }
+      is_habit_shared_with_user: {
+        Args: { _habit_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_shared_habit_participant: {
+        Args: { _shared_habit_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_v2_course_member: {
         Args: { _course_id: string; _user_id: string }
         Returns: boolean
