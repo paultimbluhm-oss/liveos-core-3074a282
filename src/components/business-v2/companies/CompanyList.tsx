@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Plus, FolderPlus, Search } from 'lucide-react';
+import { Plus, FolderPlus, Search, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useBusinessV2 } from '../context/BusinessV2Context';
@@ -7,13 +7,15 @@ import { Company } from '../types';
 import { CategorySection } from '../categories/CategorySection';
 import { AddCompanyDialog } from './AddCompanyDialog';
 import { AddCategoryDialog } from '../categories/AddCategoryDialog';
-import { CompanyDetailSheet } from './CompanyDetailSheet';
+import { CompanyDetailOverlay } from './CompanyDetailOverlay';
+import { AddTagDialog } from '../tags/AddTagDialog';
 
 export function CompanyList() {
   const { companies, categories, loading } = useBusinessV2();
   const [search, setSearch] = useState('');
   const [addCompanyOpen, setAddCompanyOpen] = useState(false);
   const [addCategoryOpen, setAddCategoryOpen] = useState(false);
+  const [addTagOpen, setAddTagOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
 
   const filteredCompanies = useMemo(() => {
@@ -28,21 +30,19 @@ export function CompanyList() {
 
   const groupedByCategory = useMemo(() => {
     const groups: { category: typeof categories[0] | null; companies: Company[] }[] = [];
-    
-    // Categories with companies
     categories.forEach(cat => {
       const catCompanies = filteredCompanies.filter(c => c.category_id === cat.id);
       groups.push({ category: cat, companies: catCompanies });
     });
-    
-    // Uncategorized
     const uncategorized = filteredCompanies.filter(c => !c.category_id);
     if (uncategorized.length > 0 || categories.length === 0) {
       groups.push({ category: null, companies: uncategorized });
     }
-    
     return groups;
   }, [filteredCompanies, categories]);
+
+  // Keep selected company in sync with state
+  const currentCompany = selectedCompany ? companies.find(c => c.id === selectedCompany.id) || selectedCompany : null;
 
   if (loading) {
     return (
@@ -52,20 +52,22 @@ export function CompanyList() {
     );
   }
 
+  // Show detail overlay
+  if (currentCompany) {
+    return <CompanyDetailOverlay company={currentCompany} onBack={() => setSelectedCompany(null)} />;
+  }
+
   return (
     <>
       <div className="space-y-4">
-        {/* Header */}
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Suchen..."
-              className="pl-9"
-            />
+            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Suchen..." className="pl-9" />
           </div>
+          <Button variant="outline" size="icon" onClick={() => setAddTagOpen(true)}>
+            <Tag className="w-4 h-4" />
+          </Button>
           <Button variant="outline" size="icon" onClick={() => setAddCategoryOpen(true)}>
             <FolderPlus className="w-4 h-4" />
           </Button>
@@ -74,9 +76,8 @@ export function CompanyList() {
           </Button>
         </div>
 
-        {/* Category Sections */}
         <div className="space-y-6">
-          {groupedByCategory.map((group, idx) => (
+          {groupedByCategory.map((group) => (
             <CategorySection
               key={group.category?.id || 'uncategorized'}
               category={group.category}
@@ -99,11 +100,7 @@ export function CompanyList() {
 
       <AddCompanyDialog open={addCompanyOpen} onOpenChange={setAddCompanyOpen} />
       <AddCategoryDialog open={addCategoryOpen} onOpenChange={setAddCategoryOpen} />
-      <CompanyDetailSheet 
-        open={!!selectedCompany} 
-        onOpenChange={(open) => !open && setSelectedCompany(null)} 
-        company={selectedCompany} 
-      />
+      <AddTagDialog open={addTagOpen} onOpenChange={setAddTagOpen} />
     </>
   );
 }

@@ -1,5 +1,6 @@
 export type CompanyStatus = 'researched' | 'contacted' | 'in_contact' | 'completed';
 export type RelationType = 'partner' | 'competitor' | 'subsidiary' | 'supplier' | 'customer';
+export type TimelineEntryType = 'call' | 'email' | 'status_change' | 'note';
 
 export interface CompanyCategory {
   id: string;
@@ -45,6 +46,52 @@ export interface CompanyRelation {
   created_at: string;
 }
 
+export interface TimelineEntry {
+  id: string;
+  user_id: string;
+  company_id: string;
+  entry_type: TimelineEntryType;
+  title?: string;
+  content?: string;
+  contact_id?: string;
+  created_at: string;
+}
+
+export interface CompanyTag {
+  id: string;
+  user_id: string;
+  name: string;
+  color: string;
+  created_at: string;
+}
+
+export interface CompanyTagAssignment {
+  id: string;
+  company_id: string;
+  tag_id: string;
+  user_id: string;
+}
+
+export interface CompanyTodo {
+  id: string;
+  user_id: string;
+  company_id: string;
+  title: string;
+  completed: boolean;
+  due_date?: string;
+  created_at: string;
+}
+
+export interface CompanyLink {
+  id: string;
+  user_id: string;
+  company_id: string;
+  title: string;
+  url: string;
+  link_type: string;
+  created_at: string;
+}
+
 export const STATUS_CONFIG: Record<CompanyStatus, { label: string; color: string }> = {
   researched: { label: 'Recherchiert', color: 'bg-muted text-muted-foreground' },
   contacted: { label: 'Angeschrieben', color: 'bg-blue-500/20 text-blue-600' },
@@ -58,4 +105,11 @@ export const RELATION_CONFIG: Record<RelationType, string> = {
   subsidiary: 'Tochterunternehmen',
   supplier: 'Lieferant',
   customer: 'Kunde',
+};
+
+export const TIMELINE_TYPE_CONFIG: Record<TimelineEntryType, { label: string; icon: string }> = {
+  call: { label: 'Anruf / Gespraech', icon: 'Phone' },
+  email: { label: 'E-Mail', icon: 'Mail' },
+  status_change: { label: 'Status-Wechsel', icon: 'ArrowRight' },
+  note: { label: 'Notiz', icon: 'StickyNote' },
 };
