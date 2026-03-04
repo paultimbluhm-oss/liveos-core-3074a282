@@ -9,7 +9,8 @@ export type WidgetType =
   | 'habits-checklist' 
   | 'tasks'
   | 'timetable'
-  | 'finance';
+  | 'finance'
+  | 'business';
 
 export interface DashboardWidget {
   id: string;
@@ -25,6 +26,7 @@ export const WIDGET_CATALOG: { type: WidgetType; name: string; description: stri
   { type: 'tasks', name: 'Aufgaben', description: 'Aufgaben verwalten und abhaken', defaultSize: 'large', sizes: ['small', 'medium', 'large'] },
   { type: 'timetable', name: 'Stundenplan', description: 'Heutiger Stundenplan und Hausaufgaben', defaultSize: 'medium', sizes: ['small', 'medium', 'large'] },
   { type: 'finance', name: 'Finanzen', description: 'Kontostand, Investments und Buchungen', defaultSize: 'medium', sizes: ['small', 'medium', 'large'] },
+  { type: 'business', name: 'Business', description: 'Pipeline, Kontakte und Networking-Streak', defaultSize: 'medium', sizes: ['small', 'medium', 'large'] },
 ];
 
 const DEFAULT_WIDGETS: DashboardWidget[] = [
@@ -33,6 +35,7 @@ const DEFAULT_WIDGETS: DashboardWidget[] = [
   { id: 'w9', type: 'tasks', size: 'large', order: 2, visible: true },
   { id: 'w10', type: 'timetable', size: 'medium', order: 3, visible: true },
   { id: 'w11', type: 'finance', size: 'medium', order: 4, visible: true },
+  { id: 'w12', type: 'business', size: 'medium', order: 5, visible: true },
 ];
 
 export interface DashboardSettings {

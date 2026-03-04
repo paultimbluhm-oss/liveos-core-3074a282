@@ -11,6 +11,8 @@ import { TimetableWidget } from '@/components/dashboard-v2/TimetableWidget';
 import { FinanceWidget } from '@/components/dashboard-v2/FinanceWidget';
 import { FinanceSheetWrapper } from '@/components/dashboard-v2/FinanceSheetWrapper';
 import { SchoolSheetWrapper } from '@/components/dashboard-v2/SchoolSheetWrapper';
+import { BusinessWidget } from '@/components/dashboard-v2/BusinessWidget';
+import { BusinessSheetWrapper } from '@/components/dashboard-v2/BusinessSheetWrapper';
 import { Settings2, X, Plus, Minus, EyeOff, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
@@ -23,6 +25,7 @@ const WIDGET_COMPONENTS: Record<string, React.FC<any>> = {
   'tasks': TasksWidget,
   'timetable': TimetableWidget,
   'finance': FinanceWidget,
+  'business': BusinessWidget,
 };
 
 function getGridClass(size: WidgetSize): string {
@@ -41,6 +44,7 @@ export default function Index() {
   const [editMode, setEditMode] = useState(false);
   const [financeSheetOpen, setFinanceSheetOpen] = useState(false);
   const [schoolSheetOpen, setSchoolSheetOpen] = useState(false);
+  const [businessSheetOpen, setBusinessSheetOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) navigate('/auth');
@@ -79,6 +83,7 @@ export default function Index() {
     if (widget.type === 'habits-checklist') return <Component size={widget.size} settings={settings} />;
     if (widget.type === 'finance') return <Component size={widget.size} onOpenSheet={() => setFinanceSheetOpen(true)} />;
     if (widget.type === 'timetable') return <Component size={widget.size} onOpenSheet={() => setSchoolSheetOpen(true)} />;
+    if (widget.type === 'business') return <Component size={widget.size} onOpenSheet={() => setBusinessSheetOpen(true)} />;
     return <Component size={widget.size} />;
   };
 
@@ -227,6 +232,7 @@ export default function Index() {
 
       <FinanceSheetWrapper open={financeSheetOpen} onOpenChange={setFinanceSheetOpen} />
       <SchoolSheetWrapper open={schoolSheetOpen} onOpenChange={setSchoolSheetOpen} />
+      <BusinessSheetWrapper open={businessSheetOpen} onOpenChange={setBusinessSheetOpen} />
     </AppLayout>
   );
 }
