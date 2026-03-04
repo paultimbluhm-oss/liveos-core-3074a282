@@ -1,228 +1,60 @@
 
-# Business V2 - Unternehmens-Pipeline
 
-## Uebersicht
+# Business Widget fuer Dashboard V2
 
-Eine neue, unabhaengige Business-Seite zur Verwaltung von Unternehmen, Kategorien und zugehoerigen Kontakten. Die Seite wird unter `/business-v2` erreichbar sein und in der Sidebar angezeigt.
+## Ueberblick
 
----
+Ein neues Dashboard-Widget das Business-Pipeline-Daten kompakt anzeigt, motiviert und Quick-Actions bietet. Drei Groessen (Small/Medium/Large), konsistent mit den bestehenden Widgets.
 
-## Datenmodell
+## Datengrundlage
 
-### Neue Datenbank-Tabellen
+Das Widget nutzt die bestehenden Tabellen `v2_companies`, `v2_company_contacts`, `v2_company_categories` direkt via Supabase-Queries. Kein neues DB-Schema noetig fuer die Kernfunktionen.
 
-```text
-v2_company_categories
-+------------------+
-| id               |
-| user_id          |
-| name             |
-| color (optional) |
-| order_index      |
-| created_at       |
-+------------------+
+Fuer den **Networking-Streak** und **Follow-up-Erinnerungen** wird `updated_at` der Companies ausgewertet (letzter Statuswechsel = letzte Aktivitaet).
 
-v2_companies
-+-------------------+
-| id                |
-| user_id           |
-| name              |
-| category_id       |
-| status            | (researched, contacted, in_contact, completed)
-| website           |
-| industry          |
-| notes             |
-| created_at        |
-| updated_at        |
-+-------------------+
+## Widget-Groessen
 
-v2_company_contacts
-+-------------------+
-| id                |
-| user_id           |
-| company_id        |
-| name              |
-| position          |
-| email             |
-| phone             |
-| notes             |
-| created_at        |
-+-------------------+
+**Small**: Pipeline-Zahlen als kompakte Leiste (4 Status-Punkte mit Anzahl), Gesamtzahl Firmen + Kontakte.
 
-v2_company_relations
-+-------------------+
-| id                |
-| user_id           |
-| from_company_id   |
-| to_company_id     |
-| relation_type     | (partner, competitor, subsidiary, supplier, customer)
-| description       |
-| created_at        |
-+-------------------+
-```
+**Medium**: Pipeline-Fortschrittsbalken (farbig pro Status), Kontakt-Score ("Diese Woche: 2 neue Firmen, 3 Kontakte"), Networking-Streak (Tage in Folge mit mind. 1 Aktion), 1 Follow-up-Erinnerung ("Firma X wartet seit 14 Tagen").
 
-### Status-Definitionen
+**Large**: Alles aus Medium plus: Scrollbare Follow-up-Liste (alle Firmen ohne Statuswechsel > 7 Tage), Quick-Actions (Firma hinzufuegen, Status aendern per Dropdown, Notiz erfassen), Mini-Aktivitaets-Feed der letzten Aktionen.
 
-| Status | Label | Farbe |
-|--------|-------|-------|
-| researched | Recherchiert | Grau |
-| contacted | Angeschrieben | Blau |
-| in_contact | In Kontakt | Violett |
-| completed | Abgeschlossen | Gruen |
+## Technische Umsetzung
 
----
+1. **Neues Widget registrieren** in `useDashboardV2.tsx`:
+   - Typ `'business'` zum `WidgetType` Union hinzufuegen
+   - Eintrag im `WIDGET_CATALOG` mit Name "Business", Groessen `['small', 'medium', 'large']`
+   - Default-Widget in `DEFAULT_WIDGETS` aufnehmen
 
-## Seitenstruktur
+2. **`BusinessWidget.tsx`** erstellen (`src/components/dashboard-v2/BusinessWidget.tsx`):
+   - Eigene Supabase-Queries (wie FinanceWidget-Pattern)
+   - Pipeline-Berechnung: `companies.filter(c => c.status === x).length` pro Status
+   - Kontakt-Score: Firmen/Kontakte der letzten 7 Tage zaehlen (via `created_at`)
+   - Networking-Streak: Rueckwaerts durch Tage iterieren, pro Tag pruefen ob `created_at` oder `updated_at` einer Firma/Kontakt auf diesen Tag faellt
+   - Follow-ups: Firmen mit Status != 'completed' sortiert nach `updated_at` aufsteigend, Differenz in Tagen berechnen
 
-### Hauptansicht (Mobile-First)
+3. **Quick-Actions** (Medium/Large):
+   - "Firma hinzufuegen" oeffnet `AddCompanyDialog`
+   - "Status aendern" zeigt Firmen-Dropdown + neuen Status
+   - "Notiz" oeffnet Inline-Input fuer eine Firma
 
-```text
-+--------------------------------+
-|  Business V2                   |
-|  [Suche...] [+ Kategorie] [+]  |
-+--------------------------------+
-|                                |
-|  KATEGORIE 1          (3)      |
-|  +----------------------------+|
-|  | Unternehmen A    [Status] ||
-|  | Website | 2 Kontakte      ||
-|  +----------------------------+|
-|  | Unternehmen B    [Status] ||
-|  +----------------------------+|
-|                                |
-|  KATEGORIE 2          (1)      |
-|  +----------------------------+|
-|  | Unternehmen C    [Status] ||
-|  +----------------------------+|
-|                                |
-|  OHNE KATEGORIE       (2)      |
-|  ...                           |
-+--------------------------------+
-```
+4. **BusinessSheetWrapper** erstellen (analog zu `FinanceSheetWrapper`):
+   - Klick auf Widget-Titel oeffnet die volle Business-Seite als Sheet
+   - Nutzt `BusinessV2Provider` intern
 
-### Unternehmen-Detail (Sheet)
+5. **Index.tsx** anpassen:
+   - `BusinessWidget` in `WIDGET_COMPONENTS` Map eintragen
+   - `BusinessSheetWrapper` einbinden mit State-Management
 
-```text
-+--------------------------------+
-|  [<]  Unternehmen A   [Loeschen]|
-+--------------------------------+
-|  Status: [Dropdown]            |
-|  Kategorie: [Dropdown]         |
-|  Website: example.com          |
-|  Branche: Software             |
-|  Notizen: ...                  |
-+--------------------------------+
-|  KONTAKTE             [+]      |
-|  +----------------------------+|
-|  | Max Muster | CEO           ||
-|  | max@example.com            ||
-|  +----------------------------+|
-|  | Anna Schmidt | Sales       ||
-|  +----------------------------+|
-+--------------------------------+
-|  VERKNUEPFUNGEN       [+]      |
-|  +----------------------------+|
-|  | Partner von: Firma X       ||
-|  +----------------------------+|
-+--------------------------------+
-```
+## Dateien
 
----
+| Aktion | Datei |
+|--------|-------|
+| Erstellen | `src/components/dashboard-v2/BusinessWidget.tsx` |
+| Erstellen | `src/components/dashboard-v2/BusinessSheetWrapper.tsx` |
+| Bearbeiten | `src/hooks/useDashboardV2.tsx` (WidgetType + Catalog) |
+| Bearbeiten | `src/pages/Index.tsx` (Widget einbinden) |
 
-## Komponenten-Struktur
+Keine Datenbank-Migration noetig.
 
-```text
-src/pages/BusinessV2.tsx
-src/components/business-v2/
-  context/BusinessV2Context.tsx
-  types.ts
-  
-  companies/
-    CompanyList.tsx
-    CompanyCard.tsx
-    AddCompanyDialog.tsx
-    CompanyDetailSheet.tsx
-  
-  categories/
-    CategorySection.tsx
-    AddCategoryDialog.tsx
-    EditCategoryDialog.tsx
-  
-  contacts/
-    CompanyContactsList.tsx
-    AddContactDialog.tsx
-    ContactCard.tsx
-  
-  relations/
-    CompanyRelationsList.tsx
-    AddRelationDialog.tsx
-```
-
----
-
-## Implementierungsschritte
-
-### Schritt 1: Datenbank-Migrationen
-- Erstellen der 4 neuen Tabellen
-- RLS-Policies fuer alle Tabellen (user_id basiert)
-- Foreign Key Constraints
-
-### Schritt 2: Grundstruktur
-- BusinessV2Context mit State-Management
-- Types-Definitionen
-- Seite `/business-v2` anlegen
-- Sidebar um Eintrag erweitern
-
-### Schritt 3: Kategorien
-- Kategorie-Liste anzeigen
-- Neue Kategorie erstellen
-- Kategorie bearbeiten/loeschen
-- Drag & Drop Sortierung (optional)
-
-### Schritt 4: Unternehmen
-- Unternehmen nach Kategorien gruppiert anzeigen
-- Neues Unternehmen hinzufuegen
-- Unternehmen-Detail-Sheet mit Bearbeitung
-- Status-Aenderung (Dropdown)
-- Suchfunktion
-
-### Schritt 5: Kontakte
-- Kontakte innerhalb eines Unternehmens anzeigen
-- Neuen Kontakt hinzufuegen
-- Kontakt bearbeiten/loeschen
-
-### Schritt 6: Unternehmens-Verknuepfungen
-- Beziehungen zwischen Unternehmen anzeigen
-- Neue Verknuepfung erstellen
-- Beziehungstypen: Partner, Konkurrent, Tochterunternehmen, Lieferant, Kunde
-
----
-
-## Technische Details
-
-### Context-Struktur
-- `companies`: Alle Unternehmen des Users
-- `categories`: Alle Kategorien
-- `contacts`: Alle Kontakte (company_id verknuepft)
-- `relations`: Alle Unternehmens-Verknuepfungen
-- CRUD-Funktionen fuer alle Entitaeten
-- Loading-States
-
-### UI-Patterns (Konsistent mit Finanzen V2)
-- Sheet statt Dialog fuer Details
-- Inline-Status-Aenderung
-- Kompakte Cards
-- Collapsible Kategorien
-- Floating Action Button fuer Hauptaktionen
-
----
-
-## Dateiaenderungen
-
-| Datei | Aktion |
-|-------|--------|
-| Supabase Migration | 4 neue Tabellen + RLS |
-| `src/pages/BusinessV2.tsx` | Neu |
-| `src/components/business-v2/...` | Neu (ca. 12 Komponenten) |
-| `src/components/layout/Sidebar.tsx` | Eintrag hinzufuegen |
-| `src/App.tsx` | Route hinzufuegen |
