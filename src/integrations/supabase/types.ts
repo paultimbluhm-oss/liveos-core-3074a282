@@ -2672,6 +2672,44 @@ export type Database = {
           },
         ]
       }
+      v2_company_links: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          link_type: string | null
+          title: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          link_type?: string | null
+          title: string
+          url: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          link_type?: string | null
+          title?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "v2_company_links_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "v2_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v2_company_relations: {
         Row: {
           created_at: string
@@ -2711,6 +2749,152 @@ export type Database = {
           {
             foreignKeyName: "v2_company_relations_to_company_id_fkey"
             columns: ["to_company_id"]
+            isOneToOne: false
+            referencedRelation: "v2_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v2_company_tag_assignments: {
+        Row: {
+          company_id: string
+          id: string
+          tag_id: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          id?: string
+          tag_id: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          id?: string
+          tag_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "v2_company_tag_assignments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "v2_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "v2_company_tag_assignments_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "v2_company_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v2_company_tags: {
+        Row: {
+          color: string | null
+          created_at: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      v2_company_timeline: {
+        Row: {
+          company_id: string
+          contact_id: string | null
+          content: string | null
+          created_at: string
+          entry_type: string
+          id: string
+          title: string | null
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          contact_id?: string | null
+          content?: string | null
+          created_at?: string
+          entry_type?: string
+          id?: string
+          title?: string | null
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          contact_id?: string | null
+          content?: string | null
+          created_at?: string
+          entry_type?: string
+          id?: string
+          title?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "v2_company_timeline_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "v2_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "v2_company_timeline_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "v2_company_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v2_company_todos: {
+        Row: {
+          company_id: string
+          completed: boolean | null
+          created_at: string
+          due_date: string | null
+          id: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          completed?: boolean | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          completed?: boolean | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "v2_company_todos_company_id_fkey"
+            columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "v2_companies"
             referencedColumns: ["id"]
