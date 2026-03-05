@@ -189,21 +189,37 @@ export function BusinessWidget({ size, onOpenSheet }: { size: WidgetSize; onOpen
             <Briefcase className="w-4 h-4 text-primary" strokeWidth={1.5} />
           </div>
           <button onClick={onOpenSheet} className="text-sm font-semibold hover:text-primary transition-colors">Business</button>
-        </div>
-        <div className="flex items-center gap-1">
-          {size === 'large' && (
-            <>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setShowNoteAction(!showNoteAction); setShowStatusAction(false); }}>
-                <StickyNote className="w-4 h-4" strokeWidth={1.5} />
-              </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setShowStatusAction(!showStatusAction); setShowNoteAction(false); }}>
-                <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
-              </Button>
-            </>
+          {streak > 0 && (
+            <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-muted/40">
+              <Flame className="w-3 h-3 text-orange-500" strokeWidth={1.5} />
+              <span className="text-[10px] font-mono font-bold text-orange-500">{streak}</span>
+            </div>
           )}
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setAddCompanyOpen(true)}>
-            <Plus className="w-4 h-4" strokeWidth={1.5} />
-          </Button>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+            <Building2 className="w-3 h-3" strokeWidth={1.5} />
+            <span className="font-mono font-medium">{total}</span>
+          </div>
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+            <Users className="w-3 h-3" strokeWidth={1.5} />
+            <span className="font-mono font-medium">{contacts.length}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            {size === 'large' && (
+              <>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setShowNoteAction(!showNoteAction); setShowStatusAction(false); }}>
+                  <StickyNote className="w-4 h-4" strokeWidth={1.5} />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setShowStatusAction(!showStatusAction); setShowNoteAction(false); }}>
+                  <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
+                </Button>
+              </>
+            )}
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setAddCompanyOpen(true)}>
+              <Plus className="w-4 h-4" strokeWidth={1.5} />
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -253,30 +269,11 @@ export function BusinessWidget({ size, onOpenSheet }: { size: WidgetSize; onOpen
           ))}
           {openTodos > 0 && (
             <div className="flex items-center gap-1.5 pt-1 mt-1 border-t border-border/30">
-              <ListChecks className="w-3 h-3 shrink-0 text-amber-500" />
+              <ListChecks className="w-3 h-3 shrink-0 text-amber-500" strokeWidth={1.5} />
               <span className="text-[11px] text-muted-foreground">Offene To-Dos</span>
               <span className="text-[11px] font-mono font-bold text-amber-500 ml-auto">{openTodos}</span>
             </div>
           )}
-        </div>
-      </div>
-
-      {/* Stats row */}
-      <div className="grid grid-cols-3 gap-2">
-        <div className="rounded-xl bg-muted/30 p-2.5 text-center">
-          <div className="flex items-center justify-center gap-1 mb-0.5">
-            <Flame className="w-3.5 h-3.5 text-orange-500" />
-          </div>
-          <p className="text-sm font-bold">{streak}</p>
-          <p className="text-[9px] text-muted-foreground">Streak</p>
-        </div>
-        <div className="rounded-xl bg-muted/30 p-2.5 text-center">
-          <p className="text-sm font-bold">{weeklyScore.newCompanies}</p>
-          <p className="text-[9px] text-muted-foreground">Neue Firmen</p>
-        </div>
-        <div className="rounded-xl bg-muted/30 p-2.5 text-center">
-          <p className="text-sm font-bold">{weeklyScore.newContacts}</p>
-          <p className="text-[9px] text-muted-foreground">Neue Kontakte</p>
         </div>
       </div>
 
