@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Plus, FolderPlus, Search, Tag, Settings2 } from 'lucide-react';
+import { Plus, FolderPlus, Search, Settings2, CircleDot } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useBusinessV2 } from '../context/BusinessV2Context';
@@ -8,16 +8,16 @@ import { CategorySection } from '../categories/CategorySection';
 import { AddCompanyDialog } from './AddCompanyDialog';
 import { AddCategoryDialog } from '../categories/AddCategoryDialog';
 import { CompanyDetailOverlay } from './CompanyDetailOverlay';
-import { AddTagDialog } from '../tags/AddTagDialog';
 import { CategoryManagementSheet } from '../categories/CategoryManagementSheet';
+import { StatusManagementSheet } from '../statuses/StatusManagementSheet';
 
 export function CompanyList() {
   const { companies, categories, loading } = useBusinessV2();
   const [search, setSearch] = useState('');
   const [addCompanyOpen, setAddCompanyOpen] = useState(false);
   const [addCategoryOpen, setAddCategoryOpen] = useState(false);
-  const [addTagOpen, setAddTagOpen] = useState(false);
   const [manageCategoriesOpen, setManageCategoriesOpen] = useState(false);
+  const [manageStatusesOpen, setManageStatusesOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
 
   const filteredCompanies = useMemo(() => {
@@ -43,7 +43,6 @@ export function CompanyList() {
     return groups;
   }, [filteredCompanies, categories]);
 
-  // Keep selected company in sync with state
   const currentCompany = selectedCompany ? companies.find(c => c.id === selectedCompany.id) || selectedCompany : null;
 
   if (loading) {
@@ -54,7 +53,6 @@ export function CompanyList() {
     );
   }
 
-  // Show detail overlay
   if (currentCompany) {
     return <CompanyDetailOverlay company={currentCompany} onBack={() => setSelectedCompany(null)} />;
   }
@@ -67,8 +65,8 @@ export function CompanyList() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Suchen..." className="pl-9" />
           </div>
-          <Button variant="outline" size="icon" onClick={() => setAddTagOpen(true)}>
-            <Tag className="w-4 h-4" />
+          <Button variant="outline" size="icon" onClick={() => setManageStatusesOpen(true)}>
+            <CircleDot className="w-4 h-4" />
           </Button>
           <Button variant="outline" size="icon" onClick={() => setManageCategoriesOpen(true)}>
             <Settings2 className="w-4 h-4" />
@@ -105,8 +103,8 @@ export function CompanyList() {
 
       <AddCompanyDialog open={addCompanyOpen} onOpenChange={setAddCompanyOpen} />
       <AddCategoryDialog open={addCategoryOpen} onOpenChange={setAddCategoryOpen} />
-      <AddTagDialog open={addTagOpen} onOpenChange={setAddTagOpen} />
       <CategoryManagementSheet open={manageCategoriesOpen} onOpenChange={setManageCategoriesOpen} />
+      <StatusManagementSheet open={manageStatusesOpen} onOpenChange={setManageStatusesOpen} />
     </>
   );
 }

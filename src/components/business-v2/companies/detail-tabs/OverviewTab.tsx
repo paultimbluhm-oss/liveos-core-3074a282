@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { useBusinessV2 } from '../../context/BusinessV2Context';
-import { Company, CompanyStatus, STATUS_CONFIG, RELATION_CONFIG } from '../../types';
+import { Company, RELATION_CONFIG } from '../../types';
 import { AddRelationDialog } from '../../relations/AddRelationDialog';
 
 interface OverviewTabProps {
@@ -15,12 +15,13 @@ interface OverviewTabProps {
 }
 
 export function OverviewTab({ company }: OverviewTabProps) {
-  const { updateCompany, categories, getCompanyRelations, deleteRelation, tags, getCompanyTags, assignTag, unassignTag } = useBusinessV2();
+  const { updateCompany, categories, statuses, getCompanyRelations, deleteRelation, tags, getCompanyTags, assignTag, unassignTag } = useBusinessV2();
   const [addRelationOpen, setAddRelationOpen] = useState(false);
 
   const relations = getCompanyRelations(company.id);
   const companyTags = getCompanyTags(company.id);
   const availableTags = tags.filter(t => !companyTags.some(ct => ct.id === t.id));
+  const sortedStatuses = [...statuses].sort((a, b) => a.order_index - b.order_index);
 
   const handleUpdate = (field: keyof Company, value: string | undefined) => {
     updateCompany(company.id, { [field]: value || undefined });
@@ -40,8 +41,13 @@ export function OverviewTab({ company }: OverviewTabProps) {
             <Select value={company.status} onValueChange={(v) => handleUpdate('status', v)}>
               <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
-                  <SelectItem key={key} value={key}>{cfg.label}</SelectItem>
+                {sortedStatuses.map(s => (
+                  <SelectItem key={s.key} value={s.key}>
+                    <span className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
+                      {s.name}
+                    </span>
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>

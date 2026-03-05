@@ -2755,6 +2755,36 @@ export type Database = {
           },
         ]
       }
+      v2_company_statuses: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          key: string
+          name: string
+          order_index: number
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          key: string
+          name: string
+          order_index?: number
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          key?: string
+          name?: string
+          order_index?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       v2_company_tag_assignments: {
         Row: {
           company_id: string

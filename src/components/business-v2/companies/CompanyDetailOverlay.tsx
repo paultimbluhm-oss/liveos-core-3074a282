@@ -3,9 +3,8 @@ import { ArrowLeft, Building2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { cn } from '@/lib/utils';
 import { useBusinessV2 } from '../context/BusinessV2Context';
-import { Company, STATUS_CONFIG } from '../types';
+import { Company } from '../types';
 import { OverviewTab } from './detail-tabs/OverviewTab';
 import { TimelineTab } from './detail-tabs/TimelineTab';
 import { ContactsTab } from './detail-tabs/ContactsTab';
@@ -18,9 +17,9 @@ interface CompanyDetailOverlayProps {
 }
 
 export function CompanyDetailOverlay({ company, onBack }: CompanyDetailOverlayProps) {
-  const { deleteCompany, getCompanyTags } = useBusinessV2();
+  const { deleteCompany, getCompanyTags, getStatusConfig } = useBusinessV2();
   const companyTags = getCompanyTags(company.id);
-  const statusConfig = STATUS_CONFIG[company.status];
+  const statusCfg = getStatusConfig(company.status);
 
   const handleDelete = async () => {
     await deleteCompany(company.id);
@@ -29,7 +28,6 @@ export function CompanyDetailOverlay({ company, onBack }: CompanyDetailOverlayPr
 
   return (
     <div className="space-y-4">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3 min-w-0">
           <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={onBack}>
@@ -38,8 +36,11 @@ export function CompanyDetailOverlay({ company, onBack }: CompanyDetailOverlayPr
           <div className="min-w-0">
             <h2 className="text-lg font-bold truncate">{company.name}</h2>
             <div className="flex items-center gap-2 flex-wrap">
-              <span className={cn('px-2 py-0.5 rounded-full text-[10px] font-medium', statusConfig.color)}>
-                {statusConfig.label}
+              <span
+                className="px-2 py-0.5 rounded-full text-[10px] font-medium"
+                style={{ backgroundColor: `${statusCfg.color}20`, color: statusCfg.color }}
+              >
+                {statusCfg.name}
               </span>
               {companyTags.map(tag => (
                 <span key={tag.id} className="px-2 py-0.5 rounded-full text-[10px] font-medium" style={{ backgroundColor: `${tag.color}20`, color: tag.color }}>
@@ -68,7 +69,6 @@ export function CompanyDetailOverlay({ company, onBack }: CompanyDetailOverlayPr
         </AlertDialog>
       </div>
 
-      {/* Tabs */}
       <Tabs defaultValue="overview" className="w-full">
         <TabsList className="w-full grid grid-cols-5 h-9">
           <TabsTrigger value="overview" className="text-xs px-1">Info</TabsTrigger>
