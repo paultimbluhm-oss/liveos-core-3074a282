@@ -25,6 +25,13 @@ const STATUS_COLORS: Record<CompanyStatus, string> = {
   completed: 'bg-emerald-500',
 };
 
+const STATUS_STROKES: Record<CompanyStatus, string> = {
+  researched: 'stroke-muted-foreground/40',
+  contacted: 'stroke-blue-500',
+  in_contact: 'stroke-violet-500',
+  completed: 'stroke-emerald-500',
+};
+
 export function BusinessWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenSheet?: () => void }) {
   const { user } = useAuth();
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -196,28 +203,48 @@ export function BusinessWidget({ size, onOpenSheet }: { size: WidgetSize; onOpen
         </div>
       </div>
 
-      {/* Pipeline bar */}
-      <div className="space-y-1.5">
-        <div className="flex items-center justify-between">
-          <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Pipeline</span>
-          <span className="text-[10px] text-muted-foreground font-mono">{total} Firmen</span>
-        </div>
-        {total > 0 && (
-          <div className="flex h-2 rounded-full overflow-hidden bg-muted/30">
-            {(Object.entries(pipeline) as [CompanyStatus, number][]).map(([status, count]) => {
-              if (count === 0) return null;
-              return (
-                <div key={status} className={`${STATUS_COLORS[status]} transition-all`} style={{ width: `${(count / total) * 100}%` }} />
-              );
-            })}
+      {/* Pipeline donut */}
+      <div className="flex items-center gap-4">
+        <div className="relative shrink-0">
+          <svg width="72" height="72" viewBox="0 0 72 72">
+            {total === 0 ? (
+              <circle cx="36" cy="36" r="28" fill="none" stroke="hsl(var(--muted))" strokeWidth="8" />
+            ) : (() => {
+              const entries = (Object.entries(pipeline) as [CompanyStatus, number][]).filter(([, c]) => c > 0);
+              let offset = 0;
+              const circumference = 2 * Math.PI * 28;
+              return entries.map(([status, count]) => {
+                const pct = count / total;
+                const dash = pct * circumference;
+                const gap = circumference - dash;
+                const currentOffset = offset;
+                offset += pct * 360;
+                return (
+                  <circle
+                    key={status}
+                    cx="36" cy="36" r="28"
+                    fill="none"
+                    strokeWidth="8"
+                    strokeLinecap="round"
+                    className={STATUS_STROKES[status]}
+                    strokeDasharray={`${dash} ${gap}`}
+                    strokeDashoffset={-currentOffset / 360 * circumference}
+                    transform="rotate(-90 36 36)"
+                  />
+                );
+              });
+            })()}
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-sm font-bold font-mono">{total}</span>
           </div>
-        )}
-        <div className="flex gap-3">
+        </div>
+        <div className="flex flex-col gap-1.5 min-w-0">
           {(Object.entries(pipeline) as [CompanyStatus, number][]).map(([status, count]) => (
-            <div key={status} className="flex items-center gap-1">
-              <div className={`w-1.5 h-1.5 rounded-full ${STATUS_COLORS[status]}`} />
-              <span className="text-[10px] text-muted-foreground">{STATUS_CONFIG[status].label}</span>
-              <span className="text-[10px] font-mono font-medium">{count}</span>
+            <div key={status} className="flex items-center gap-1.5">
+              <div className={`w-2 h-2 rounded-full shrink-0 ${STATUS_COLORS[status]}`} />
+              <span className="text-[11px] text-muted-foreground truncate">{STATUS_CONFIG[status].label}</span>
+              <span className="text-[11px] font-mono font-medium ml-auto">{count}</span>
             </div>
           ))}
         </div>
