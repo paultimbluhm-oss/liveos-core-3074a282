@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Briefcase, Plus, Flame, Clock, Users, Building2, ChevronRight, StickyNote } from 'lucide-react';
+import { Briefcase, Plus, Flame, Clock, Users, Building2, ChevronRight, StickyNote, ListChecks } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -36,7 +36,7 @@ export function BusinessWidget({ size, onOpenSheet }: { size: WidgetSize; onOpen
   const { user } = useAuth();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [contacts, setContacts] = useState<CompanyContact[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [openTodos, setOpenTodos] = useState(0);
   const [addCompanyOpen, setAddCompanyOpen] = useState(false);
 
   // Quick-action states
@@ -47,14 +47,18 @@ export function BusinessWidget({ size, onOpenSheet }: { size: WidgetSize; onOpen
   const [showStatusAction, setShowStatusAction] = useState(false);
   const [showNoteAction, setShowNoteAction] = useState(false);
 
+  const [loading, setLoading] = useState(true);
+
   const loadData = useCallback(async () => {
     if (!user) return;
     const [compRes, contRes] = await Promise.all([
       supabase.from('v2_companies').select('*').eq('user_id', user.id).order('updated_at', { ascending: false }),
       supabase.from('v2_company_contacts').select('id, company_id, created_at').eq('user_id', user.id),
     ]);
+    const todosRes = await (supabase.from('v2_company_todos').select('id').eq('user_id', user.id) as any).eq('done', false);
     setCompanies((compRes.data || []) as Company[]);
     setContacts((contRes.data || []) as CompanyContact[]);
+    setOpenTodos((todosRes.data || []).length);
     setLoading(false);
   }, [user]);
 
@@ -247,6 +251,13 @@ export function BusinessWidget({ size, onOpenSheet }: { size: WidgetSize; onOpen
               <span className="text-[11px] font-mono font-medium ml-auto">{count}</span>
             </div>
           ))}
+          {openTodos > 0 && (
+            <div className="flex items-center gap-1.5 pt-1 mt-1 border-t border-border/30">
+              <ListChecks className="w-3 h-3 shrink-0 text-amber-500" />
+              <span className="text-[11px] text-muted-foreground">Offene To-Dos</span>
+              <span className="text-[11px] font-mono font-bold text-amber-500 ml-auto">{openTodos}</span>
+            </div>
+          )}
         </div>
       </div>
 
