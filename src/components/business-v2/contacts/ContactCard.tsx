@@ -5,13 +5,17 @@ import { useBusinessV2 } from '../context/BusinessV2Context';
 
 interface ContactCardProps {
   contact: CompanyContact;
+  onClick?: () => void;
 }
 
-export function ContactCard({ contact }: ContactCardProps) {
+export function ContactCard({ contact, onClick }: ContactCardProps) {
   const { deleteContact } = useBusinessV2();
 
   return (
-    <div className="flex items-start justify-between p-3 bg-muted/50 rounded-lg">
+    <div
+      className="flex items-start justify-between p-3 bg-muted/50 rounded-lg cursor-pointer hover:bg-muted/70 transition-colors"
+      onClick={onClick}
+    >
       <div className="flex items-start gap-3 min-w-0 flex-1">
         <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
           <User className="w-4 h-4 text-primary" />
@@ -47,7 +51,7 @@ export function ContactCard({ contact }: ContactCardProps) {
         variant="ghost"
         size="icon"
         className="h-7 w-7 text-muted-foreground hover:text-destructive shrink-0"
-        onClick={() => deleteContact(contact.id)}
+        onClick={(e) => { e.stopPropagation(); deleteContact(contact.id); }}
       >
         <Trash2 className="w-4 h-4" />
       </Button>
