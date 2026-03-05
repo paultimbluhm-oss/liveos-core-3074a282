@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useBusinessV2 } from '../../context/BusinessV2Context';
-import { Company } from '../../types';
+import { Company, CompanyContact } from '../../types';
 import { ContactCard } from '../../contacts/ContactCard';
 import { AddContactDialog } from '../../contacts/AddContactDialog';
+import { EditContactDialog } from '../../contacts/EditContactDialog';
 
 interface ContactsTabProps {
   company: Company;
@@ -13,6 +14,7 @@ interface ContactsTabProps {
 export function ContactsTab({ company }: ContactsTabProps) {
   const { getCompanyContacts } = useBusinessV2();
   const [addOpen, setAddOpen] = useState(false);
+  const [editContact, setEditContact] = useState<CompanyContact | null>(null);
   const contacts = getCompanyContacts(company.id);
 
   return (
@@ -28,11 +30,14 @@ export function ContactsTab({ company }: ContactsTabProps) {
       ) : (
         <div className="space-y-2">
           {contacts.map(contact => (
-            <ContactCard key={contact.id} contact={contact} />
+            <ContactCard key={contact.id} contact={contact} onClick={() => setEditContact(contact)} />
           ))}
         </div>
       )}
       <AddContactDialog open={addOpen} onOpenChange={setAddOpen} companyId={company.id} />
+      {editContact && (
+        <EditContactDialog open={!!editContact} onOpenChange={(o) => !o && setEditContact(null)} contact={editContact} />
+      )}
     </div>
   );
 }

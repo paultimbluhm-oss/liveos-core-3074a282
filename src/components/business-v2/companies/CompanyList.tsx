@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Plus, FolderPlus, Search, Tag } from 'lucide-react';
+import { Plus, FolderPlus, Search, Tag, Settings2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useBusinessV2 } from '../context/BusinessV2Context';
@@ -9,6 +9,7 @@ import { AddCompanyDialog } from './AddCompanyDialog';
 import { AddCategoryDialog } from '../categories/AddCategoryDialog';
 import { CompanyDetailOverlay } from './CompanyDetailOverlay';
 import { AddTagDialog } from '../tags/AddTagDialog';
+import { CategoryManagementSheet } from '../categories/CategoryManagementSheet';
 
 export function CompanyList() {
   const { companies, categories, loading } = useBusinessV2();
@@ -16,6 +17,7 @@ export function CompanyList() {
   const [addCompanyOpen, setAddCompanyOpen] = useState(false);
   const [addCategoryOpen, setAddCategoryOpen] = useState(false);
   const [addTagOpen, setAddTagOpen] = useState(false);
+  const [manageCategoriesOpen, setManageCategoriesOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
 
   const filteredCompanies = useMemo(() => {
@@ -68,6 +70,9 @@ export function CompanyList() {
           <Button variant="outline" size="icon" onClick={() => setAddTagOpen(true)}>
             <Tag className="w-4 h-4" />
           </Button>
+          <Button variant="outline" size="icon" onClick={() => setManageCategoriesOpen(true)}>
+            <Settings2 className="w-4 h-4" />
+          </Button>
           <Button variant="outline" size="icon" onClick={() => setAddCategoryOpen(true)}>
             <FolderPlus className="w-4 h-4" />
           </Button>
@@ -101,6 +106,7 @@ export function CompanyList() {
       <AddCompanyDialog open={addCompanyOpen} onOpenChange={setAddCompanyOpen} />
       <AddCategoryDialog open={addCategoryOpen} onOpenChange={setAddCategoryOpen} />
       <AddTagDialog open={addTagOpen} onOpenChange={setAddTagOpen} />
+      <CategoryManagementSheet open={manageCategoriesOpen} onOpenChange={setManageCategoriesOpen} />
     </>
   );
 }
