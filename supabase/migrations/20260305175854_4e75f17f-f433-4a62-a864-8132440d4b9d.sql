@@ -1,0 +1,1 @@
+ALTER TABLE v2_companies DROP CONSTRAINT IF EXISTS v2_companies_status_check;
