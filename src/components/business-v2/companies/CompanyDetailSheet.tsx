@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useBusinessV2 } from '../context/BusinessV2Context';
-import { Company, CompanyStatus, STATUS_CONFIG, RELATION_CONFIG } from '../types';
+import { Company, RELATION_CONFIG } from '../types';
 import { ContactCard } from '../contacts/ContactCard';
 import { AddContactDialog } from '../contacts/AddContactDialog';
 import { AddRelationDialog } from '../relations/AddRelationDialog';
@@ -21,7 +21,7 @@ interface CompanyDetailSheetProps {
 }
 
 export function CompanyDetailSheet({ open, onOpenChange, company }: CompanyDetailSheetProps) {
-  const { updateCompany, deleteCompany, categories, getCompanyContacts, getCompanyRelations, deleteRelation } = useBusinessV2();
+  const { updateCompany, deleteCompany, categories, statuses, getCompanyContacts, getCompanyRelations, deleteRelation } = useBusinessV2();
   const [addContactOpen, setAddContactOpen] = useState(false);
   const [addRelationOpen, setAddRelationOpen] = useState(false);
 
@@ -95,8 +95,8 @@ export function CompanyDetailSheet({ open, onOpenChange, company }: CompanyDetai
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
-                        <SelectItem key={key} value={key}>{cfg.label}</SelectItem>
+                      {[...statuses].sort((a, b) => a.order_index - b.order_index).map(s => (
+                        <SelectItem key={s.key} value={s.key}>{s.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

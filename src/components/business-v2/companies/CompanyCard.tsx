@@ -1,6 +1,5 @@
 import { Building2, Globe, Users } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Company, STATUS_CONFIG } from '../types';
+import { Company } from '../types';
 import { useBusinessV2 } from '../context/BusinessV2Context';
 
 interface CompanyCardProps {
@@ -9,9 +8,9 @@ interface CompanyCardProps {
 }
 
 export function CompanyCard({ company, onClick }: CompanyCardProps) {
-  const { getCompanyContacts } = useBusinessV2();
+  const { getCompanyContacts, getStatusConfig } = useBusinessV2();
   const contactCount = getCompanyContacts(company.id).length;
-  const statusConfig = STATUS_CONFIG[company.status];
+  const statusCfg = getStatusConfig(company.status);
 
   return (
     <div
@@ -40,8 +39,11 @@ export function CompanyCard({ company, onClick }: CompanyCardProps) {
           </div>
         </div>
       </div>
-      <span className={cn('px-2 py-1 rounded-full text-xs font-medium shrink-0', statusConfig.color)}>
-        {statusConfig.label}
+      <span
+        className="px-2 py-1 rounded-full text-xs font-medium shrink-0"
+        style={{ backgroundColor: `${statusCfg.color}20`, color: statusCfg.color }}
+      >
+        {statusCfg.name}
       </span>
     </div>
   );

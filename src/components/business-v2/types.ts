@@ -1,6 +1,15 @@
-export type CompanyStatus = 'researched' | 'contacted' | 'in_contact' | 'completed';
 export type RelationType = 'partner' | 'competitor' | 'subsidiary' | 'supplier' | 'customer';
 export type TimelineEntryType = 'call' | 'email' | 'status_change' | 'note';
+
+export interface CompanyStatus {
+  id: string;
+  user_id: string;
+  key: string;
+  name: string;
+  color: string;
+  order_index: number;
+  created_at: string;
+}
 
 export interface CompanyCategory {
   id: string;
@@ -16,7 +25,7 @@ export interface Company {
   user_id: string;
   name: string;
   category_id?: string;
-  status: CompanyStatus;
+  status: string;
   website?: string;
   industry?: string;
   notes?: string;
@@ -92,12 +101,12 @@ export interface CompanyLink {
   created_at: string;
 }
 
-export const STATUS_CONFIG: Record<CompanyStatus, { label: string; color: string }> = {
-  researched: { label: 'Recherchiert', color: 'bg-muted text-muted-foreground' },
-  contacted: { label: 'Angeschrieben', color: 'bg-blue-500/20 text-blue-600' },
-  in_contact: { label: 'In Kontakt', color: 'bg-violet-500/20 text-violet-600' },
-  completed: { label: 'Abgeschlossen', color: 'bg-green-500/20 text-green-600' },
-};
+export const DEFAULT_STATUSES = [
+  { key: 'researched', name: 'Recherchiert', color: '#64748b', order_index: 0 },
+  { key: 'contacted', name: 'Angeschrieben', color: '#3b82f6', order_index: 1 },
+  { key: 'in_contact', name: 'In Kontakt', color: '#8b5cf6', order_index: 2 },
+  { key: 'completed', name: 'Abgeschlossen', color: '#22c55e', order_index: 3 },
+];
 
 export const RELATION_CONFIG: Record<RelationType, string> = {
   partner: 'Partner',

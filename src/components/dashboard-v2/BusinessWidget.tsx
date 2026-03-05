@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { format, differenceInDays, subDays } from 'date-fns';
 import type { WidgetSize } from '@/hooks/useDashboardV2';
-import { Company, CompanyStatus, STATUS_CONFIG } from '@/components/business-v2/types';
+import { Company, DEFAULT_STATUSES } from '@/components/business-v2/types';
 import { BusinessV2Provider } from '@/components/business-v2/context/BusinessV2Context';
 import { AddCompanyDialog } from '@/components/business-v2/companies/AddCompanyDialog';
 
@@ -18,19 +18,12 @@ interface CompanyContact {
   created_at: string;
 }
 
-const STATUS_COLORS: Record<CompanyStatus, string> = {
-  researched: 'bg-muted-foreground/40',
-  contacted: 'bg-blue-500',
-  in_contact: 'bg-violet-500',
-  completed: 'bg-emerald-500',
-};
-
-const STATUS_STROKES: Record<CompanyStatus, string> = {
-  researched: 'stroke-muted-foreground/40',
-  contacted: 'stroke-blue-500',
-  in_contact: 'stroke-violet-500',
-  completed: 'stroke-emerald-500',
-};
+interface StatusEntry {
+  key: string;
+  name: string;
+  color: string;
+  order_index: number;
+}
 
 export function BusinessWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenSheet?: () => void }) {
   const { user } = useAuth();
@@ -38,10 +31,11 @@ export function BusinessWidget({ size, onOpenSheet }: { size: WidgetSize; onOpen
   const [contacts, setContacts] = useState<CompanyContact[]>([]);
   const [openTodos, setOpenTodos] = useState(0);
   const [addCompanyOpen, setAddCompanyOpen] = useState(false);
+  const [statusEntries, setStatusEntries] = useState<StatusEntry[]>([]);
 
   // Quick-action states
   const [statusCompanyId, setStatusCompanyId] = useState('');
-  const [newStatus, setNewStatus] = useState<CompanyStatus | ''>('');
+  const [newStatus, setNewStatus] = useState('');
   const [noteCompanyId, setNoteCompanyId] = useState('');
   const [noteText, setNoteText] = useState('');
   const [showStatusAction, setShowStatusAction] = useState(false);
@@ -51,14 +45,17 @@ export function BusinessWidget({ size, onOpenSheet }: { size: WidgetSize; onOpen
 
   const loadData = useCallback(async () => {
     if (!user) return;
-    const [compRes, contRes] = await Promise.all([
+    const [compRes, contRes, statusRes] = await Promise.all([
       supabase.from('v2_companies').select('*').eq('user_id', user.id).order('updated_at', { ascending: false }),
       supabase.from('v2_company_contacts').select('id, company_id, created_at').eq('user_id', user.id),
+      supabase.from('v2_company_statuses').select('*').eq('user_id', user.id).order('order_index'),
     ]);
     const todosRes = await (supabase.from('v2_company_todos').select('id').eq('user_id', user.id) as any).eq('done', false);
     setCompanies((compRes.data || []) as Company[]);
     setContacts((contRes.data || []) as CompanyContact[]);
     setOpenTodos((todosRes.data || []).length);
+    const loadedStatuses = (statusRes.data || []) as StatusEntry[];
+    setStatusEntries(loadedStatuses.length > 0 ? loadedStatuses : DEFAULT_STATUSES.map(s => ({ ...s })));
     setLoading(false);
   }, [user]);
 
@@ -73,12 +70,23 @@ export function BusinessWidget({ size, onOpenSheet }: { size: WidgetSize; onOpen
     return () => { supabase.removeChannel(ch); };
   }, [user, loadData]);
 
+  const getStatusCfg = (key: string) => {
+    const found = statusEntries.find(s => s.key === key);
+    if (found) return found;
+    const def = DEFAULT_STATUSES.find(s => s.key === key);
+    return def || { key, name: key, color: '#64748b', order_index: 99 };
+  };
+
   // Pipeline counts
   const pipeline = useMemo(() => {
-    const counts: Record<CompanyStatus, number> = { researched: 0, contacted: 0, in_contact: 0, completed: 0 };
-    companies.forEach(c => { if (counts[c.status] !== undefined) counts[c.status]++; });
+    const counts: Record<string, number> = {};
+    statusEntries.forEach(s => { counts[s.key] = 0; });
+    companies.forEach(c => {
+      if (counts[c.status] !== undefined) counts[c.status]++;
+      else counts[c.status] = 1;
+    });
     return counts;
-  }, [companies]);
+  }, [companies, statusEntries]);
 
   const total = companies.length;
 
@@ -99,20 +107,21 @@ export function BusinessWidget({ size, onOpenSheet }: { size: WidgetSize; onOpen
       const hasActivity = companies.some(c => format(new Date(c.created_at), 'yyyy-MM-dd') === d || format(new Date(c.updated_at), 'yyyy-MM-dd') === d)
         || contacts.some(c => format(new Date(c.created_at), 'yyyy-MM-dd') === d);
       if (hasActivity) days++;
-      else if (i > 0) break; // allow today to be empty
+      else if (i > 0) break;
       else break;
     }
     return days;
   }, [companies, contacts]);
 
-  // Follow-ups: non-completed companies sorted by oldest update
+  // Follow-ups
   const followUps = useMemo(() => {
+    const completedKey = statusEntries.find(s => s.key === 'completed')?.key || 'completed';
     return companies
-      .filter(c => c.status !== 'completed')
+      .filter(c => c.status !== completedKey)
       .map(c => ({ ...c, daysSince: differenceInDays(new Date(), new Date(c.updated_at)) }))
       .filter(c => c.daysSince >= 7)
       .sort((a, b) => b.daysSince - a.daysSince);
-  }, [companies]);
+  }, [companies, statusEntries]);
 
   const handleStatusChange = async () => {
     if (!statusCompanyId || !newStatus) return;
@@ -146,6 +155,8 @@ export function BusinessWidget({ size, onOpenSheet }: { size: WidgetSize; onOpen
     );
   }
 
+  const sortedStatuses = [...statusEntries].sort((a, b) => a.order_index - b.order_index);
+
   // === SMALL ===
   if (size === 'small') {
     return (
@@ -166,12 +177,11 @@ export function BusinessWidget({ size, onOpenSheet }: { size: WidgetSize; onOpen
             <span className="text-lg font-bold">{contacts.length}</span>
           </div>
         </div>
-        {/* Pipeline dots */}
         <div className="flex gap-2">
-          {(Object.entries(pipeline) as [CompanyStatus, number][]).map(([status, count]) => (
-            <div key={status} className="flex items-center gap-1">
-              <div className={`w-2 h-2 rounded-full ${STATUS_COLORS[status]}`} />
-              <span className="text-[10px] font-mono text-muted-foreground">{count}</span>
+          {sortedStatuses.map(s => (
+            <div key={s.key} className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
+              <span className="text-[10px] font-mono text-muted-foreground">{pipeline[s.key] || 0}</span>
             </div>
           ))}
         </div>
@@ -230,10 +240,11 @@ export function BusinessWidget({ size, onOpenSheet }: { size: WidgetSize; onOpen
             {total === 0 ? (
               <circle cx="36" cy="36" r="28" fill="none" stroke="hsl(var(--muted))" strokeWidth="8" />
             ) : (() => {
-              const entries = (Object.entries(pipeline) as [CompanyStatus, number][]).filter(([, c]) => c > 0);
+              const entries = sortedStatuses.filter(s => (pipeline[s.key] || 0) > 0);
               let offset = 0;
               const circumference = 2 * Math.PI * 28;
-              return entries.map(([status, count]) => {
+              return entries.map(s => {
+                const count = pipeline[s.key] || 0;
                 const pct = count / total;
                 const dash = pct * circumference;
                 const gap = circumference - dash;
@@ -241,12 +252,12 @@ export function BusinessWidget({ size, onOpenSheet }: { size: WidgetSize; onOpen
                 offset += pct * 360;
                 return (
                   <circle
-                    key={status}
+                    key={s.key}
                     cx="36" cy="36" r="28"
                     fill="none"
                     strokeWidth="8"
                     strokeLinecap="round"
-                    className={STATUS_STROKES[status]}
+                    stroke={s.color}
                     strokeDasharray={`${dash} ${gap}`}
                     strokeDashoffset={-currentOffset / 360 * circumference}
                     transform="rotate(-90 36 36)"
@@ -260,11 +271,11 @@ export function BusinessWidget({ size, onOpenSheet }: { size: WidgetSize; onOpen
           </div>
         </div>
         <div className="flex flex-col gap-1.5 min-w-0">
-          {(Object.entries(pipeline) as [CompanyStatus, number][]).map(([status, count]) => (
-            <div key={status} className="flex items-center gap-1.5">
-              <div className={`w-2 h-2 rounded-full shrink-0 ${STATUS_COLORS[status]}`} />
-              <span className="text-[11px] text-muted-foreground truncate">{STATUS_CONFIG[status].label}</span>
-              <span className="text-[11px] font-mono font-medium ml-auto">{count}</span>
+          {sortedStatuses.map(s => (
+            <div key={s.key} className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
+              <span className="text-[11px] text-muted-foreground truncate">{s.name}</span>
+              <span className="text-[11px] font-mono font-medium ml-auto">{pipeline[s.key] || 0}</span>
             </div>
           ))}
           {openTodos > 0 && (
@@ -277,7 +288,7 @@ export function BusinessWidget({ size, onOpenSheet }: { size: WidgetSize; onOpen
         </div>
       </div>
 
-      {/* Follow-up reminder (medium: 1, large: list) */}
+      {/* Follow-up reminder */}
       {followUps.length > 0 && (
         <div className="space-y-1 pt-1 border-t border-border/30">
           <span className="text-[10px] text-muted-foreground uppercase tracking-wider px-1">Follow-up</span>
@@ -305,11 +316,11 @@ export function BusinessWidget({ size, onOpenSheet }: { size: WidgetSize; onOpen
               ))}
             </SelectContent>
           </Select>
-          <Select value={newStatus} onValueChange={(v) => setNewStatus(v as CompanyStatus)}>
+          <Select value={newStatus} onValueChange={setNewStatus}>
             <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Neuer Status" /></SelectTrigger>
             <SelectContent>
-              {(Object.entries(STATUS_CONFIG) as [CompanyStatus, { label: string }][]).map(([s, cfg]) => (
-                <SelectItem key={s} value={s} className="text-xs">{cfg.label}</SelectItem>
+              {sortedStatuses.map(s => (
+                <SelectItem key={s.key} value={s.key} className="text-xs">{s.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>

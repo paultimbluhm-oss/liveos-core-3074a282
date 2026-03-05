@@ -2,7 +2,8 @@ import { createContext, useContext, useState, useEffect, useCallback, ReactNode 
 import { useAuth, getSupabase } from '@/hooks/useAuth';
 import { 
   Company, CompanyCategory, CompanyContact, CompanyRelation, CompanyStatus, RelationType,
-  TimelineEntry, TimelineEntryType, CompanyTag, CompanyTagAssignment, CompanyTodo, CompanyLink
+  TimelineEntry, TimelineEntryType, CompanyTag, CompanyTagAssignment, CompanyTodo, CompanyLink,
+  DEFAULT_STATUSES
 } from '../types';
 
 interface BusinessV2ContextType {
@@ -15,53 +16,50 @@ interface BusinessV2ContextType {
   tagAssignments: CompanyTagAssignment[];
   todos: CompanyTodo[];
   links: CompanyLink[];
+  statuses: CompanyStatus[];
   loading: boolean;
   
-  // Companies
   addCompany: (data: Omit<Company, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<Company | null>;
   updateCompany: (id: string, data: Partial<Company>) => Promise<void>;
   deleteCompany: (id: string) => Promise<void>;
   
-  // Categories
   addCategory: (name: string, color?: string) => Promise<CompanyCategory | null>;
   updateCategory: (id: string, data: Partial<CompanyCategory>) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
   
-  // Contacts
   addContact: (data: Omit<CompanyContact, 'id' | 'user_id' | 'created_at'>) => Promise<CompanyContact | null>;
   updateContact: (id: string, data: Partial<CompanyContact>) => Promise<void>;
   deleteContact: (id: string) => Promise<void>;
   
-  // Relations
   addRelation: (fromId: string, toId: string, type: RelationType, description?: string) => Promise<CompanyRelation | null>;
   deleteRelation: (id: string) => Promise<void>;
   
-  // Timeline
   addTimelineEntry: (companyId: string, type: TimelineEntryType, title?: string, content?: string, contactId?: string) => Promise<TimelineEntry | null>;
   deleteTimelineEntry: (id: string) => Promise<void>;
   
-  // Tags
   addTag: (name: string, color?: string) => Promise<CompanyTag | null>;
   deleteTag: (id: string) => Promise<void>;
   assignTag: (companyId: string, tagId: string) => Promise<void>;
   unassignTag: (companyId: string, tagId: string) => Promise<void>;
   
-  // Todos
   addTodo: (companyId: string, title: string, dueDate?: string) => Promise<CompanyTodo | null>;
   updateTodo: (id: string, data: Partial<CompanyTodo>) => Promise<void>;
   deleteTodo: (id: string) => Promise<void>;
   
-  // Links
   addLink: (companyId: string, title: string, url: string, linkType?: string) => Promise<CompanyLink | null>;
   deleteLink: (id: string) => Promise<void>;
   
-  // Helpers
+  addStatus: (name: string, color?: string) => Promise<CompanyStatus | null>;
+  updateStatus: (id: string, data: Partial<CompanyStatus>) => Promise<void>;
+  deleteStatus: (id: string) => Promise<void>;
+  
   getCompanyContacts: (companyId: string) => CompanyContact[];
   getCompanyRelations: (companyId: string) => { relation: CompanyRelation; company: Company }[];
   getCompanyTimeline: (companyId: string) => TimelineEntry[];
   getCompanyTags: (companyId: string) => CompanyTag[];
   getCompanyTodos: (companyId: string) => CompanyTodo[];
   getCompanyLinks: (companyId: string) => CompanyLink[];
+  getStatusConfig: (statusKey: string) => { name: string; color: string };
   refresh: () => Promise<void>;
 }
 
@@ -78,13 +76,24 @@ export function BusinessV2Provider({ children }: { children: ReactNode }) {
   const [tagAssignments, setTagAssignments] = useState<CompanyTagAssignment[]>([]);
   const [todos, setTodos] = useState<CompanyTodo[]>([]);
   const [links, setLinks] = useState<CompanyLink[]>([]);
+  const [statuses, setStatuses] = useState<CompanyStatus[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const ensureDefaultStatuses = useCallback(async () => {
+    if (!user) return;
+    const supabase = getSupabase();
+    const { data } = await supabase.from('v2_company_statuses').select('*').eq('user_id', user.id);
+    if (!data || data.length === 0) {
+      const inserts = DEFAULT_STATUSES.map(s => ({ ...s, user_id: user.id }));
+      await supabase.from('v2_company_statuses').insert(inserts);
+    }
+  }, [user]);
 
   const refresh = useCallback(async () => {
     if (!user) return;
     const supabase = getSupabase();
     
-    const [companiesRes, categoriesRes, contactsRes, relationsRes, timelineRes, tagsRes, tagAssignRes, todosRes, linksRes] = await Promise.all([
+    const [companiesRes, categoriesRes, contactsRes, relationsRes, timelineRes, tagsRes, tagAssignRes, todosRes, linksRes, statusesRes] = await Promise.all([
       supabase.from('v2_companies').select('*').eq('user_id', user.id).order('name'),
       supabase.from('v2_company_categories').select('*').eq('user_id', user.id).order('order_index'),
       supabase.from('v2_company_contacts').select('*').eq('user_id', user.id).order('name'),
@@ -94,6 +103,7 @@ export function BusinessV2Provider({ children }: { children: ReactNode }) {
       supabase.from('v2_company_tag_assignments').select('*').eq('user_id', user.id),
       supabase.from('v2_company_todos').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
       supabase.from('v2_company_links').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+      supabase.from('v2_company_statuses').select('*').eq('user_id', user.id).order('order_index'),
     ]);
     
     if (companiesRes.data) setCompanies(companiesRes.data as Company[]);
@@ -105,10 +115,17 @@ export function BusinessV2Provider({ children }: { children: ReactNode }) {
     if (tagAssignRes.data) setTagAssignments(tagAssignRes.data as CompanyTagAssignment[]);
     if (todosRes.data) setTodos(todosRes.data as CompanyTodo[]);
     if (linksRes.data) setLinks(linksRes.data as CompanyLink[]);
+    if (statusesRes.data) setStatuses(statusesRes.data as CompanyStatus[]);
     setLoading(false);
   }, [user]);
 
-  useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => {
+    const init = async () => {
+      await ensureDefaultStatuses();
+      await refresh();
+    };
+    init();
+  }, [ensureDefaultStatuses, refresh]);
 
   // Companies CRUD
   const addCompany = async (data: Omit<Company, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
@@ -127,9 +144,10 @@ export function BusinessV2Provider({ children }: { children: ReactNode }) {
     const { error } = await supabase.from('v2_companies').update(data).eq('id', id);
     if (error) { console.error(error); return; }
     setCompanies(prev => prev.map(c => c.id === id ? { ...c, ...data } : c));
-    // Auto-add timeline entry for status change
     if (data.status && oldCompany && data.status !== oldCompany.status) {
-      await addTimelineEntry(id, 'status_change', `${STATUS_LABELS[oldCompany.status]} → ${STATUS_LABELS[data.status as CompanyStatus]}`);
+      const oldLabel = getStatusConfig(oldCompany.status).name;
+      const newLabel = getStatusConfig(data.status).name;
+      await addTimelineEntry(id, 'status_change', `${oldLabel} → ${newLabel}`);
     }
   };
 
@@ -221,7 +239,6 @@ export function BusinessV2Provider({ children }: { children: ReactNode }) {
     if (error) { console.error(error); return null; }
     const e = entry as TimelineEntry;
     setTimeline(prev => [e, ...prev]);
-    // Also update company updated_at
     await supabase.from('v2_companies').update({ updated_at: new Date().toISOString() }).eq('id', companyId);
     setCompanies(prev => prev.map(c => c.id === companyId ? { ...c, updated_at: new Date().toISOString() } : c));
     return e;
@@ -312,6 +329,34 @@ export function BusinessV2Provider({ children }: { children: ReactNode }) {
     setLinks(prev => prev.filter(l => l.id !== id));
   };
 
+  // Status CRUD
+  const addStatus = async (name: string, color?: string) => {
+    if (!user) return null;
+    const supabase = getSupabase();
+    const maxOrder = statuses.length > 0 ? Math.max(...statuses.map(s => s.order_index)) + 1 : 0;
+    const key = name.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_');
+    const { data: s, error } = await supabase.from('v2_company_statuses').insert({
+      name, color: color || '#64748b', order_index: maxOrder, key, user_id: user.id
+    }).select().single();
+    if (error) { console.error(error); return null; }
+    setStatuses(prev => [...prev, s as CompanyStatus]);
+    return s as CompanyStatus;
+  };
+
+  const updateStatus = async (id: string, data: Partial<CompanyStatus>) => {
+    const supabase = getSupabase();
+    const { error } = await supabase.from('v2_company_statuses').update(data).eq('id', id);
+    if (error) { console.error(error); return; }
+    setStatuses(prev => prev.map(s => s.id === id ? { ...s, ...data } : s));
+  };
+
+  const deleteStatus = async (id: string) => {
+    const supabase = getSupabase();
+    const { error } = await supabase.from('v2_company_statuses').delete().eq('id', id);
+    if (error) { console.error(error); return; }
+    setStatuses(prev => prev.filter(s => s.id !== id));
+  };
+
   // Helpers
   const getCompanyContacts = (companyId: string) => contacts.filter(c => c.company_id === companyId);
   const getCompanyTimeline = (companyId: string) => timeline.filter(t => t.company_id === companyId);
@@ -321,6 +366,14 @@ export function BusinessV2Provider({ children }: { children: ReactNode }) {
   };
   const getCompanyTodos = (companyId: string) => todos.filter(t => t.company_id === companyId);
   const getCompanyLinks = (companyId: string) => links.filter(l => l.company_id === companyId);
+  
+  const getStatusConfig = (statusKey: string): { name: string; color: string } => {
+    const found = statuses.find(s => s.key === statusKey);
+    if (found) return { name: found.name, color: found.color };
+    const def = DEFAULT_STATUSES.find(s => s.key === statusKey);
+    if (def) return { name: def.name, color: def.color };
+    return { name: statusKey, color: '#64748b' };
+  };
   
   const getCompanyRelations = (companyId: string) => {
     return relations
@@ -335,7 +388,7 @@ export function BusinessV2Provider({ children }: { children: ReactNode }) {
 
   return (
     <BusinessV2Context.Provider value={{
-      companies, categories, contacts, relations, timeline, tags, tagAssignments, todos, links, loading,
+      companies, categories, contacts, relations, timeline, tags, tagAssignments, todos, links, statuses, loading,
       addCompany, updateCompany, deleteCompany,
       addCategory, updateCategory, deleteCategory,
       addContact, updateContact, deleteContact,
@@ -344,20 +397,15 @@ export function BusinessV2Provider({ children }: { children: ReactNode }) {
       addTag, deleteTag, assignTag, unassignTag,
       addTodo, updateTodo, deleteTodo,
       addLink, deleteLink,
+      addStatus, updateStatus, deleteStatus,
       getCompanyContacts, getCompanyRelations, getCompanyTimeline, getCompanyTags, getCompanyTodos, getCompanyLinks,
+      getStatusConfig,
       refresh,
     }}>
       {children}
     </BusinessV2Context.Provider>
   );
 }
-
-const STATUS_LABELS: Record<CompanyStatus, string> = {
-  researched: 'Recherchiert',
-  contacted: 'Angeschrieben',
-  in_contact: 'In Kontakt',
-  completed: 'Abgeschlossen',
-};
 
 export function useBusinessV2() {
   const context = useContext(BusinessV2Context);
