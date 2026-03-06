@@ -358,7 +358,7 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
     } catch (err) {
       console.error('Automation trigger error:', err);
     }
-  }, [user, refreshAccounts, refreshTransactions, refreshAutomations]);
+  }, [user, refreshAccounts, refreshTransactions, refreshAutomations, refreshInvestments]);
 
   const refreshData = useCallback(async () => {
     setLoading(true);
