@@ -13,6 +13,7 @@ import { FinanceSheetWrapper } from '@/components/dashboard-v2/FinanceSheetWrapp
 import { SchoolSheetWrapper } from '@/components/dashboard-v2/SchoolSheetWrapper';
 import { BusinessWidget } from '@/components/dashboard-v2/BusinessWidget';
 import { BusinessSheetWrapper } from '@/components/dashboard-v2/BusinessSheetWrapper';
+import { TreeCoach } from '@/components/dashboard-v2/TreeCoach';
 import { Settings2, X, Plus, Minus, EyeOff, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
@@ -116,7 +117,8 @@ export default function Index() {
     <AppLayout>
       <div className="p-4 pb-24 mx-auto space-y-3 max-w-lg md:max-w-3xl lg:max-w-5xl">
         {/* Edit mode toggle */}
-        <div className="flex justify-end">
+        <div className="flex justify-between items-center">
+          <div className="flex-1" />
           <Button
             variant={editMode ? 'default' : 'ghost'}
             size="icon"
@@ -126,6 +128,9 @@ export default function Index() {
             {editMode ? <X className="w-4 h-4" strokeWidth={1.5} /> : <Settings2 className="w-4 h-4" strokeWidth={1.5} />}
           </Button>
         </div>
+
+        {/* Tree Coach - always above widgets */}
+        {!editMode && <TreeCoach />}
 
         {/* Mobile widget list */}
         <div className="md:hidden space-y-3">
