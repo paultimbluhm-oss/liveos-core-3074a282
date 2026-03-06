@@ -129,8 +129,6 @@ export default function Index() {
           </Button>
         </div>
 
-        {/* Tree Coach - always above widgets */}
-        {!editMode && <TreeCoach />}
 
         {/* Mobile widget list */}
         <div className="md:hidden space-y-3">

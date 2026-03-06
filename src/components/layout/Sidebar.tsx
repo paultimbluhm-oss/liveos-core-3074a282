@@ -78,6 +78,7 @@ export function Sidebar() {
   }, []);
 
   const pageTitle = getPageTitle(location.pathname);
+  const isDashboard = location.pathname === '/';
 
   return (
     <TooltipProvider delayDuration={0}>
