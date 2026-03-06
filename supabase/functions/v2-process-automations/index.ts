@@ -191,18 +191,20 @@ serve(async (req) => {
         transactionsCreated++;
       }
 
-      await supabase
-        .from('v2_automations')
-        .update({ 
-          last_executed_at: today.toISOString(),
-          next_execution_date: format(
-            getExecutionDates(auto, addDays(today, 1), addMonths(today, 2))[0] || today,
-            'yyyy-MM-dd'
-          ),
-        })
-        .eq('id', auto.id);
+      if (executionDates.length > 0) {
+        await supabase
+          .from('v2_automations')
+          .update({ 
+            last_executed_at: today.toISOString(),
+            next_execution_date: format(
+              getExecutionDates(auto, addDays(today, 1), addMonths(today, 2))[0] || today,
+              'yyyy-MM-dd'
+            ),
+          })
+          .eq('id', auto.id);
 
-      processedCount++;
+        processedCount++;
+      }
     }
 
     return new Response(

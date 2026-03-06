@@ -353,7 +353,7 @@ export function FinanceV2Provider({ children }: { children: ReactNode }) {
         console.error('Failed to trigger automations:', error);
       } else {
         // Refresh data after automations ran
-        await Promise.all([refreshAccounts(), refreshTransactions(), refreshAutomations()]);
+        await Promise.all([refreshAccounts(), refreshTransactions(), refreshAutomations(), refreshInvestments()]);
       }
     } catch (err) {
       console.error('Automation trigger error:', err);
