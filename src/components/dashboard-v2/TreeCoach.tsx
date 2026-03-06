@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Check, Plus, Minus } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
+import { TreeCoachSheet } from './TreeCoachSheet';
 
 interface Habit {
   id: string;
