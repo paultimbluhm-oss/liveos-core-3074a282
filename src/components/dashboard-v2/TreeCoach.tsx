@@ -59,6 +59,7 @@ export function TreeCoach() {
   const [completions, setCompletions] = useState<Completion[]>([]);
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
   const [justCompleted, setJustCompleted] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const today = format(new Date(), 'yyyy-MM-dd');
 
   const fetchData = async () => {

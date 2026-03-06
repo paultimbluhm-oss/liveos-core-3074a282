@@ -216,7 +216,7 @@ export function TreeCoachSheet({ open, onOpenChange, currentPct, currentStageInd
                 <div className="flex flex-col items-center gap-1">
                   <span className="text-2xl leading-none">{currentStage.emoji}</span>
                   <span className="text-[10px] font-medium truncate max-w-full">
-                    {profile?.display_name || 'Du'}
+                    {profile?.username || 'Du'}
                   </span>
                 </div>
                 {friendTrees.map((ft) => (
