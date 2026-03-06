@@ -115,20 +115,18 @@ export default function Index() {
 
   return (
     <AppLayout>
-      <div className="p-4 pb-24 mx-auto space-y-3 max-w-lg md:max-w-3xl lg:max-w-5xl">
+      <div className="p-4 pt-2 pb-24 mx-auto space-y-3 max-w-lg md:max-w-3xl lg:max-w-5xl">
         {/* Edit mode toggle */}
-        <div className="flex justify-between items-center">
-          <div className="flex-1" />
+        <div className="flex justify-end">
           <Button
             variant={editMode ? 'default' : 'ghost'}
             size="icon"
-            className="h-8 w-8 rounded-full"
+            className="h-7 w-7 rounded-full"
             onClick={() => setEditMode(!editMode)}
           >
-            {editMode ? <X className="w-4 h-4" strokeWidth={1.5} /> : <Settings2 className="w-4 h-4" strokeWidth={1.5} />}
+            {editMode ? <X className="w-3.5 h-3.5" strokeWidth={1.5} /> : <Settings2 className="w-3.5 h-3.5" strokeWidth={1.5} />}
           </Button>
         </div>
-
 
         {/* Mobile widget list */}
         <div className="md:hidden space-y-3">
