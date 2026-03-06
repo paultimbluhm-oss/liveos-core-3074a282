@@ -212,8 +212,19 @@ export default function Index() {
                   ))}
                 </div>
               </div>
-              <div className="flex justify-center">
+              <div className="flex justify-center gap-3">
                 <Button variant="outline" size="sm" onClick={resetToDefault} className="text-xs">Zuruecksetzen</Button>
+                <Button variant="default" size="sm" onClick={() => setEditMode(false)} className="text-xs">Fertig</Button>
+              </div>
+              <div className="flex justify-center pt-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-muted-foreground"
+                  onClick={() => setEditMode(false)}
+                >
+                  Bearbeitung beenden
+                </Button>
               </div>
             </motion.div>
           )}
