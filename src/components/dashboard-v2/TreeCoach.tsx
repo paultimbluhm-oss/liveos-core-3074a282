@@ -150,10 +150,8 @@ export function TreeCoach() {
 
   return (
     <>
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-card border border-border/50 cursor-pointer"
+      <div
+        className="flex items-center gap-2 cursor-pointer min-w-0"
         onClick={() => setSheetOpen(true)}
       >
         {/* Tree */}
@@ -161,7 +159,7 @@ export function TreeCoach() {
           key={stageIndex}
           initial={{ scale: 0.6, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="text-2xl shrink-0 leading-none"
+          className="text-lg shrink-0 leading-none"
         >
           {tree.emoji}
         </motion.span>
@@ -209,12 +207,12 @@ export function TreeCoach() {
             animate={{ scale: 1 }}
             whileTap={{ scale: 0.85 }}
             onClick={(e) => { e.stopPropagation(); handleComplete(); }}
-            className="shrink-0 w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center hover:bg-primary/20 transition-colors"
+            className="shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center hover:bg-primary/20 transition-colors"
           >
-            <Check className="w-3.5 h-3.5" strokeWidth={2} />
+            <Check className="w-3 h-3" strokeWidth={2.5} />
           </motion.button>
         )}
-      </motion.div>
+      </div>
 
       <TreeCoachSheet
         open={sheetOpen}
