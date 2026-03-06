@@ -13,7 +13,7 @@ import { FinanceSheetWrapper } from '@/components/dashboard-v2/FinanceSheetWrapp
 import { SchoolSheetWrapper } from '@/components/dashboard-v2/SchoolSheetWrapper';
 import { BusinessWidget } from '@/components/dashboard-v2/BusinessWidget';
 import { BusinessSheetWrapper } from '@/components/dashboard-v2/BusinessSheetWrapper';
-import { TreeCoach } from '@/components/dashboard-v2/TreeCoach';
+
 import { Settings2, X, Plus, Minus, EyeOff, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
@@ -129,8 +129,6 @@ export default function Index() {
           </Button>
         </div>
 
-        {/* Tree Coach - always above widgets */}
-        {!editMode && <TreeCoach />}
 
         {/* Mobile widget list */}
         <div className="md:hidden space-y-3">
