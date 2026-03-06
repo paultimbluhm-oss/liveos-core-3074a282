@@ -195,7 +195,7 @@ export default function Index() {
           )}
         </AnimatePresence>
 
-        {/* Edit mode footer */}
+        {/* Edit mode footer & toggle */}
         <AnimatePresence>
           {editMode && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="space-y-3 pt-2">
@@ -216,19 +216,24 @@ export default function Index() {
                 <Button variant="outline" size="sm" onClick={resetToDefault} className="text-xs">Zuruecksetzen</Button>
                 <Button variant="default" size="sm" onClick={() => setEditMode(false)} className="text-xs">Fertig</Button>
               </div>
-              <div className="flex justify-center pt-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs text-muted-foreground"
-                  onClick={() => setEditMode(false)}
-                >
-                  Bearbeitung beenden
-                </Button>
-              </div>
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Bottom edit mode trigger */}
+        {!editMode && (
+          <div className="flex justify-center pt-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs text-muted-foreground gap-1.5"
+              onClick={() => setEditMode(true)}
+            >
+              <Settings2 className="w-3.5 h-3.5" />
+              Widgets bearbeiten
+            </Button>
+          </div>
+        )}
       </div>
 
       <FinanceSheetWrapper open={financeSheetOpen} onOpenChange={setFinanceSheetOpen} />
