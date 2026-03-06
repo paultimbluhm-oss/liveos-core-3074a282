@@ -81,25 +81,47 @@ export function Sidebar() {
 
   return (
     <TooltipProvider delayDuration={0}>
-      {/* Mobile Header Bar */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50 h-12 bg-sidebar border-b border-sidebar-border flex items-center justify-between px-3">
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setMobileOpen(!mobileOpen)}
-            className="p-1.5 h-8 w-8"
-          >
-            {mobileOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-          </Button>
-          <NavLink to="/" className="flex items-center">
-            <Warehouse className="w-4 h-4 text-primary" />
-          </NavLink>
-          <span className="text-sm font-semibold">{pageTitle}</span>
-        </div>
+      {/* Header Bar - visible on all screen sizes */}
+      <div className={cn(
+        "fixed top-0 right-0 z-50 h-12 bg-sidebar border-b border-sidebar-border flex items-center justify-between px-3 transition-all duration-300",
+        "left-0 md:left-14",
+        expanded && "md:left-56"
+      )}>
+        {isDashboard ? (
+          // Dashboard: show TreeCoach instead of navigation
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setMobileOpen(!mobileOpen)}
+              className="p-1.5 h-8 w-8 md:hidden"
+            >
+              {mobileOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+            </Button>
+            <div className="flex-1 min-w-0">
+              <TreeCoach />
+            </div>
+          </div>
+        ) : (
+          // Other pages: show navigation
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setMobileOpen(!mobileOpen)}
+              className="p-1.5 h-8 w-8 md:hidden"
+            >
+              {mobileOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+            </Button>
+            <NavLink to="/" className="flex items-center md:hidden">
+              <Warehouse className="w-4 h-4 text-primary" />
+            </NavLink>
+            <span className="text-sm font-semibold">{pageTitle}</span>
+          </div>
+        )}
         
         {/* Streak in header */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 shrink-0 ml-2">
           <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold font-mono ${
             allDone ? 'bg-success/15 text-success' : percentage > 0 ? 'bg-primary/10 text-primary' : 'text-muted-foreground'
           }`}>
