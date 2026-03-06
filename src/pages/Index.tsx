@@ -116,17 +116,6 @@ export default function Index() {
   return (
     <AppLayout>
       <div className="p-4 pt-2 pb-24 mx-auto space-y-3 max-w-lg md:max-w-3xl lg:max-w-5xl">
-        {/* Edit mode toggle */}
-        <div className="flex justify-end">
-          <Button
-            variant={editMode ? 'default' : 'ghost'}
-            size="icon"
-            className="h-7 w-7 rounded-full"
-            onClick={() => setEditMode(!editMode)}
-          >
-            {editMode ? <X className="w-3.5 h-3.5" strokeWidth={1.5} /> : <Settings2 className="w-3.5 h-3.5" strokeWidth={1.5} />}
-          </Button>
-        </div>
 
         {/* Mobile widget list */}
         <div className="md:hidden space-y-3">
@@ -206,7 +195,7 @@ export default function Index() {
           )}
         </AnimatePresence>
 
-        {/* Edit mode footer */}
+        {/* Edit mode footer & toggle */}
         <AnimatePresence>
           {editMode && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="space-y-3 pt-2">
@@ -223,12 +212,28 @@ export default function Index() {
                   ))}
                 </div>
               </div>
-              <div className="flex justify-center">
+              <div className="flex justify-center gap-3">
                 <Button variant="outline" size="sm" onClick={resetToDefault} className="text-xs">Zuruecksetzen</Button>
+                <Button variant="default" size="sm" onClick={() => setEditMode(false)} className="text-xs">Fertig</Button>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Bottom edit mode trigger */}
+        {!editMode && (
+          <div className="flex justify-center pt-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs text-muted-foreground gap-1.5"
+              onClick={() => setEditMode(true)}
+            >
+              <Settings2 className="w-3.5 h-3.5" />
+              Widgets bearbeiten
+            </Button>
+          </div>
+        )}
       </div>
 
       <FinanceSheetWrapper open={financeSheetOpen} onOpenChange={setFinanceSheetOpen} />
