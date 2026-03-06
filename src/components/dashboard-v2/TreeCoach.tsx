@@ -149,69 +149,79 @@ export function TreeCoach() {
   if (habits.length === 0) return null;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-card border border-border/50"
-    >
-      {/* Tree */}
-      <motion.span
-        key={stageIndex}
-        initial={{ scale: 0.6, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        className="text-2xl shrink-0 leading-none"
+    <>
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-card border border-border/50 cursor-pointer"
+        onClick={() => setSheetOpen(true)}
       >
-        {tree.emoji}
-      </motion.span>
-
-      {/* Message */}
-      <div className="flex-1 min-w-0">
-        <AnimatePresence mode="wait">
-          {justCompleted ? (
-            <motion.p
-              key="done"
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -10 }}
-              className="text-xs font-medium text-success truncate"
-            >
-              Super, danke!
-            </motion.p>
-          ) : allDone ? (
-            <motion.p
-              key="happy"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-xs font-medium text-success truncate"
-            >
-              {happyMessage}
-            </motion.p>
-          ) : (
-            <motion.p
-              key={suggestion?.id || 'none'}
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -10 }}
-              className="text-xs text-foreground truncate"
-            >
-              {suggestionText}
-            </motion.p>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* Action button */}
-      {!allDone && suggestion && !justCompleted && (
-        <motion.button
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          whileTap={{ scale: 0.85 }}
-          onClick={handleComplete}
-          className="shrink-0 w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center hover:bg-primary/20 transition-colors"
+        {/* Tree */}
+        <motion.span
+          key={stageIndex}
+          initial={{ scale: 0.6, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="text-2xl shrink-0 leading-none"
         >
-          <Check className="w-3.5 h-3.5" strokeWidth={2} />
-        </motion.button>
-      )}
-    </motion.div>
+          {tree.emoji}
+        </motion.span>
+
+        {/* Message */}
+        <div className="flex-1 min-w-0">
+          <AnimatePresence mode="wait">
+            {justCompleted ? (
+              <motion.p
+                key="done"
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                className="text-xs font-medium text-success truncate"
+              >
+                Super, danke!
+              </motion.p>
+            ) : allDone ? (
+              <motion.p
+                key="happy"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-xs font-medium text-success truncate"
+              >
+                {happyMessage}
+              </motion.p>
+            ) : (
+              <motion.p
+                key={suggestion?.id || 'none'}
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                className="text-xs text-foreground truncate"
+              >
+                {suggestionText}
+              </motion.p>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Action button */}
+        {!allDone && suggestion && !justCompleted && (
+          <motion.button
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            whileTap={{ scale: 0.85 }}
+            onClick={(e) => { e.stopPropagation(); handleComplete(); }}
+            className="shrink-0 w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center hover:bg-primary/20 transition-colors"
+          >
+            <Check className="w-3.5 h-3.5" strokeWidth={2} />
+          </motion.button>
+        )}
+      </motion.div>
+
+      <TreeCoachSheet
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        currentPct={pct}
+        currentStageIndex={stageIndex}
+      />
+    </>
   );
 }
