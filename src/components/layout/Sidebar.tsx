@@ -15,7 +15,6 @@ import {
   Coins,
 } from 'lucide-react';
 import { FinanceSheetWrapper } from '@/components/dashboard-v2/FinanceSheetWrapper';
-import { TreeCoach } from '@/components/dashboard-v2/TreeCoach';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
