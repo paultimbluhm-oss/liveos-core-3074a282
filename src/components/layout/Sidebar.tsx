@@ -15,7 +15,6 @@ import {
   Coins,
 } from 'lucide-react';
 import { FinanceSheetWrapper } from '@/components/dashboard-v2/FinanceSheetWrapper';
-import { TreeCoach } from '@/components/dashboard-v2/TreeCoach';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
@@ -78,8 +77,6 @@ export function Sidebar() {
   }, []);
 
   const pageTitle = getPageTitle(location.pathname);
-  const isDashboard = location.pathname === '/';
-
   return (
     <TooltipProvider delayDuration={0}>
       {/* Header Bar - visible on all screen sizes */}
@@ -88,38 +85,20 @@ export function Sidebar() {
         "left-0 md:left-14",
         expanded && "md:left-56"
       )}>
-        {isDashboard ? (
-          // Dashboard: show TreeCoach instead of navigation
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setMobileOpen(!mobileOpen)}
-              className="p-1.5 h-8 w-8 md:hidden"
-            >
-              {mobileOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-            </Button>
-            <div className="flex-1 min-w-0">
-              <TreeCoach />
-            </div>
-          </div>
-        ) : (
-          // Other pages: show navigation
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setMobileOpen(!mobileOpen)}
-              className="p-1.5 h-8 w-8 md:hidden"
-            >
-              {mobileOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-            </Button>
-            <NavLink to="/" className="flex items-center md:hidden">
-              <Warehouse className="w-4 h-4 text-primary" />
-            </NavLink>
-            <span className="text-sm font-semibold">{pageTitle}</span>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setMobileOpen(!mobileOpen)}
+            className="p-1.5 h-8 w-8 md:hidden"
+          >
+            {mobileOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+          </Button>
+          <NavLink to="/" className="flex items-center md:hidden">
+            <Warehouse className="w-4 h-4 text-primary" />
+          </NavLink>
+          <span className="text-sm font-semibold">{pageTitle}</span>
+        </div>
         
         {/* Streak in header */}
         <div className="flex items-center gap-1.5 shrink-0 ml-2">
