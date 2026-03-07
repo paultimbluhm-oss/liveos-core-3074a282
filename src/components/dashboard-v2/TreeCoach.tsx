@@ -1,152 +1,97 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
 import { TreeCoachSheet } from './TreeCoachSheet';
-
-interface Habit {
-  id: string;
-  name: string;
-  habit_type: string;
-}
-
-interface Completion {
-  habit_id: string;
-  value: number | null;
-}
-
-const TREE_STAGES = [
-  { emoji: '\u{1F331}', label: 'Setzling' },    // seedling
-  { emoji: '\u{1FAB4}', label: 'Spross' },       // potted plant
-  { emoji: '\u{1F333}', label: 'Baum' },          // deciduous tree
-  { emoji: '\u{1F334}', label: 'Palme' },         // palm tree (bonus)
-];
-
-const PROMPTS_CHECK = [
-  (name: string) => `Mach jetzt ${name}!`,
-  (name: string) => `Zeit fuer ${name}.`,
-  (name: string) => `${name} steht noch aus.`,
-  (name: string) => `Wie waer's mit ${name}?`,
-];
-
-const PROMPTS_COUNT = [
-  (name: string, n: number) => `Mach ${n}x ${name}!`,
-  (name: string, n: number) => `Noch ${n} ${name} heute.`,
-  (name: string, n: number) => `${n}x ${name} packen wir!`,
-];
-
-const HAPPY_MESSAGES = [
-  'Alles erledigt, top!',
-  'Perfekter Tag!',
-  'Stark, alles geschafft!',
-  'Weiter so!',
-];
-
-function getStableRandom(seed: string): number {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) {
-    hash = ((hash << 5) - hash) + seed.charCodeAt(i);
-    hash |= 0;
-  }
-  return Math.abs(hash);
-}
+import { FalkoAvatar } from './falko/FalkoAvatar';
+import { generateChallenges, pickChallenge, getMood, type FalkoChallenge, type FalkoMood } from './falko/challengeEngine';
 
 export function TreeCoach() {
   const { user } = useAuth();
-  const [habits, setHabits] = useState<Habit[]>([]);
-  const [completions, setCompletions] = useState<Completion[]>([]);
+  const [habits, setHabits] = useState<{ id: string; name: string; habit_type: string }[]>([]);
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
+  const [challenges, setChallenges] = useState<FalkoChallenge[]>([]);
   const [justCompleted, setJustCompleted] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [streakDays, setStreakDays] = useState(0);
   const today = format(new Date(), 'yyyy-MM-dd');
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!user) return;
-    const [hRes, cRes] = await Promise.all([
+    const [hRes, cRes, profileRes] = await Promise.all([
       supabase.from('habits').select('id, name, habit_type').eq('user_id', user.id).eq('is_active', true),
-      supabase.from('habit_completions').select('habit_id, value').eq('user_id', user.id).eq('completed_date', today),
+      supabase.from('habit_completions').select('habit_id').eq('user_id', user.id).eq('completed_date', today),
+      supabase.from('profiles').select('streak_days').eq('user_id', user.id).maybeSingle(),
     ]);
     if (hRes.data) setHabits(hRes.data.map((h: any) => ({ id: h.id, name: h.name, habit_type: h.habit_type || 'check' })));
-    if (cRes.data) {
-      setCompletions(cRes.data as Completion[]);
-      setCompletedIds(new Set(cRes.data.map((c: any) => c.habit_id)));
-    }
-  };
+    if (cRes.data) setCompletedIds(new Set(cRes.data.map((c: any) => c.habit_id)));
+    if (profileRes.data) setStreakDays(profileRes.data.streak_days || 0);
 
-  useEffect(() => { if (user) fetchData(); }, [user]);
+    // Generate challenges
+    const ch = await generateChallenges(user.id);
+    setChallenges(ch);
+  }, [user, today]);
+
+  useEffect(() => { if (user) fetchData(); }, [user, fetchData]);
 
   useEffect(() => {
     if (!user) return;
-    const ch = supabase.channel('tree-coach-live')
+    const ch = supabase.channel('falko-live')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'habit_completions' }, fetchData)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'habits' }, fetchData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, fetchData)
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [user]);
-
-  const incompleteHabits = useMemo(
-    () => habits.filter(h => !completedIds.has(h.id)),
-    [habits, completedIds]
-  );
+  }, [user, fetchData]);
 
   const total = habits.length;
   const doneCount = habits.filter(h => completedIds.has(h.id)).length;
   const pct = total > 0 ? doneCount / total : 0;
   const allDone = total > 0 && doneCount === total;
 
-  // Tree stage based on completion percentage
-  const stageIndex = allDone ? 3 : pct >= 0.66 ? 2 : pct >= 0.33 ? 1 : 0;
-  const tree = TREE_STAGES[stageIndex];
+  const mood: FalkoMood = getMood(pct, streakDays);
 
-  // Pick a stable suggestion for this session (changes when completions change)
-  const suggestion = useMemo(() => {
-    if (incompleteHabits.length === 0) return null;
-    const seed = today + doneCount;
-    const idx = getStableRandom(String(seed)) % incompleteHabits.length;
-    return incompleteHabits[idx];
-  }, [incompleteHabits, doneCount, today]);
+  const currentChallenge = useMemo(
+    () => pickChallenge(challenges, today, doneCount),
+    [challenges, today, doneCount]
+  );
 
-  const suggestionText = useMemo(() => {
-    if (!suggestion) return '';
-    const seed = getStableRandom(today + suggestion.id);
-    if (suggestion.habit_type === 'count') {
-      const targets = [2, 3, 5, 10];
-      const target = targets[seed % targets.length];
-      const prompt = PROMPTS_COUNT[seed % PROMPTS_COUNT.length];
-      return prompt(suggestion.name, target);
-    }
-    const prompt = PROMPTS_CHECK[seed % PROMPTS_CHECK.length];
-    return prompt(suggestion.name);
-  }, [suggestion, today]);
+  const happyMessages = [
+    'Alles erledigt, top!',
+    'Perfekter Tag!',
+    'Stark, alles geschafft!',
+    'Falko ist stolz auf dich!',
+  ];
 
   const happyMessage = useMemo(() => {
-    const seed = getStableRandom(today);
-    return HAPPY_MESSAGES[seed % HAPPY_MESSAGES.length];
+    let hash = 0;
+    for (let i = 0; i < today.length; i++) { hash = ((hash << 5) - hash) + today.charCodeAt(i); hash |= 0; }
+    return happyMessages[Math.abs(hash) % happyMessages.length];
   }, [today]);
 
   const handleComplete = async () => {
-    if (!suggestion || !user) return;
-    if (suggestion.habit_type === 'count') {
-      const seed = getStableRandom(today + suggestion.id);
-      const targets = [2, 3, 5, 10];
-      const target = targets[seed % targets.length];
-      const existing = completions.find(c => c.habit_id === suggestion.id);
-      if (existing) {
-        await (supabase.from('habit_completions').update({ value: (existing.value || 0) + target } as any)
-          .eq('habit_id', suggestion.id).eq('completed_date', today).eq('user_id', user.id));
-      } else {
-        await supabase.from('habit_completions').insert({ user_id: user.id, habit_id: suggestion.id, completed_date: today, value: target } as any);
-      }
-    } else {
-      await supabase.from('habit_completions').insert({ user_id: user.id, habit_id: suggestion.id, completed_date: today } as any);
+    if (!currentChallenge || !user) return;
+
+    if (currentChallenge.habitId) {
+      await supabase.from('habit_completions').insert({
+        user_id: user.id,
+        habit_id: currentChallenge.habitId,
+        completed_date: today,
+      } as any);
+    } else if (currentChallenge.taskId) {
+      await supabase.from('tasks').update({ completed: true } as any)
+        .eq('id', currentChallenge.taskId).eq('user_id', user.id);
     }
+
     setJustCompleted(true);
     setTimeout(() => setJustCompleted(false), 1500);
   };
 
   if (habits.length === 0) return null;
+
+  const hasAction = currentChallenge && (currentChallenge.habitId || currentChallenge.taskId);
 
   return (
     <>
@@ -154,17 +99,8 @@ export function TreeCoach() {
         className="flex items-center gap-2 cursor-pointer min-w-0"
         onClick={() => setSheetOpen(true)}
       >
-        {/* Tree */}
-        <motion.span
-          key={stageIndex}
-          initial={{ scale: 0.6, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="text-lg shrink-0 leading-none"
-        >
-          {tree.emoji}
-        </motion.span>
+        <FalkoAvatar mood={mood} size="sm" />
 
-        {/* Message */}
         <div className="flex-1 min-w-0">
           <AnimatePresence mode="wait">
             {justCompleted ? (
@@ -173,35 +109,34 @@ export function TreeCoach() {
                 initial={{ opacity: 0, x: 10 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -10 }}
-                className="text-xs font-medium text-success truncate"
+                className="text-xs font-medium text-primary truncate"
               >
-                Super, danke!
+                Falko freut sich!
               </motion.p>
             ) : allDone ? (
               <motion.p
                 key="happy"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="text-xs font-medium text-success truncate"
+                className="text-xs font-medium text-primary truncate"
               >
                 {happyMessage}
               </motion.p>
-            ) : (
+            ) : currentChallenge ? (
               <motion.p
-                key={suggestion?.id || 'none'}
+                key={currentChallenge.id}
                 initial={{ opacity: 0, x: 10 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -10 }}
                 className="text-xs text-foreground truncate"
               >
-                {suggestionText}
+                {currentChallenge.text}
               </motion.p>
-            )}
+            ) : null}
           </AnimatePresence>
         </div>
 
-        {/* Action button */}
-        {!allDone && suggestion && !justCompleted && (
+        {!allDone && hasAction && !justCompleted && (
           <motion.button
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
@@ -218,7 +153,9 @@ export function TreeCoach() {
         open={sheetOpen}
         onOpenChange={setSheetOpen}
         currentPct={pct}
-        currentStageIndex={stageIndex}
+        mood={mood}
+        challenges={challenges}
+        streakDays={streakDays}
       />
     </>
   );
