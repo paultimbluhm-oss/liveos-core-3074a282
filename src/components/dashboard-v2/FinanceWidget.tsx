@@ -394,22 +394,24 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
       </div>
 
       {/* Monthly Stats */}
-      <div className="rounded-xl bg-muted/30 p-2.5">
-        <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">{currentMonthLabel}</p>
-        <div className="grid grid-cols-3 gap-2">
-          <div>
-            <p className="text-xs font-bold text-emerald-500">{fmt(monthlyStats.income)}</p>
-            <p className="text-[9px] text-muted-foreground">Einnahmen</p>
+      <div className="finance-monthly-stats rounded-xl bg-muted/30 p-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div>
+              <p className="text-xs font-bold text-emerald-500 leading-tight">{fmt(monthlyStats.income)}</p>
+              <p className="text-[8px] text-muted-foreground uppercase">Einnahmen</p>
+            </div>
+            <div className="w-px h-5 bg-border/40" />
+            <div>
+              <p className="text-xs font-bold text-destructive leading-tight">{fmt(monthlyStats.expenses)}</p>
+              <p className="text-[8px] text-muted-foreground uppercase">Ausgaben</p>
+            </div>
           </div>
-          <div>
-            <p className="text-xs font-bold text-destructive">{fmt(monthlyStats.expenses)}</p>
-            <p className="text-[9px] text-muted-foreground">Ausgaben</p>
-          </div>
-          <div>
-            <p className={`text-xs font-bold ${monthlyStats.savingsRate >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>
+          <div className="text-right">
+            <p className={`text-sm font-bold ${monthlyStats.savingsRate >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>
               {monthlyStats.savingsRate}%
             </p>
-            <p className="text-[9px] text-muted-foreground">Sparquote</p>
+            <p className="text-[8px] text-muted-foreground uppercase">{currentMonthLabel}</p>
           </div>
         </div>
       </div>
@@ -490,19 +492,23 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
           <span className="text-[10px] text-muted-foreground uppercase tracking-wider px-1">Offen</span>
           {loans.map(loan => (
             <div key={loan.id} className="space-y-1.5">
-              <div className="flex items-center justify-between py-1.5 px-2 rounded-lg bg-muted/20">
+              <div className="finance-loan-row flex items-center justify-between py-1.5 px-2.5 rounded-xl bg-muted/20">
                 <div className="flex items-center gap-2 min-w-0">
-                  {loan.loan_type === 'lent'
-                    ? <ArrowUpRight className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                    : <ArrowDownRight className="w-3.5 h-3.5 text-violet-500 shrink-0" />
-                  }
+                  <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${
+                    loan.loan_type === 'lent' ? 'bg-amber-500/15' : 'bg-violet-500/15'
+                  }`}>
+                    {loan.loan_type === 'lent'
+                      ? <ArrowUpRight className="w-3 h-3 text-amber-500" />
+                      : <ArrowDownRight className="w-3 h-3 text-violet-500" />
+                    }
+                  </div>
                   <div className="min-w-0">
                     <p className="text-xs font-medium truncate">{loan.person_name}</p>
-                    {loan.note && <p className="text-[10px] text-muted-foreground truncate">{loan.note}</p>}
+                    {loan.note && <p className="text-[9px] text-muted-foreground truncate">{loan.note}</p>}
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <span className={`text-xs font-mono font-medium ${loan.loan_type === 'lent' ? 'text-amber-500' : 'text-violet-500'}`}>
+                  <span className={`text-xs font-mono font-semibold ${loan.loan_type === 'lent' ? 'text-amber-500' : 'text-violet-500'}`}>
                     {loan.amount.toLocaleString('de-DE', { style: 'currency', currency: loan.currency })}
                   </span>
                   <button
