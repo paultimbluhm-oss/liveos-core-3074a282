@@ -268,7 +268,7 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
             <div className="w-6 h-6 rounded-md bg-muted/60 flex items-center justify-center shrink-0">
               <HabitIcon className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
             </div>
-            <button onClick={() => setSelectedHabitId(habit.id)} className={`flex-1 text-xs truncate text-left hover:underline underline-offset-2 ${isNegative ? 'text-destructive font-medium' : ''}`}>
+            <button onClick={() => setSelectedHabitId(habit.id)} className={`flex-1 text-sm truncate text-left hover:underline underline-offset-2 ${isNegative ? 'text-destructive font-medium' : ''}`}>
               {habit.name}
             </button>
             {streak !== 0 && (
