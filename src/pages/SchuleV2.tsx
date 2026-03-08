@@ -32,6 +32,7 @@ function SchuleV2Content() {
   const [totalLessons, setTotalLessons] = useState(0);
   const [timetableKey, setTimetableKey] = useState(0);
   const [coursesCollapsed, setCoursesCollapsed] = useState(false);
+  const [activeSheet, setActiveSheet] = useState<'abi' | 'absences' | 'weekly' | 'stats' | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
