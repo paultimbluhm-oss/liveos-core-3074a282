@@ -250,7 +250,7 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
             <div className="w-6 h-6 rounded-md bg-muted/40 flex items-center justify-center shrink-0">
               <HabitIcon className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
             </div>
-            <button onClick={() => setSelectedHabitId(habit.id)} className="flex-1 text-xs truncate line-through text-muted-foreground text-left hover:underline underline-offset-2 cursor-pointer">
+            <button onClick={() => setSelectedHabitId(habit.id)} className="flex-1 text-sm truncate line-through text-muted-foreground text-left hover:underline underline-offset-2 cursor-pointer">
               {habit.name}
             </button>
             {streak !== 0 && (
