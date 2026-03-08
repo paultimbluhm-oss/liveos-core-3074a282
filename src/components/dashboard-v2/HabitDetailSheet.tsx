@@ -159,6 +159,13 @@ export function HabitDetailSheet({ open, onOpenChange, habitId, onUpdated }: Hab
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Icon</p>
                 <IconPicker value={editIcon} onChange={setEditIcon} />
               </div>
+              <div className="flex items-center justify-between py-1">
+                <div>
+                  <p className="text-xs font-medium">Kompakt (halbe Breite)</p>
+                  <p className="text-[11px] text-muted-foreground">Nur Icon anzeigen, zwei nebeneinander</p>
+                </div>
+                <Switch checked={editHalfWidth} onCheckedChange={setEditHalfWidth} />
+              </div>
               <Button size="sm" onClick={saveEdit} disabled={!editName.trim()} className="w-full h-8 text-xs">
                 Speichern
               </Button>
