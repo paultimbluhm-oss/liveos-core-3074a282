@@ -3,6 +3,7 @@ import { useAuth, getSupabase } from '@/hooks/useAuth';
 import { 
   Company, CompanyCategory, CompanyContact, CompanyRelation, CompanyStatus, RelationType,
   TimelineEntry, TimelineEntryType, CompanyTag, CompanyTagAssignment, CompanyTodo, CompanyLink,
+  CompanyOrder, OrderChecklistItem,
   DEFAULT_STATUSES
 } from '../types';
 
@@ -17,6 +18,8 @@ interface BusinessV2ContextType {
   todos: CompanyTodo[];
   links: CompanyLink[];
   statuses: CompanyStatus[];
+  orders: CompanyOrder[];
+  checklistItems: OrderChecklistItem[];
   loading: boolean;
   
   addCompany: (data: Omit<Company, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<Company | null>;
@@ -52,6 +55,16 @@ interface BusinessV2ContextType {
   addStatus: (name: string, color?: string) => Promise<CompanyStatus | null>;
   updateStatus: (id: string, data: Partial<CompanyStatus>) => Promise<void>;
   deleteStatus: (id: string) => Promise<void>;
+
+  addOrder: (companyId: string, title: string, description?: string) => Promise<CompanyOrder | null>;
+  updateOrder: (id: string, data: Partial<CompanyOrder>) => Promise<void>;
+  deleteOrder: (id: string) => Promise<void>;
+  getCompanyOrders: (companyId: string) => CompanyOrder[];
+
+  addChecklistItem: (orderId: string, title: string, orderIndex: number) => Promise<OrderChecklistItem | null>;
+  updateChecklistItem: (id: string, data: Partial<OrderChecklistItem>) => Promise<void>;
+  deleteChecklistItem: (id: string) => Promise<void>;
+  getOrderChecklist: (orderId: string) => OrderChecklistItem[];
   
   getCompanyContacts: (companyId: string) => CompanyContact[];
   getCompanyRelations: (companyId: string) => { relation: CompanyRelation; company: Company }[];
@@ -77,6 +90,8 @@ export function BusinessV2Provider({ children }: { children: ReactNode }) {
   const [todos, setTodos] = useState<CompanyTodo[]>([]);
   const [links, setLinks] = useState<CompanyLink[]>([]);
   const [statuses, setStatuses] = useState<CompanyStatus[]>([]);
+  const [orders, setOrders] = useState<CompanyOrder[]>([]);
+  const [checklistItems, setChecklistItems] = useState<OrderChecklistItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   const ensureDefaultStatuses = useCallback(async () => {
@@ -93,7 +108,7 @@ export function BusinessV2Provider({ children }: { children: ReactNode }) {
     if (!user) return;
     const supabase = getSupabase();
     
-    const [companiesRes, categoriesRes, contactsRes, relationsRes, timelineRes, tagsRes, tagAssignRes, todosRes, linksRes, statusesRes] = await Promise.all([
+    const [companiesRes, categoriesRes, contactsRes, relationsRes, timelineRes, tagsRes, tagAssignRes, todosRes, linksRes, statusesRes, ordersRes, checklistRes] = await Promise.all([
       supabase.from('v2_companies').select('*').eq('user_id', user.id).order('name'),
       supabase.from('v2_company_categories').select('*').eq('user_id', user.id).order('order_index'),
       supabase.from('v2_company_contacts').select('*').eq('user_id', user.id).order('name'),
@@ -104,6 +119,8 @@ export function BusinessV2Provider({ children }: { children: ReactNode }) {
       supabase.from('v2_company_todos').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
       supabase.from('v2_company_links').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
       supabase.from('v2_company_statuses').select('*').eq('user_id', user.id).order('order_index'),
+      supabase.from('v2_company_orders').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+      supabase.from('v2_order_checklist_items').select('*').eq('user_id', user.id).order('order_index'),
     ]);
     
     if (companiesRes.data) setCompanies(companiesRes.data as Company[]);
@@ -116,6 +133,8 @@ export function BusinessV2Provider({ children }: { children: ReactNode }) {
     if (todosRes.data) setTodos(todosRes.data as CompanyTodo[]);
     if (linksRes.data) setLinks(linksRes.data as CompanyLink[]);
     if (statusesRes.data) setStatuses(statusesRes.data as CompanyStatus[]);
+    if (ordersRes.data) setOrders(ordersRes.data as CompanyOrder[]);
+    if (checklistRes.data) setChecklistItems(checklistRes.data as OrderChecklistItem[]);
     setLoading(false);
   }, [user]);
 
@@ -161,6 +180,9 @@ export function BusinessV2Provider({ children }: { children: ReactNode }) {
     setTimeline(prev => prev.filter(t => t.company_id !== id));
     setTodos(prev => prev.filter(t => t.company_id !== id));
     setLinks(prev => prev.filter(l => l.company_id !== id));
+    const orderIds = orders.filter(o => o.company_id === id).map(o => o.id);
+    setOrders(prev => prev.filter(o => o.company_id !== id));
+    setChecklistItems(prev => prev.filter(i => !orderIds.includes(i.order_id)));
   };
 
   // Categories CRUD
@@ -357,6 +379,66 @@ export function BusinessV2Provider({ children }: { children: ReactNode }) {
     setStatuses(prev => prev.filter(s => s.id !== id));
   };
 
+  // Orders CRUD
+  const addOrder = async (companyId: string, title: string, description?: string) => {
+    if (!user) return null;
+    const supabase = getSupabase();
+    const { data: order, error } = await supabase.from('v2_company_orders').insert({
+      company_id: companyId, title, description: description || null, user_id: user.id
+    }).select().single();
+    if (error) { console.error(error); return null; }
+    const o = order as CompanyOrder;
+    setOrders(prev => [o, ...prev]);
+    await addTimelineEntry(companyId, 'order_update', `Neuer Auftrag: "${title}"`);
+    return o;
+  };
+
+  const updateOrder = async (id: string, data: Partial<CompanyOrder>) => {
+    const supabase = getSupabase();
+    const { error } = await supabase.from('v2_company_orders').update({ ...data, updated_at: new Date().toISOString() }).eq('id', id);
+    if (error) { console.error(error); return; }
+    setOrders(prev => prev.map(o => o.id === id ? { ...o, ...data, updated_at: new Date().toISOString() } : o));
+  };
+
+  const deleteOrder = async (id: string) => {
+    const supabase = getSupabase();
+    const { error } = await supabase.from('v2_company_orders').delete().eq('id', id);
+    if (error) { console.error(error); return; }
+    setOrders(prev => prev.filter(o => o.id !== id));
+    setChecklistItems(prev => prev.filter(i => i.order_id !== id));
+  };
+
+  const getCompanyOrders = (companyId: string) => orders.filter(o => o.company_id === companyId);
+
+  // Checklist CRUD
+  const addChecklistItem = async (orderId: string, title: string, orderIndex: number) => {
+    if (!user) return null;
+    const supabase = getSupabase();
+    const { data: item, error } = await supabase.from('v2_order_checklist_items').insert({
+      order_id: orderId, title, order_index: orderIndex, user_id: user.id
+    }).select().single();
+    if (error) { console.error(error); return null; }
+    const i = item as OrderChecklistItem;
+    setChecklistItems(prev => [...prev, i].sort((a, b) => a.order_index - b.order_index));
+    return i;
+  };
+
+  const updateChecklistItem = async (id: string, data: Partial<OrderChecklistItem>) => {
+    const supabase = getSupabase();
+    const { error } = await supabase.from('v2_order_checklist_items').update(data).eq('id', id);
+    if (error) { console.error(error); return; }
+    setChecklistItems(prev => prev.map(i => i.id === id ? { ...i, ...data } : i));
+  };
+
+  const deleteChecklistItem = async (id: string) => {
+    const supabase = getSupabase();
+    const { error } = await supabase.from('v2_order_checklist_items').delete().eq('id', id);
+    if (error) { console.error(error); return; }
+    setChecklistItems(prev => prev.filter(i => i.id !== id));
+  };
+
+  const getOrderChecklist = (orderId: string) => checklistItems.filter(i => i.order_id === orderId);
+
   // Helpers
   const getCompanyContacts = (companyId: string) => contacts.filter(c => c.company_id === companyId);
   const getCompanyTimeline = (companyId: string) => timeline.filter(t => t.company_id === companyId);
@@ -388,7 +470,7 @@ export function BusinessV2Provider({ children }: { children: ReactNode }) {
 
   return (
     <BusinessV2Context.Provider value={{
-      companies, categories, contacts, relations, timeline, tags, tagAssignments, todos, links, statuses, loading,
+      companies, categories, contacts, relations, timeline, tags, tagAssignments, todos, links, statuses, orders, checklistItems, loading,
       addCompany, updateCompany, deleteCompany,
       addCategory, updateCategory, deleteCategory,
       addContact, updateContact, deleteContact,
@@ -398,6 +480,8 @@ export function BusinessV2Provider({ children }: { children: ReactNode }) {
       addTodo, updateTodo, deleteTodo,
       addLink, deleteLink,
       addStatus, updateStatus, deleteStatus,
+      addOrder, updateOrder, deleteOrder, getCompanyOrders,
+      addChecklistItem, updateChecklistItem, deleteChecklistItem, getOrderChecklist,
       getCompanyContacts, getCompanyRelations, getCompanyTimeline, getCompanyTags, getCompanyTodos, getCompanyLinks,
       getStatusConfig,
       refresh,
