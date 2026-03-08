@@ -1,21 +1,27 @@
 import { useState, useEffect } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
-import { Flame, Eye, EyeOff, Pencil } from 'lucide-react';
+import { Flame, Eye, EyeOff, Pencil, X as XIcon } from 'lucide-react';
+import { icons } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { format, subDays } from 'date-fns';
+import { toast } from 'sonner';
+import { IconPicker } from './IconPicker';
 
 interface HabitDetailSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   habitId: string | null;
+  onUpdated?: () => void;
 }
 
 interface HabitDetail {
   id: string;
   name: string;
+  icon: string | null;
   habit_type: string;
   identity_statement: string | null;
   when_trigger: string | null;
@@ -42,20 +48,28 @@ function InfoRow({ label, value }: { label: string; value: string | null }) {
   );
 }
 
-export function HabitDetailSheet({ open, onOpenChange, habitId }: HabitDetailSheetProps) {
+export function HabitDetailSheet({ open, onOpenChange, habitId, onUpdated }: HabitDetailSheetProps) {
   const { user } = useAuth();
   const [habit, setHabit] = useState<HabitDetail | null>(null);
   const [lifetimeCount, setLifetimeCount] = useState(0);
   const [streak, setStreak] = useState(0);
   const [showMotivation, setShowMotivation] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editIcon, setEditIcon] = useState('Check');
 
   useEffect(() => {
     if (!open || !habitId || !user) return;
     setShowMotivation(false);
+    setEditing(false);
 
     const fetchHabit = async () => {
       const { data } = await supabase.from('habits').select('*').eq('id', habitId).single();
-      if (data) setHabit(data as any);
+      if (data) {
+        setHabit(data as any);
+        setEditName((data as any).name);
+        setEditIcon((data as any).icon || 'Check');
+      }
 
       const { data: completions } = await supabase
         .from('habit_completions')
@@ -83,8 +97,25 @@ export function HabitDetailSheet({ open, onOpenChange, habitId }: HabitDetailShe
     fetchHabit();
   }, [open, habitId, user]);
 
+  const saveEdit = async () => {
+    if (!habit || !editName.trim()) return;
+    const { error } = await supabase.from('habits').update({ 
+      name: editName.trim(), 
+      icon: editIcon 
+    } as any).eq('id', habit.id);
+    if (error) {
+      toast.error('Fehler beim Speichern');
+      return;
+    }
+    setHabit(prev => prev ? { ...prev, name: editName.trim(), icon: editIcon } : prev);
+    setEditing(false);
+    onUpdated?.();
+    toast.success('Habit aktualisiert');
+  };
+
   if (!habit) return null;
 
+  const HabitIcon = icons[(habit.icon || 'Check') as keyof typeof icons] || icons.Check;
   const pct = Math.min(lifetimeCount, 100);
   const adopted = lifetimeCount >= 100;
   const hasImplementation = habit.when_trigger || habit.where_location || habit.habit_stacking ||
@@ -96,10 +127,40 @@ export function HabitDetailSheet({ open, onOpenChange, habitId }: HabitDetailShe
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl">
         <SheetHeader>
-          <SheetTitle className="text-left">{habit.name}</SheetTitle>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <HabitIcon className="w-4.5 h-4.5 text-primary" strokeWidth={1.5} />
+            </div>
+            <SheetTitle className="text-left flex-1">{habit.name}</SheetTitle>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8 shrink-0"
+              onClick={() => setEditing(!editing)}
+            >
+              {editing ? <XIcon className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
+            </Button>
+          </div>
         </SheetHeader>
 
         <div className="mt-4 space-y-6 overflow-y-auto max-h-[calc(85vh-100px)] pb-8">
+          {/* Edit mode */}
+          {editing && (
+            <section className="space-y-3 p-4 rounded-xl border border-border bg-muted/30">
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Name</p>
+                <Input value={editName} onChange={e => setEditName(e.target.value)} className="h-9" />
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Icon</p>
+                <IconPicker value={editIcon} onChange={setEditIcon} />
+              </div>
+              <Button size="sm" onClick={saveEdit} disabled={!editName.trim()} className="w-full h-8 text-xs">
+                Speichern
+              </Button>
+            </section>
+          )}
+
           {/* A) Identitaet & Fortschritt */}
           <section className="space-y-3">
             {habit.identity_statement && (
@@ -145,7 +206,7 @@ export function HabitDetailSheet({ open, onOpenChange, habitId }: HabitDetailShe
             </section>
           )}
 
-          {/* C) Motivation (nur auf Klick) */}
+          {/* C) Motivation */}
           {hasMotivation && (
             <section className="space-y-3">
               <Button
@@ -168,7 +229,6 @@ export function HabitDetailSheet({ open, onOpenChange, habitId }: HabitDetailShe
             </section>
           )}
 
-          {/* Fallback for old habits without data */}
           {!hasImplementation && !habit.identity_statement && (
             <div className="text-center py-8 text-sm text-muted-foreground">
               Dieses Habit wurde ohne Atomic-Habits-Details erstellt.
