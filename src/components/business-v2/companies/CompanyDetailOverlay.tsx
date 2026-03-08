@@ -27,7 +27,7 @@ export function CompanyDetailOverlay({ company, onBack }: CompanyDetailOverlayPr
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-no-glass="true">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3 min-w-0">
           <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={onBack}>
