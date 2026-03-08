@@ -5,7 +5,7 @@ import { useSchoolV2 } from '../context/SchoolV2Context';
 import { useGradeColors } from '@/hooks/useGradeColors';
 import { V2Course, V2TimetableSlot, V2Grade, V2Homework, PERIOD_TIMES, WEEKDAYS } from '../types';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Settings } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Settings, Calculator, BarChart3, UserX } from 'lucide-react';
 import { format, addWeeks, subWeeks, startOfWeek, addDays, isToday } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { GradeColorSettingsV2 } from '../settings/GradeColorSettingsV2';
