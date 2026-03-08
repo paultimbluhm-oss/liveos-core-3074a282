@@ -43,12 +43,17 @@ export function BusinessWidget({ size, onOpenSheet }: { size: WidgetSize; onOpen
 
   const [loading, setLoading] = useState(true);
 
+  // Order stats
+  const [orderStats, setOrderStats] = useState({ total: 0, withDeposit: 0, totalRevenue: 0, totalExpenses: 0 });
+
   const loadData = useCallback(async () => {
     if (!user) return;
-    const [compRes, contRes, statusRes] = await Promise.all([
+    const [compRes, contRes, statusRes, ordersRes, checklistRes] = await Promise.all([
       supabase.from('v2_companies').select('*').eq('user_id', user.id).order('updated_at', { ascending: false }),
       supabase.from('v2_company_contacts').select('id, company_id, created_at').eq('user_id', user.id),
       supabase.from('v2_company_statuses').select('*').eq('user_id', user.id).order('order_index'),
+      supabase.from('v2_company_orders').select('id, revenue, expenses, status').eq('user_id', user.id),
+      supabase.from('v2_order_checklist_items').select('order_id, title, completed').eq('user_id', user.id),
     ]);
     const todosRes = await (supabase.from('v2_company_todos').select('id').eq('user_id', user.id) as any).eq('done', false);
     setCompanies((compRes.data || []) as Company[]);
@@ -56,6 +61,23 @@ export function BusinessWidget({ size, onOpenSheet }: { size: WidgetSize; onOpen
     setOpenTodos((todosRes.data || []).length);
     const loadedStatuses = (statusRes.data || []) as StatusEntry[];
     setStatusEntries(loadedStatuses.length > 0 ? loadedStatuses : DEFAULT_STATUSES.map(s => ({ ...s })));
+
+    // Calculate order stats
+    const allOrders = (ordersRes.data || []) as { id: string; revenue: number; expenses: number; status: string }[];
+    const allChecklist = (checklistRes.data || []) as { order_id: string; title: string; completed: boolean }[];
+    const depositOrders = new Set<string>();
+    allChecklist.forEach(item => {
+      if (item.completed && item.title.toLowerCase().includes('anzahlung')) {
+        depositOrders.add(item.order_id);
+      }
+    });
+    setOrderStats({
+      total: allOrders.length,
+      withDeposit: depositOrders.size,
+      totalRevenue: allOrders.reduce((s, o) => s + Number(o.revenue || 0), 0),
+      totalExpenses: allOrders.reduce((s, o) => s + Number(o.expenses || 0), 0),
+    });
+
     setLoading(false);
   }, [user]);
 
