@@ -468,7 +468,7 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
             const cost = inv.quantity * inv.avg_purchase_price;
             const pnl = val - cost;
             return (
-              <div key={inv.id} className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-muted/20 transition-colors">
+              <div key={inv.id} className="widget-inner-row flex items-center justify-between py-2 px-2.5 rounded-xl border border-border/40 hover:bg-muted/20 transition-colors">
                 <span className="text-sm">{inv.name}</span>
                 <div className="text-right">
                   <span className="text-sm font-mono font-medium">
