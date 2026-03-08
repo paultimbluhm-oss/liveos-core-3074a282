@@ -401,20 +401,12 @@ function TimetableWidgetInner({ size, onOpenSheet }: { size: WidgetSize; onOpenS
           </div>
         )}
 
-        {/* Upcoming Events with live timer - 2 column grid */}
+        {/* Upcoming Events - compact inline */}
         {upcomingEvents.length > 0 && (
-          <div className="pt-1 border-t border-border/30 space-y-1.5">
-            <div className="flex items-center gap-1">
-              <AlertTriangle className="w-3 h-3 text-muted-foreground" strokeWidth={1.5} />
-              <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
-                Termine
-              </span>
-            </div>
-            <div className="grid grid-cols-2 gap-1.5">
-              {upcomingEvents.map(ev => (
-                <EventCountdown key={ev.id} event={ev} />
-              ))}
-            </div>
+          <div className="pt-1 border-t border-border/30 space-y-1">
+            {upcomingEvents.map(ev => (
+              <EventCountdown key={ev.id} event={ev} />
+            ))}
           </div>
         )}
 
