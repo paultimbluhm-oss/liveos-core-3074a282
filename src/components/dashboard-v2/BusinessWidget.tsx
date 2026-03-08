@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Briefcase, Plus, Flame, Clock, Users, Building2, ChevronRight, StickyNote, ListChecks } from 'lucide-react';
+import { Briefcase, Plus, Flame, Clock, Users, Building2, ChevronRight, StickyNote, ListChecks, ClipboardList, Euro, TrendingDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
