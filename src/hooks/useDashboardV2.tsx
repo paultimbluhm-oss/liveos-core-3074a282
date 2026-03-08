@@ -312,7 +312,8 @@ export function useTodayStats() {
     if (!user) return;
     const ch1 = supabase.channel('dv2-tasks').on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => { fetchStats(); computeStreak(); }).subscribe();
     const ch3 = supabase.channel('dv2-hc').on('postgres_changes', { event: '*', schema: 'public', table: 'habit_completions' }, () => { fetchStats(); computeStreak(); }).subscribe();
-    return () => { supabase.removeChannel(ch1); supabase.removeChannel(ch3); };
+    const ch4 = supabase.channel('dv2-habits').on('postgres_changes', { event: '*', schema: 'public', table: 'habits' }, () => { fetchStats(); computeStreak(); }).subscribe();
+    return () => { supabase.removeChannel(ch1); supabase.removeChannel(ch3); supabase.removeChannel(ch4); };
   }, [user, fetchStats, computeStreak]);
 
   const totalDone = stats.tasksCompleted + stats.homeworkCompleted + stats.habitsCompleted;
