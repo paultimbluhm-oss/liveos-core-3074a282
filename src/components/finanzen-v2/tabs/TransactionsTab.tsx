@@ -41,6 +41,9 @@ const typeLabels: Record<string, string> = {
   investment: 'Investment',
   investment_buy: 'Kauf',
   investment_sell: 'Verkauf',
+  loan_lent: 'Verliehen',
+  loan_borrowed: 'Geliehen',
+  loan_settled: 'Rueckzahlung',
 };
 
 const intervalLabels: Record<string, string> = {
