@@ -313,8 +313,14 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
         />
       </div>
 
+      {compactHabits.length > 0 && (
+        <div className="grid grid-cols-4 gap-1.5">
+          {compactHabits.map(habit => renderCompactHabit(habit))}
+        </div>
+      )}
+
       <div className={`space-y-1.5 ${limit > 0 ? 'max-h-48 overflow-y-auto scrollbar-hide' : ''}`}>
-        {displayOpen.map(habit => renderHabitRow(habit, false))}
+        {fullWidthOpen.map(habit => renderHabitRow(habit, false))}
         {hiddenCount > 0 && (
           <button onClick={() => setShowManagement(true)} className="w-full text-center text-xs text-muted-foreground py-1.5 hover:text-foreground transition-colors">
             +{hiddenCount} weitere
@@ -322,11 +328,11 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
         )}
       </div>
 
-      {doneHabits.length > 0 && (
+      {fullWidthDone.length > 0 && (
         <Collapsible open={showDone} onOpenChange={setShowDone}>
           <CollapsibleTrigger className="flex items-center gap-2 w-full py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
             <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showDone ? 'rotate-180' : ''}`} />
-            <span>Erledigt ({doneHabits.length})</span>
+            <span>Erledigt ({fullWidthDone.length})</span>
           </CollapsibleTrigger>
           <CollapsibleContent className="space-y-1.5 pt-1.5">
             {doneHabits.map(habit => renderHabitRow(habit, true))}
