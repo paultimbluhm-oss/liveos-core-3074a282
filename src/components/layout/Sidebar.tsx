@@ -77,6 +77,7 @@ export function Sidebar() {
   }, []);
 
   const pageTitle = getPageTitle(location.pathname);
+  const isDashboard = location.pathname === '/';
   return (
     <TooltipProvider delayDuration={0}>
       {/* Header Bar - visible on all screen sizes */}
@@ -85,7 +86,7 @@ export function Sidebar() {
         "left-0 md:left-14",
         expanded && "md:left-56"
       )}>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <Button
             variant="ghost"
             size="sm"
@@ -97,21 +98,53 @@ export function Sidebar() {
           <NavLink to="/" className="flex items-center md:hidden">
             <Warehouse className="w-4 h-4 text-primary" />
           </NavLink>
-          <span className="text-sm font-semibold">{pageTitle}</span>
+          {!isDashboard && <span className="text-sm font-semibold">{pageTitle}</span>}
         </div>
         
-        {/* Streak in header */}
-        <div className="flex items-center gap-1.5 shrink-0 ml-2">
-          <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold font-mono ${
-            allDone ? 'bg-success/15 text-success' : percentage > 0 ? 'bg-primary/10 text-primary' : 'text-muted-foreground'
-          }`}>
-            {percentage}%
+        {isDashboard ? (
+          /* Full progress bar for dashboard */
+          <div className="flex items-center gap-3 flex-1 mx-3">
+            <div className="flex-1 h-2.5 bg-muted rounded-full overflow-hidden">
+              <div
+                className={cn(
+                  "h-full rounded-full transition-all duration-500 ease-out",
+                  allDone ? "bg-success" : "bg-primary"
+                )}
+                style={{ width: `${percentage}%` }}
+              />
+            </div>
+            <div className={cn(
+              "text-xs font-bold font-mono shrink-0",
+              allDone ? "text-success" : percentage > 0 ? "text-primary" : "text-muted-foreground"
+            )}>
+              {percentage}%
+            </div>
+            <div className={cn(
+              "flex items-center gap-1 shrink-0",
+              streakDays > 0 ? "text-streak" : "text-muted-foreground"
+            )}>
+              <Flame className="w-3.5 h-3.5" />
+              <span className="text-xs font-bold font-mono">{streakDays}</span>
+            </div>
           </div>
-          <div className={`flex items-center gap-1 px-2 py-1 rounded-full ${streakDays > 0 ? 'bg-streak/10 text-streak' : 'text-muted-foreground'}`}>
-            <Flame className="w-3.5 h-3.5" />
-            <span className="text-xs font-bold font-mono">{streakDays}</span>
+        ) : (
+          /* Compact stats for other pages */
+          <div className="flex items-center gap-1.5 shrink-0 ml-2">
+            <div className={cn(
+              "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold font-mono",
+              allDone ? "bg-success/15 text-success" : percentage > 0 ? "bg-primary/10 text-primary" : "text-muted-foreground"
+            )}>
+              {percentage}%
+            </div>
+            <div className={cn(
+              "flex items-center gap-1 px-2 py-1 rounded-full",
+              streakDays > 0 ? "bg-streak/10 text-streak" : "text-muted-foreground"
+            )}>
+              <Flame className="w-3.5 h-3.5" />
+              <span className="text-xs font-bold font-mono">{streakDays}</span>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Mobile Overlay */}
