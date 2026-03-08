@@ -302,7 +302,7 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
 
       <HabitsManagementSheet open={showManagement} onOpenChange={(o) => { setShowManagement(o); if (!o) fetchData(); }} />
       <HabitCreationWizard open={showWizard} onOpenChange={setShowWizard} onCreated={fetchData} />
-      <HabitDetailSheet open={!!selectedHabitId} onOpenChange={(o) => { if (!o) setSelectedHabitId(null); }} habitId={selectedHabitId} />
+      <HabitDetailSheet open={!!selectedHabitId} onOpenChange={(o) => { if (!o) setSelectedHabitId(null); }} habitId={selectedHabitId} onUpdated={fetchData} />
     </div>
   );
 }
