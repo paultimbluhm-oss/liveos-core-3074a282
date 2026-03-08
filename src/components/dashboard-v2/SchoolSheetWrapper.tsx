@@ -113,7 +113,7 @@ function SchoolSheetContent() {
 export function SchoolSheetWrapper({ open, onOpenChange }: SchoolSheetWrapperProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="h-[92vh] rounded-t-2xl p-0">
+      <SheetContent side="bottom" className="h-[92vh] rounded-t-[1.5rem] p-0">
         <SchoolV2Provider>
           <SheetHeader className="px-4 pt-4 pb-2">
             <SheetTitle>Schule</SheetTitle>
