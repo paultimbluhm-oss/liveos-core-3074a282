@@ -307,59 +307,96 @@ export function TransactionsTab() {
             Neue Transaktion
           </Button>
 
-          {/* Transactions List */}
+          {/* Transactions & Loans List */}
           <div className="space-y-3">
-            {groupedTransactions.map(([date, txs]) => (
+            {groupedItems.map(([date, items]) => (
               <div key={date}>
                 <p className="text-xs text-muted-foreground mb-2 px-1">
                   {format(new Date(date), 'EEEE, d. MMMM', { locale: de })}
                 </p>
                 <div className="rounded-2xl overflow-hidden bg-card border border-border">
-                  {txs.map((tx, index) => {
-                    const config = automationTypeConfig[tx.transaction_type] || automationTypeConfig.expense;
-                    const categoryName = getCategoryName(tx.category_id);
-                    const categoryColor = getCategoryColor(tx.category_id);
-                    
-                    return (
-                      <button 
-                        key={tx.id}
-                        onClick={() => setSelectedTransaction(tx)}
-                        className={`w-full flex items-center gap-3 p-3 text-left hover:bg-muted/50 transition-colors ${index !== txs.length - 1 ? 'border-b border-border' : ''}`}
-                      >
-                        <div className={`w-10 h-10 rounded-xl ${config.bg} flex items-center justify-center`}>
-                          <span className={config.color}>{config.icon}</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium truncate">
-                              {tx.note || typeLabels[tx.transaction_type]}
-                            </p>
-                            {categoryName && (
-                              <span 
-                                className="text-[10px] px-1.5 py-0.5 rounded-full text-white"
-                                style={{ backgroundColor: categoryColor }}
-                              >
-                                {categoryName}
-                              </span>
-                            )}
+                  {items.map((item, index) => {
+                    if (item.type === 'transaction') {
+                      const tx = item.data;
+                      const config = automationTypeConfig[tx.transaction_type] || automationTypeConfig.expense;
+                      const categoryName = getCategoryName(tx.category_id);
+                      const categoryColor = getCategoryColor(tx.category_id);
+                      
+                      return (
+                        <button 
+                          key={`tx-${tx.id}`}
+                          onClick={() => setSelectedTransaction(tx)}
+                          className={`w-full flex items-center gap-3 p-3 text-left hover:bg-muted/50 transition-colors ${index !== items.length - 1 ? 'border-b border-border' : ''}`}
+                        >
+                          <div className={`w-10 h-10 rounded-xl ${config.bg} flex items-center justify-center`}>
+                            <span className={config.color}>{config.icon}</span>
                           </div>
-                          <p className="text-xs text-muted-foreground">
-                            {getAccountName(tx.account_id)}
-                            {tx.to_account_id && ` → ${getAccountName(tx.to_account_id)}`}
-                          </p>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-medium truncate">
+                                {tx.note || typeLabels[tx.transaction_type]}
+                              </p>
+                              {categoryName && (
+                                <span 
+                                  className="text-[10px] px-1.5 py-0.5 rounded-full text-white"
+                                  style={{ backgroundColor: categoryColor }}
+                                >
+                                  {categoryName}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              {getAccountName(tx.account_id)}
+                              {tx.to_account_id && ` -> ${getAccountName(tx.to_account_id)}`}
+                            </p>
+                          </div>
+                          <span className={`font-semibold ${config.color}`}>
+                            {tx.transaction_type === 'income' ? '+' : tx.transaction_type === 'expense' ? '-' : ''}
+                            {formatCurrency(tx.amount, tx.currency)}
+                          </span>
+                        </button>
+                      );
+                    } else {
+                      // Loan item
+                      const loan = item.data as V2Loan & { _isSettlement?: boolean };
+                      const isSettlement = !!(loan as any)._isSettlement;
+                      const loanTypeKey = isSettlement ? 'loan_settled' : loan.loan_type === 'lent' ? 'loan_lent' : 'loan_borrowed';
+                      const config = automationTypeConfig[loanTypeKey];
+                      
+                      const subtitle = isSettlement
+                        ? `${loan.person_name} -> ${getAccountName(loan.settled_account_id)}`
+                        : loan.loan_type === 'lent'
+                          ? `${getAccountName(loan.account_id)} -> ${loan.person_name}`
+                          : `${loan.person_name} -> ${getAccountName(loan.account_id)}`;
+
+                      return (
+                        <div 
+                          key={`loan-${loan.id}-${isSettlement ? 'settled' : 'created'}`}
+                          className={`w-full flex items-center gap-3 p-3 ${index !== items.length - 1 ? 'border-b border-border' : ''}`}
+                        >
+                          <div className={`w-10 h-10 rounded-xl ${config.bg} flex items-center justify-center`}>
+                            <span className={config.color}>{config.icon}</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">
+                              {loan.note || typeLabels[loanTypeKey]}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {subtitle}
+                            </p>
+                          </div>
+                          <span className={`font-semibold ${config.color}`}>
+                            {formatCurrency(loan.amount, loan.currency)}
+                          </span>
                         </div>
-                        <span className={`font-semibold ${config.color}`}>
-                          {tx.transaction_type === 'income' ? '+' : tx.transaction_type === 'expense' ? '-' : ''}
-                          {formatCurrency(tx.amount, tx.currency)}
-                        </span>
-                      </button>
-                    );
+                      );
+                    }
                   })}
                 </div>
               </div>
             ))}
 
-            {groupedTransactions.length === 0 && (
+            {groupedItems.length === 0 && (
               <div className="rounded-2xl bg-card border border-border p-8 text-center">
                 <Calendar className="w-10 h-10 mx-auto mb-3 text-muted-foreground/50" />
                 <p className="font-medium">Keine Transaktionen</p>
