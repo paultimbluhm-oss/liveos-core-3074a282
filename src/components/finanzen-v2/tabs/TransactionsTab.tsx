@@ -95,24 +95,9 @@ export function TransactionsTab() {
     const loanItems: UnifiedItem[] = loans
       .filter(loan => {
         const loanDate = new Date(loan.date);
-        const inMonth = isWithinInterval(loanDate, { start: monthStart, end: monthEnd });
-        // Also check settlement date
-        const settledInMonth = loan.is_settled && loan.settled_date && 
-          isWithinInterval(new Date(loan.settled_date), { start: monthStart, end: monthEnd });
-        return inMonth || settledInMonth;
+        return isWithinInterval(loanDate, { start: monthStart, end: monthEnd });
       })
-      .flatMap(loan => {
-        const items: UnifiedItem[] = [];
-        if (isWithinInterval(new Date(loan.date), { start: monthStart, end: monthEnd })) {
-          items.push({ type: 'loan' as const, data: loan, date: loan.date });
-        }
-        if (loan.is_settled && loan.settled_date && 
-            isWithinInterval(new Date(loan.settled_date), { start: monthStart, end: monthEnd }) &&
-            loan.settled_date !== loan.date) {
-          items.push({ type: 'loan' as const, data: { ...loan, _isSettlement: true } as any, date: loan.settled_date });
-        }
-        return items;
-      });
+      .map(loan => ({ type: 'loan' as const, data: loan, date: loan.date }));
 
     return [...txItems, ...loanItems];
   }, [transactions, loans, filterMonth]);
