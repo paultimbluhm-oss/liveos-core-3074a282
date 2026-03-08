@@ -495,7 +495,9 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
 
                             {/* Grade badge */}
                             {avg !== null && !isPast && !hasMissed && !hasEva && (
-                              <span className={`absolute top-0.5 right-0.5 min-w-[18px] h-[18px] text-[10px] font-bold rounded-full flex items-center justify-center text-white ${getGradeColor(avg)}`}>
+                              <span className={`absolute top-0.5 right-0.5 min-w-[18px] h-[18px] text-[10px] font-bold rounded-full flex items-center justify-center text-white ${
+                                gradeSourceMap[slot.course.id] === 'hj1only' ? 'bg-sky-500' : getGradeColor(avg)
+                              }`}>
                                 {avg}
                               </span>
                             )}
