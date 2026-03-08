@@ -69,6 +69,7 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [loans, setLoans] = useState<Loan[]>([]);
   const [monthlyTransactions, setMonthlyTransactions] = useState<Transaction[]>([]);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAddTx, setShowAddTx] = useState(false);
   const [showChart, setShowChart] = useState(false);
