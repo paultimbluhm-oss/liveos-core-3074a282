@@ -42,9 +42,11 @@ export interface DashboardSettings {
   habitDisplayLimit: number;
   showXpToast: boolean;
   statsVisibleFields: string[];
+  dashboardGlass: boolean;
+  dashboardGlassMode: 'light' | 'dark';
 }
 
-const DEFAULT_SETTINGS: DashboardSettings = { habitDisplayLimit: 0, showXpToast: true, statsVisibleFields: ['grade', 'netWorth'] };
+const DEFAULT_SETTINGS: DashboardSettings = { habitDisplayLimit: 0, showXpToast: true, statsVisibleFields: ['grade', 'netWorth'], dashboardGlass: false, dashboardGlassMode: 'dark' };
 
 export function useDashboardV2Config() {
   const { user } = useAuth();
