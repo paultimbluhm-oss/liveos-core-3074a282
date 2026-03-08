@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Check, Flame, Plus, Minus, ChevronDown, Sparkles } from 'lucide-react';
+import { icons } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -11,7 +12,7 @@ import { HabitDetailSheet } from './HabitDetailSheet';
 import { HabitCreationWizard } from './HabitCreationWizard';
 import type { WidgetSize, DashboardSettings } from '@/hooks/useDashboardV2';
 
-interface Habit { id: string; name: string; habit_type: string; created_at: string | null; }
+interface Habit { id: string; name: string; icon: string | null; habit_type: string; created_at: string | null; }
 
 interface Props {
   size: WidgetSize;
@@ -78,7 +79,7 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
       supabase.from('habit_completions').select('*').eq('user_id', user.id).eq('completed_date', yesterday),
     ]);
     if (hRes.data) {
-      const habitsWithType = hRes.data.map((h: any) => ({ id: h.id, name: h.name, habit_type: h.habit_type || 'check', created_at: h.created_at || null }));
+      const habitsWithType = hRes.data.map((h: any) => ({ id: h.id, name: h.name, icon: h.icon || null, habit_type: h.habit_type || 'check', created_at: h.created_at || null }));
       setHabits(habitsWithType);
       const ids = habitsWithType.map((h: Habit) => h.id);
       if (ids.length > 0) {
@@ -185,66 +186,71 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
     const streakWeight = isDoneToday || isNegative ? 'font-semibold' : '';
     const adopted = ltCount >= 100;
     const negativeBg = isNegative && !isDoneToday ? 'bg-destructive/8 border border-destructive/20' : '';
+    const HabitIcon = icons[(habit.icon || 'Check') as keyof typeof icons] || icons.Check;
 
     return (
-      <div key={habit.id} className="space-y-1">
+      <div key={habit.id} className="space-y-0.5">
         {isCount ? (
-          <div className={`flex items-center gap-2 p-2 rounded-xl transition-colors ${isDoneToday ? 'bg-success/10' : negativeBg || 'bg-muted/30'}`}>
-            <button onClick={() => adjustCount(habit, -1)} className="w-7 h-7 rounded-lg bg-muted/60 hover:bg-muted flex items-center justify-center transition-colors shrink-0">
-              <Minus className="w-3.5 h-3.5" />
+          <div className={`flex items-center gap-1.5 p-1.5 rounded-lg transition-colors ${isDoneToday ? 'bg-success/10' : negativeBg || 'bg-muted/30'}`}>
+            <div className="w-6 h-6 rounded-md bg-muted/60 flex items-center justify-center shrink-0">
+              <HabitIcon className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
+            </div>
+            <button onClick={() => adjustCount(habit, -1)} className="w-6 h-6 rounded-md bg-muted/60 hover:bg-muted flex items-center justify-center transition-colors shrink-0">
+              <Minus className="w-3 h-3" />
             </button>
-            <span className="text-sm font-mono font-semibold min-w-[2ch] text-center">{currentVal}</span>
-            <button onClick={() => adjustCount(habit, 1)} className="w-7 h-7 rounded-lg bg-primary/10 hover:bg-primary/20 flex items-center justify-center transition-colors shrink-0">
-              <Plus className="w-3.5 h-3.5 text-primary" />
+            <span className="text-xs font-mono font-semibold min-w-[2ch] text-center">{currentVal}</span>
+            <button onClick={() => adjustCount(habit, 1)} className="w-6 h-6 rounded-md bg-primary/10 hover:bg-primary/20 flex items-center justify-center transition-colors shrink-0">
+              <Plus className="w-3 h-3 text-primary" />
             </button>
-            <button onClick={() => setSelectedHabitId(habit.id)} className={`flex-1 text-sm truncate text-left hover:underline underline-offset-2 ${isNegative && !isDoneToday ? 'text-destructive' : ''}`}>
+            <button onClick={() => setSelectedHabitId(habit.id)} className={`flex-1 text-xs truncate text-left hover:underline underline-offset-2 ${isNegative && !isDoneToday ? 'text-destructive' : ''}`}>
               {habit.name}
             </button>
             {streak !== 0 && (
               <div className="flex items-center gap-0.5 shrink-0">
-                <Flame className={`w-3 h-3 ${streakColor}`} />
+                <Flame className={`w-2.5 h-2.5 ${streakColor}`} />
                 <span className={`text-[10px] font-mono ${streakColor} ${streakWeight}`}>{streak}</span>
               </div>
             )}
-            {adopted && <Sparkles className="w-3 h-3 text-success shrink-0" />}
+            {adopted && <Sparkles className="w-2.5 h-2.5 text-success shrink-0" />}
             <span className="text-[10px] text-muted-foreground font-mono shrink-0">{ltPct}%</span>
           </div>
         ) : isDone ? (
-          <div className="flex items-center gap-2.5 p-2 rounded-xl transition-all bg-success/5 opacity-60 hover:opacity-80">
-            <Checkbox checked={true} onCheckedChange={() => toggle(habit)} />
-            <button onClick={() => setSelectedHabitId(habit.id)} className="flex-1 text-sm truncate line-through text-muted-foreground text-left hover:underline underline-offset-2 cursor-pointer">
+          <div className="flex items-center gap-1.5 p-1.5 rounded-lg transition-all bg-success/5 opacity-60 hover:opacity-80">
+            <Checkbox checked={true} onCheckedChange={() => toggle(habit)} className="w-4 h-4" />
+            <div className="w-6 h-6 rounded-md bg-muted/40 flex items-center justify-center shrink-0">
+              <HabitIcon className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
+            </div>
+            <button onClick={() => setSelectedHabitId(habit.id)} className="flex-1 text-xs truncate line-through text-muted-foreground text-left hover:underline underline-offset-2 cursor-pointer">
               {habit.name}
             </button>
             {streak !== 0 && (
               <div className="flex items-center gap-0.5 shrink-0">
-                <Flame className={`w-3 h-3 ${streakColor}`} />
+                <Flame className={`w-2.5 h-2.5 ${streakColor}`} />
                 <span className={`text-[10px] font-mono ${streakColor} ${streakWeight}`}>{streak}</span>
               </div>
             )}
-            {adopted && <Sparkles className="w-3 h-3 text-success shrink-0" />}
+            {adopted && <Sparkles className="w-2.5 h-2.5 text-success shrink-0" />}
             <span className="text-[10px] text-muted-foreground font-mono shrink-0">{ltPct}%</span>
           </div>
         ) : (
-          <div className={`flex items-center gap-2.5 p-2 rounded-xl transition-all ${negativeBg || 'bg-muted/30 hover:bg-muted/60'}`}>
-            <Checkbox checked={false} onCheckedChange={() => toggle(habit)} />
-            <button onClick={() => setSelectedHabitId(habit.id)} className={`flex-1 text-sm truncate text-left hover:underline underline-offset-2 ${isNegative ? 'text-destructive font-medium' : ''}`}>
+          <div className={`flex items-center gap-1.5 p-1.5 rounded-lg transition-all ${negativeBg || 'bg-muted/30 hover:bg-muted/60'}`}>
+            <Checkbox checked={false} onCheckedChange={() => toggle(habit)} className="w-4 h-4" />
+            <div className="w-6 h-6 rounded-md bg-muted/60 flex items-center justify-center shrink-0">
+              <HabitIcon className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
+            </div>
+            <button onClick={() => setSelectedHabitId(habit.id)} className={`flex-1 text-xs truncate text-left hover:underline underline-offset-2 ${isNegative ? 'text-destructive font-medium' : ''}`}>
               {habit.name}
             </button>
             {streak !== 0 && (
               <div className="flex items-center gap-0.5 shrink-0">
-                <Flame className={`w-3 h-3 ${streakColor}`} />
+                <Flame className={`w-2.5 h-2.5 ${streakColor}`} />
                 <span className={`text-[10px] font-mono ${streakColor} ${streakWeight}`}>{streak}</span>
               </div>
             )}
-            {adopted && <Sparkles className="w-3 h-3 text-success shrink-0" />}
+            {adopted && <Sparkles className="w-2.5 h-2.5 text-success shrink-0" />}
             <span className="text-[10px] text-muted-foreground font-mono shrink-0">{ltPct}%</span>
           </div>
         )}
-        <div className="px-2">
-          <div className="h-0.5 bg-muted rounded-full overflow-hidden">
-            <div className={`h-full rounded-full transition-all duration-500 ${adopted ? 'bg-success' : 'bg-primary/50'}`} style={{ width: `${ltPct}%` }} />
-          </div>
-        </div>
       </div>
     );
   };
@@ -296,7 +302,7 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
 
       <HabitsManagementSheet open={showManagement} onOpenChange={(o) => { setShowManagement(o); if (!o) fetchData(); }} />
       <HabitCreationWizard open={showWizard} onOpenChange={setShowWizard} onCreated={fetchData} />
-      <HabitDetailSheet open={!!selectedHabitId} onOpenChange={(o) => { if (!o) setSelectedHabitId(null); }} habitId={selectedHabitId} />
+      <HabitDetailSheet open={!!selectedHabitId} onOpenChange={(o) => { if (!o) setSelectedHabitId(null); }} habitId={selectedHabitId} onUpdated={fetchData} />
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { IconPicker } from './IconPicker';
 
 interface HabitCreationWizardProps {
   open: boolean;
@@ -16,6 +17,7 @@ interface HabitCreationWizardProps {
 
 interface HabitFormData {
   name: string;
+  icon: string;
   habit_type: 'check' | 'count';
   identity_statement: string;
   when_trigger: string;
@@ -34,6 +36,7 @@ interface HabitFormData {
 
 const INITIAL_DATA: HabitFormData = {
   name: '',
+  icon: 'Check',
   habit_type: 'check',
   identity_statement: '',
   when_trigger: '',
@@ -54,7 +57,7 @@ const STEPS = [
   {
     title: 'Grundlagen',
     subtitle: 'Was moechtest du zur Gewohnheit machen?',
-    fields: ['name', 'habit_type', 'identity_statement'] as const,
+    fields: ['name', 'icon', 'habit_type', 'identity_statement'] as const,
   },
   {
     title: 'Wann & Wo',
@@ -121,6 +124,7 @@ export function HabitCreationWizard({ open, onOpenChange, onCreated }: HabitCrea
       const { error } = await supabase.from('habits').insert({
         user_id: user.id,
         name: data.name.trim(),
+        icon: data.icon,
         habit_type: data.habit_type,
         identity_statement: data.identity_statement.trim(),
         when_trigger: data.when_trigger.trim(),
@@ -177,6 +181,15 @@ export function HabitCreationWizard({ open, onOpenChange, onCreated }: HabitCrea
           {/* Fields */}
           <div className="space-y-4">
             {currentStep.fields.map(field => {
+              if (field === 'icon') {
+                return (
+                  <div key={field} className="space-y-1.5">
+                    <p className="text-sm font-medium">Icon</p>
+                    <IconPicker value={data.icon} onChange={(icon) => update('icon', icon)} />
+                  </div>
+                );
+              }
+
               if (field === 'habit_type') {
                 return (
                   <div key={field} className="space-y-1.5">
