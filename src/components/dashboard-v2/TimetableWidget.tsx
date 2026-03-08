@@ -87,7 +87,7 @@ function EventCountdown({ event }: { event: UpcomingEvent }) {
     : `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
   return (
-    <div className="event-countdown-row flex items-center gap-2 py-1.5 px-2 rounded-lg bg-muted/30">
+    <div className="widget-inner-row flex items-center gap-2.5 py-2 px-2.5 rounded-xl border border-border/40 bg-muted/30">
       <div
         className="w-5 h-5 rounded-full shrink-0 flex items-center justify-center text-[8px] font-bold text-white"
         style={{ backgroundColor: typeColors[event.event_type] || '#94a3b8' }}

@@ -503,7 +503,7 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
                     }
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs font-medium truncate">{loan.person_name}</p>
+                    <p className="text-sm font-semibold truncate">{loan.person_name}</p>
                     {loan.note && <p className="text-[9px] text-muted-foreground truncate">{loan.note}</p>}
                   </div>
                 </div>
