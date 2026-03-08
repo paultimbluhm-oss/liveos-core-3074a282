@@ -2713,6 +2713,56 @@ export type Database = {
           },
         ]
       }
+      v2_company_orders: {
+        Row: {
+          company_id: string
+          created_at: string
+          description: string | null
+          expenses: number | null
+          id: string
+          revenue: number | null
+          status: string
+          time_spent_minutes: number | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          description?: string | null
+          expenses?: number | null
+          id?: string
+          revenue?: number | null
+          status?: string
+          time_spent_minutes?: number | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          expenses?: number | null
+          id?: string
+          revenue?: number | null
+          status?: string
+          time_spent_minutes?: number | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "v2_company_orders_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "v2_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v2_company_relations: {
         Row: {
           created_at: string
@@ -3510,6 +3560,47 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      v2_order_checklist_items: {
+        Row: {
+          completed: boolean | null
+          completed_at: string | null
+          created_at: string
+          id: string
+          order_id: string
+          order_index: number | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          order_id: string
+          order_index?: number | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          order_id?: string
+          order_index?: number | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "v2_order_checklist_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "v2_company_orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       v2_school_memberships: {
         Row: {
