@@ -187,8 +187,16 @@ export function DashboardTab() {
             <AreaChart data={netWorthChartData} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorNetWorth" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
+                  <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.15}/>
                   <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                </linearGradient>
+                <linearGradient id="colorAcctDash" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="hsl(210, 80%, 55%)" stopOpacity={0.1}/>
+                  <stop offset="95%" stopColor="hsl(210, 80%, 55%)" stopOpacity={0}/>
+                </linearGradient>
+                <linearGradient id="colorInvDash" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="hsl(142, 70%, 45%)" stopOpacity={0.1}/>
+                  <stop offset="95%" stopColor="hsl(142, 70%, 45%)" stopOpacity={0}/>
                 </linearGradient>
               </defs>
               <XAxis 
@@ -206,7 +214,7 @@ export function DashboardTab() {
                 width={40}
               />
               <Tooltip 
-                formatter={(value: number) => formatCurrency(value)}
+                formatter={(value: number, name: string) => [formatCurrency(value), name === 'value' ? 'Gesamt' : name === 'accounts' ? 'Konten' : 'Investments']}
                 contentStyle={{ 
                   backgroundColor: 'hsl(var(--popover))', 
                   border: '1px solid hsl(var(--border))',
@@ -221,6 +229,27 @@ export function DashboardTab() {
                 strokeWidth={2}
                 fillOpacity={1} 
                 fill="url(#colorNetWorth)" 
+                name="Gesamt"
+              />
+              <Area 
+                type="monotone" 
+                dataKey="accounts" 
+                stroke="hsl(210, 80%, 55%)" 
+                strokeWidth={1.5}
+                strokeDasharray="4 2"
+                fillOpacity={1} 
+                fill="url(#colorAcctDash)" 
+                name="Konten"
+              />
+              <Area 
+                type="monotone" 
+                dataKey="investments" 
+                stroke="hsl(142, 70%, 45%)" 
+                strokeWidth={1.5}
+                strokeDasharray="4 2"
+                fillOpacity={1} 
+                fill="url(#colorInvDash)" 
+                name="Investments"
               />
             </AreaChart>
           </ResponsiveContainer>
