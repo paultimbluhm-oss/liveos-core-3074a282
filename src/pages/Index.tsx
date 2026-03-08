@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
+import { useTheme } from '@/contexts/ThemeContext';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useDashboardV2Config, WIDGET_CATALOG, type DashboardSettings } from '@/hooks/useDashboardV2';
 import { StreakRingWidget } from '@/components/dashboard-v2/StreakRingWidget';
@@ -14,7 +15,7 @@ import { SchoolSheetWrapper } from '@/components/dashboard-v2/SchoolSheetWrapper
 import { BusinessWidget } from '@/components/dashboard-v2/BusinessWidget';
 import { BusinessSheetWrapper } from '@/components/dashboard-v2/BusinessSheetWrapper';
 
-import { Settings2, X, Plus, Minus, EyeOff, ChevronUp, ChevronDown } from 'lucide-react';
+import { Settings2, X, Plus, Minus, EyeOff, ChevronUp, ChevronDown, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -41,11 +42,15 @@ export default function Index() {
   const { user, loading: authLoading } = useAuth();
   const { loading: profileLoading } = useProfile();
   const { widgets, visibleWidgets, loading: configLoading, updateWidgetSize, toggleWidget, moveWidget, resetToDefault, settings, updateSettings } = useDashboardV2Config();
+  const { liquidGlass, liquidGlassMode, dashboardLiquidGlass, setDashboardLiquidGlass } = useTheme();
   const navigate = useNavigate();
   const [editMode, setEditMode] = useState(false);
   const [financeSheetOpen, setFinanceSheetOpen] = useState(false);
   const [schoolSheetOpen, setSchoolSheetOpen] = useState(false);
   const [businessSheetOpen, setBusinessSheetOpen] = useState(false);
+
+  // Dashboard-only glass: apply when global is OFF but dashboard toggle is ON
+  const dashGlassActive = !liquidGlass && dashboardLiquidGlass;
 
   useEffect(() => {
     if (!authLoading && !user) navigate('/auth');
