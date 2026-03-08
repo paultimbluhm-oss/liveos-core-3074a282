@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Phone, Mail, ArrowRight, StickyNote, Plus, Trash2 } from 'lucide-react';
+import { Phone, Mail, ArrowRight, StickyNote, Plus, Trash2, ClipboardList } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -14,6 +14,7 @@ const ICONS: Record<TimelineEntryType, React.ReactNode> = {
   email: <Mail className="w-3.5 h-3.5" />,
   status_change: <ArrowRight className="w-3.5 h-3.5" />,
   note: <StickyNote className="w-3.5 h-3.5" />,
+  order_update: <ClipboardList className="w-3.5 h-3.5" />,
 };
 
 const ICON_COLORS: Record<TimelineEntryType, string> = {
@@ -21,6 +22,7 @@ const ICON_COLORS: Record<TimelineEntryType, string> = {
   email: 'bg-blue-500/10 text-blue-600',
   status_change: 'bg-violet-500/10 text-violet-600',
   note: 'bg-amber-500/10 text-amber-600',
+  order_update: 'bg-cyan-500/10 text-cyan-600',
 };
 
 interface TimelineTabProps {
@@ -62,7 +64,7 @@ export function TimelineTab({ company }: TimelineTabProps) {
             <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
               {(Object.entries(TIMELINE_TYPE_CONFIG) as [TimelineEntryType, { label: string }][])
-                .filter(([k]) => k !== 'status_change')
+                .filter(([k]) => k !== 'status_change' && k !== 'order_update')
                 .map(([key, cfg]) => (
                   <SelectItem key={key} value={key} className="text-xs">{cfg.label}</SelectItem>
                 ))}
@@ -92,7 +94,6 @@ export function TimelineTab({ company }: TimelineTabProps) {
         <p className="text-xs text-muted-foreground text-center py-8">Noch keine Eintraege</p>
       ) : (
         <div className="relative">
-          {/* Timeline line */}
           <div className="absolute left-[15px] top-2 bottom-2 w-px bg-border/50" />
           <div className="space-y-3">
             {entries.map((entry) => {
@@ -111,7 +112,7 @@ export function TimelineTab({ company }: TimelineTabProps) {
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
                         <span className="text-[10px] text-muted-foreground">{format(new Date(entry.created_at), 'dd. MMM', { locale: de })}</span>
-                        {entry.entry_type !== 'status_change' && (
+                        {entry.entry_type !== 'status_change' && entry.entry_type !== 'order_update' && (
                           <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground hover:text-destructive" onClick={() => deleteTimelineEntry(entry.id)}>
                             <Trash2 className="w-3 h-3" />
                           </Button>
