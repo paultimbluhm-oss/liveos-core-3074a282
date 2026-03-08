@@ -106,7 +106,7 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
     const monthEnd = format(endOfMonth(now), 'yyyy-MM-dd');
 
     const [accRes, invRes, catRes, snapRes, loanRes, txMonthRes] = await Promise.all([
-      supabase.from('v2_accounts').select('id, name, account_type, currency, balance, color').eq('user_id', user.id).eq('is_active', true).order('name'),
+      supabase.from('v2_accounts').select('id, name, account_type, currency, balance, color, updated_at').eq('user_id', user.id).eq('is_active', true).order('name'),
       supabase.from('v2_investments').select('id, name, symbol, asset_type, currency, quantity, avg_purchase_price, current_price').eq('user_id', user.id).eq('is_active', true).order('name'),
       supabase.from('v2_categories').select('id, name, icon').eq('user_id', user.id).eq('is_active', true).order('name'),
       supabase.from('v2_daily_snapshots').select('date, net_worth_eur').eq('user_id', user.id).gte('date', format(subMonths(now, 1), 'yyyy-MM-dd')).order('date', { ascending: true }),
