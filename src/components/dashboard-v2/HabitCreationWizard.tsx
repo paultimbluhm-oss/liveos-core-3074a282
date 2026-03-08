@@ -36,6 +36,7 @@ interface HabitFormData {
 
 const INITIAL_DATA: HabitFormData = {
   name: '',
+  icon: 'Check',
   habit_type: 'check',
   identity_statement: '',
   when_trigger: '',
