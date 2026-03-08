@@ -391,19 +391,19 @@
 
 /* ---- Dark Mode (default) ---- */
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] {
-  --background: 220 25% 8%;
-  --foreground: 210 20% 92%;
-  --card: 220 20% 14%;
-  --card-foreground: 210 20% 92%;
-  --popover: 220 20% 16%;
-  --popover-foreground: 210 20% 92%;
-  --primary: 217 70% 60%;
+  --background: 220 25% 6%;
+  --foreground: 210 20% 94%;
+  --card: 220 20% 12%;
+  --card-foreground: 210 20% 94%;
+  --popover: 220 20% 14%;
+  --popover-foreground: 210 20% 94%;
+  --primary: 217 80% 62%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 220 18% 20%;
-  --secondary-foreground: 210 20% 80%;
-  --muted: 220 15% 18%;
-  --muted-foreground: 215 15% 58%;
-  --accent: 195 80% 55%;
+  --secondary: 220 18% 18%;
+  --secondary-foreground: 210 20% 82%;
+  --muted: 220 15% 16%;
+  --muted-foreground: 215 15% 55%;
+  --accent: 195 85% 55%;
   --accent-foreground: 0 0% 100%;
   --destructive: 0 65% 55%;
   --destructive-foreground: 0 0% 100%;
@@ -411,23 +411,23 @@
   --success-foreground: 0 0% 100%;
   --warning: 40 85% 55%;
   --warning-foreground: 220 25% 8%;
-  --border: 220 15% 22%;
-  --input: 220 15% 18%;
-  --ring: 217 70% 60%;
-  --sidebar-background: 220 25% 9%;
-  --sidebar-foreground: 210 20% 85%;
-  --sidebar-primary: 217 70% 60%;
+  --border: 220 15% 20%;
+  --input: 220 15% 16%;
+  --ring: 217 80% 62%;
+  --sidebar-background: 220 25% 7%;
+  --sidebar-foreground: 210 20% 88%;
+  --sidebar-primary: 217 80% 62%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 220 18% 18%;
-  --sidebar-accent-foreground: 210 20% 90%;
-  --sidebar-border: 220 15% 20%;
-  --sidebar-ring: 217 70% 60%;
-  --glass-blur: 0px;
-  --glass-saturation: 1;
-  --glass-bg: 0.96;
-  --glass-border-light: 0;
-  --glass-shine: 0;
-  --glass-shadow: none;
+  --sidebar-accent: 220 18% 16%;
+  --sidebar-accent-foreground: 210 20% 92%;
+  --sidebar-border: 220 15% 18%;
+  --sidebar-ring: 217 80% 62%;
+  --glass-blur: 32px;
+  --glass-saturation: 1.8;
+  --glass-bg: 0.55;
+  --glass-border-light: 0.08;
+  --glass-shine: 0.06;
+  --glass-shadow: 0 4px 24px -4px hsl(0 0% 0% / 0.4);
 }
 
 /* ---- Light Mode ---- */
@@ -498,9 +498,10 @@
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] .bg-background {
   background: linear-gradient(
     155deg,
-    hsl(220 30% 10%) 0%,
-    hsl(225 25% 12%) 40%,
-    hsl(215 20% 14%) 100%
+    hsl(225 35% 8%) 0%,
+    hsl(220 30% 10%) 35%,
+    hsl(235 25% 12%) 70%,
+    hsl(215 20% 9%) 100%
   ) !important;
 }
 
@@ -832,30 +833,15 @@
 }
 
 /* ---- GLOBAL HAZE GUARD (Dark) ---- */
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [class*="bg-card"],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [class*="bg-muted"],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [class*="bg-secondary"],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [class*="bg-popover"],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-sonner-toast],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] button[role="switch"],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] button[role="checkbox"],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] button[role="combobox"],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-radix-select-trigger],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="progressbar"],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] .inline-flex.items-center.rounded-full,
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] .inline-flex.items-center.rounded-md {
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] .bg-card,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] .bg-muted,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] .bg-secondary,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] .bg-card,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] .bg-muted,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] .bg-secondary {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   box-shadow: none !important;
   border-color: hsl(var(--border) / 0.45) !important;
-}
-
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [class*="bg-card"],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [class*="bg-popover"] {
   background: hsl(var(--card) / 0.96) !important;
-}
-
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [class*="bg-muted"],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [class*="bg-secondary"] {
-  background: hsl(var(--muted) / 0.85) !important;
 }

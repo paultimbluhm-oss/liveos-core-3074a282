@@ -14,7 +14,7 @@ import { SchoolSheetWrapper } from '@/components/dashboard-v2/SchoolSheetWrapper
 import { BusinessWidget } from '@/components/dashboard-v2/BusinessWidget';
 import { BusinessSheetWrapper } from '@/components/dashboard-v2/BusinessSheetWrapper';
 
-import { Settings2, X, Plus, Minus, EyeOff, ChevronUp, ChevronDown } from 'lucide-react';
+import { Settings2, X, Plus, Minus, EyeOff, ChevronUp, ChevronDown, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -113,8 +113,27 @@ export default function Index() {
     </AnimatePresence>
   );
 
+  const glassActive = settings.dashboardGlass;
+  const glassMode = settings.dashboardGlassMode;
+
+  const toggleGlass = () => {
+    if (!glassActive) {
+      updateSettings({ dashboardGlass: true });
+    } else {
+      updateSettings({ dashboardGlass: false });
+    }
+  };
+
+  const cycleGlassMode = () => {
+    updateSettings({ dashboardGlassMode: glassMode === 'dark' ? 'light' : 'dark' });
+  };
+
   return (
     <AppLayout>
+      <div
+        className={`min-h-full ${glassActive ? 'bg-background' : ''}`}
+        {...(glassActive ? { 'data-liquid-glass': 'true', 'data-liquid-glass-mode': glassMode } : {})}
+      >
       <div className="p-4 pt-2 pb-24 mx-auto space-y-3 max-w-lg md:max-w-3xl lg:max-w-5xl">
 
         {/* Mobile widget list */}
@@ -220,9 +239,9 @@ export default function Index() {
           )}
         </AnimatePresence>
 
-        {/* Bottom edit mode trigger */}
+        {/* Bottom edit mode trigger & glass toggle */}
         {!editMode && (
-          <div className="flex justify-center pt-4">
+          <div className="flex justify-center items-center gap-1 pt-4">
             <Button
               variant="ghost"
               size="sm"
@@ -232,8 +251,19 @@ export default function Index() {
               <Settings2 className="w-3.5 h-3.5" />
               Widgets bearbeiten
             </Button>
+            <Button
+              variant={glassActive ? 'secondary' : 'ghost'}
+              size="sm"
+              className={`text-xs gap-1.5 ${glassActive ? 'text-primary' : 'text-muted-foreground'}`}
+              onClick={toggleGlass}
+              onContextMenu={(e) => { e.preventDefault(); cycleGlassMode(); }}
+            >
+              <Sparkles className="w-3.5 h-3.5" strokeWidth={1.5} />
+              Glass
+            </Button>
           </div>
         )}
+      </div>
       </div>
 
       <FinanceSheetWrapper open={financeSheetOpen} onOpenChange={setFinanceSheetOpen} />
