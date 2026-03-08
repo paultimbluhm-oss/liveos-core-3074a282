@@ -1020,6 +1020,7 @@ export type Database = {
           fun_activity: string | null
           habit_stacking: string | null
           habit_type: string
+          half_width: boolean | null
           icon: string | null
           id: string
           identity_statement: string | null
@@ -1043,6 +1044,7 @@ export type Database = {
           fun_activity?: string | null
           habit_stacking?: string | null
           habit_type?: string
+          half_width?: boolean | null
           icon?: string | null
           id?: string
           identity_statement?: string | null
@@ -1066,6 +1068,7 @@ export type Database = {
           fun_activity?: string | null
           habit_stacking?: string | null
           habit_type?: string
+          half_width?: boolean | null
           icon?: string | null
           id?: string
           identity_statement?: string | null
