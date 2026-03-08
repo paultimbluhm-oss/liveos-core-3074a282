@@ -95,24 +95,9 @@ export function TransactionsTab() {
     const loanItems: UnifiedItem[] = loans
       .filter(loan => {
         const loanDate = new Date(loan.date);
-        const inMonth = isWithinInterval(loanDate, { start: monthStart, end: monthEnd });
-        // Also check settlement date
-        const settledInMonth = loan.is_settled && loan.settled_date && 
-          isWithinInterval(new Date(loan.settled_date), { start: monthStart, end: monthEnd });
-        return inMonth || settledInMonth;
+        return isWithinInterval(loanDate, { start: monthStart, end: monthEnd });
       })
-      .flatMap(loan => {
-        const items: UnifiedItem[] = [];
-        if (isWithinInterval(new Date(loan.date), { start: monthStart, end: monthEnd })) {
-          items.push({ type: 'loan' as const, data: loan, date: loan.date });
-        }
-        if (loan.is_settled && loan.settled_date && 
-            isWithinInterval(new Date(loan.settled_date), { start: monthStart, end: monthEnd }) &&
-            loan.settled_date !== loan.date) {
-          items.push({ type: 'loan' as const, data: { ...loan, _isSettlement: true } as any, date: loan.settled_date });
-        }
-        return items;
-      });
+      .map(loan => ({ type: 'loan' as const, data: loan, date: loan.date }));
 
     return [...txItems, ...loanItems];
   }, [transactions, loans, filterMonth]);
@@ -357,32 +342,38 @@ export function TransactionsTab() {
                         </button>
                       );
                     } else {
-                      // Loan item
-                      const loan = item.data as V2Loan & { _isSettlement?: boolean };
-                      const isSettlement = !!(loan as any)._isSettlement;
-                      const loanTypeKey = isSettlement ? 'loan_settled' : loan.loan_type === 'lent' ? 'loan_lent' : 'loan_borrowed';
-                      const config = automationTypeConfig[loanTypeKey];
+                      // Loan item - single line
+                      const loan = item.data as V2Loan;
+                      const loanTypeKey = loan.loan_type === 'lent' ? 'loan_lent' : 'loan_borrowed';
+                      const config = automationTypeConfig[loan.is_settled ? 'loan_settled' : loanTypeKey];
                       
-                      const subtitle = isSettlement
-                        ? `${loan.person_name} -> ${getAccountName(loan.settled_account_id)}`
-                        : loan.loan_type === 'lent'
-                          ? `${getAccountName(loan.account_id)} -> ${loan.person_name}`
-                          : `${loan.person_name} -> ${getAccountName(loan.account_id)}`;
+                      const direction = loan.loan_type === 'lent'
+                        ? `${getAccountName(loan.account_id)} -> ${loan.person_name}`
+                        : `${loan.person_name} -> ${getAccountName(loan.account_id)}`;
+                      
+                      const statusText = loan.is_settled 
+                        ? `Zurueck ${loan.settled_account_id ? `auf ${getAccountName(loan.settled_account_id)}` : ''}`
+                        : 'Offen';
 
                       return (
                         <div 
-                          key={`loan-${loan.id}-${isSettlement ? 'settled' : 'created'}`}
+                          key={`loan-${loan.id}`}
                           className={`w-full flex items-center gap-3 p-3 ${index !== items.length - 1 ? 'border-b border-border' : ''}`}
                         >
                           <div className={`w-10 h-10 rounded-xl ${config.bg} flex items-center justify-center`}>
                             <span className={config.color}>{config.icon}</span>
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">
-                              {loan.note || typeLabels[loanTypeKey]}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {subtitle}
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-medium truncate">
+                                {loan.note || typeLabels[loanTypeKey]}
+                              </p>
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${loan.is_settled ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}`}>
+                                {statusText}
+                              </span>
+                            </div>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {direction}
                             </p>
                           </div>
                           <span className={`font-semibold ${config.color}`}>
