@@ -74,7 +74,6 @@ function EventCountdown({ event }: { event: UpcomingEvent }) {
   const typeLabels: Record<string, string> = { vocab_test: 'VT', exam: 'KA', abi_exam: 'ABI', other: '' };
   const typeColors: Record<string, string> = { vocab_test: '#38bdf8', exam: '#fbbf24', abi_exam: '#f87171', other: '#94a3b8' };
 
-  // Target is start of that day (8:00 as typical school start)
   const target = new Date(event.date + 'T08:00:00');
   const diffMs = Math.max(0, target.getTime() - now.getTime());
   const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
@@ -82,24 +81,21 @@ function EventCountdown({ event }: { event: UpcomingEvent }) {
   const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
   const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
 
-  const isToday = days === 0 && hours === 0 && minutes === 0 && seconds === 0 ? false : days === 0;
+  const isTodayEvent = days === 0;
   const timerStr = days > 0
-    ? `${days}d ${hours}h ${minutes}m`
+    ? `${days}d ${hours}h`
     : `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
   return (
-    <div className="flex flex-col gap-1 p-2 rounded-lg bg-muted/30">
-      <div className="flex items-center gap-1.5">
-        <div
-          className="w-5 h-5 rounded-full shrink-0 flex items-center justify-center text-[7px] font-bold text-white"
-          style={{ backgroundColor: typeColors[event.event_type] || '#94a3b8' }}
-        >
-          {typeLabels[event.event_type]}
-        </div>
-        <span className="text-[11px] font-medium truncate">{event.topic || event.course_name}</span>
+    <div className="event-countdown-row flex items-center gap-1.5 py-1 px-1.5 rounded-lg bg-muted/30">
+      <div
+        className="w-4 h-4 rounded-full shrink-0 flex items-center justify-center text-[6px] font-bold text-white"
+        style={{ backgroundColor: typeColors[event.event_type] || '#94a3b8' }}
+      >
+        {typeLabels[event.event_type]}
       </div>
-      <span className="text-[10px] text-muted-foreground">{event.course_name}</span>
-      <span className={`text-[11px] font-mono font-bold ${diffMs === 0 ? 'text-destructive' : isToday ? 'text-destructive' : 'text-primary'}`}>
+      <span className="text-[10px] font-medium truncate flex-1 min-w-0">{event.topic || event.course_name}</span>
+      <span className={`text-[10px] font-mono font-bold shrink-0 ${diffMs === 0 ? 'text-destructive' : isTodayEvent ? 'text-destructive' : 'text-primary'}`}>
         {diffMs === 0 ? 'Jetzt' : timerStr}
       </span>
     </div>
@@ -405,20 +401,12 @@ function TimetableWidgetInner({ size, onOpenSheet }: { size: WidgetSize; onOpenS
           </div>
         )}
 
-        {/* Upcoming Events with live timer - 2 column grid */}
+        {/* Upcoming Events - compact inline */}
         {upcomingEvents.length > 0 && (
-          <div className="pt-1 border-t border-border/30 space-y-1.5">
-            <div className="flex items-center gap-1">
-              <AlertTriangle className="w-3 h-3 text-muted-foreground" strokeWidth={1.5} />
-              <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
-                Termine
-              </span>
-            </div>
-            <div className="grid grid-cols-2 gap-1.5">
-              {upcomingEvents.map(ev => (
-                <EventCountdown key={ev.id} event={ev} />
-              ))}
-            </div>
+          <div className="pt-1 border-t border-border/30 space-y-1">
+            {upcomingEvents.map(ev => (
+              <EventCountdown key={ev.id} event={ev} />
+            ))}
           </div>
         )}
 

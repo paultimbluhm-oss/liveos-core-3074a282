@@ -987,3 +987,17 @@
   backdrop-filter: blur(12px) saturate(1.3) !important;
   -webkit-backdrop-filter: blur(12px) saturate(1.3) !important;
 }
+
+/* ---- Dark: Event countdown rows ---- */
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] .event-countdown-row {
+  background: hsl(220 20% 13% / 0.5) !important;
+  border: 0.5px solid hsl(0 0% 100% / 0.07) !important;
+  box-shadow: 0 2px 8px -2px hsl(0 0% 0% / 0.3), inset 0 0.5px 0 hsl(0 0% 100% / 0.05) !important;
+}
+
+/* ---- Light: Event countdown rows ---- */
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] .event-countdown-row {
+  background: hsl(0 0% 100% / 0.45) !important;
+  border: 0.5px solid hsl(220 15% 50% / 0.1) !important;
+  box-shadow: 0 2px 8px -2px hsl(220 15% 30% / 0.08), inset 0 0.5px 0 hsl(0 0% 100% / 0.5) !important;
+}
