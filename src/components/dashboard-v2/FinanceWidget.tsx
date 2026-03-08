@@ -420,7 +420,7 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
       {size === 'large' && accounts.length > 0 && (
         <div className="space-y-0.5">
           <div className="flex items-center justify-between px-1 pb-1">
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Konten</span>
+            <span className="text-xs text-muted-foreground uppercase tracking-wider">Konten</span>
             {!editingBalances ? (
               <button onClick={startEditBalances} className="p-1 rounded-lg hover:bg-muted/50 transition-colors">
                 <Pencil className="w-3 h-3 text-muted-foreground" />
