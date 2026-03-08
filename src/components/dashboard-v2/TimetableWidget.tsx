@@ -388,10 +388,10 @@ function TimetableWidgetInner({ size, onOpenSheet }: { size: WidgetSize; onOpenS
                     style={{ backgroundColor: slot.course.color || 'hsl(var(--primary))' }}
                   />
                   <div className="min-w-0 flex-1">
-                    <span className={`text-xs font-medium truncate block ${past ? 'line-through' : ''}`}>
+                    <span className={`text-sm font-medium truncate block ${past ? 'line-through' : ''}`}>
                       {slot.course.short_name || slot.course.name}
                     </span>
-                    <span className="text-[9px] text-muted-foreground font-mono">
+                    <span className="text-[10px] text-muted-foreground font-mono">
                       {time?.start || ''}{slot.room ? ` · ${slot.room}` : ''}{slot.is_double_lesson ? ' · 2h' : ''}
                     </span>
                   </div>
