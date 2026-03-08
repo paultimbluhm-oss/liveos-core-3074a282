@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
-import { format, subMonths } from 'date-fns';
+import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
+import { de } from 'date-fns/locale';
 import { toast } from 'sonner';
 import type { WidgetSize } from '@/hooks/useDashboardV2';
 
