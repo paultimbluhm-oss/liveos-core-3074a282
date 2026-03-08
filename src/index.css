@@ -465,7 +465,7 @@
   border-right: 0.5px solid hsl(0 0% 100% / 0.06) !important;
 }
 
-/* --- DIALOGS / SHEETS / POPUPS (dark) - SOLID backgrounds --- */
+/* --- DIALOGS / SHEETS / DRAWERS (dark) - FULLY SOLID --- */
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"],
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] {
   background: hsl(220 22% 10%) !important;
@@ -476,28 +476,37 @@
   box-shadow: 0 24px 80px hsl(0 0% 0% / 0.5) !important;
 }
 
-/* CRITICAL: Kill glass on ALL elements inside dialogs/sheets (dark) */
+/* CRITICAL: Kill ALL glass/transparency on elements inside dialogs (dark) */
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] *,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] * {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] .bg-card,
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] .bg-background,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] .bg-card,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] .bg-background {
+  background: hsl(220 22% 10%) !important;
+  border-color: hsl(220 12% 22%) !important;
+  box-shadow: none !important;
+}
+
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] .bg-muted,
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] .bg-muted\/50,
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] [class*="bg-muted"],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] [class*="bg-card"],
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] [class*="bg-secondary"],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] [class*="bg-background"],
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] [class*="bg-card"],
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] [class*="bg-popover"],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] .bg-card,
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] .bg-background,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] [class*="bg-background"],
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] .bg-muted,
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] .bg-muted\/50,
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] [class*="bg-muted"],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] [class*="bg-card"],
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] [class*="bg-secondary"],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] [class*="bg-background"],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] [class*="bg-popover"] {
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] [class*="bg-card"],
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] [class*="bg-popover"],
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] [class*="bg-background"] {
   background: hsl(220 20% 12%) !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
   border-color: hsl(220 12% 22%) !important;
   box-shadow: none !important;
 }
