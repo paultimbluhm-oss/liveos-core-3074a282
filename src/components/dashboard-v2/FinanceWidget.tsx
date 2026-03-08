@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
-import { format, subMonths } from 'date-fns';
+import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
+import { de } from 'date-fns/locale';
 import { toast } from 'sonner';
 import type { WidgetSize } from '@/hooks/useDashboardV2';
 
@@ -42,6 +43,12 @@ interface Snapshot {
   net_worth_eur: number;
 }
 
+interface Transaction {
+  transaction_type: string;
+  amount: number;
+  currency: string;
+}
+
 interface Loan {
   id: string;
   loan_type: 'lent' | 'borrowed';
@@ -61,6 +68,7 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
   const [categories, setCategories] = useState<Category[]>([]);
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [loans, setLoans] = useState<Loan[]>([]);
+  const [monthlyTransactions, setMonthlyTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddTx, setShowAddTx] = useState(false);
   const [showChart, setShowChart] = useState(false);
@@ -92,12 +100,17 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
     if (!user) return;
     setLoading(true);
 
-    const [accRes, invRes, catRes, snapRes, loanRes] = await Promise.all([
+    const now = new Date();
+    const monthStart = format(startOfMonth(now), 'yyyy-MM-dd');
+    const monthEnd = format(endOfMonth(now), 'yyyy-MM-dd');
+
+    const [accRes, invRes, catRes, snapRes, loanRes, txMonthRes] = await Promise.all([
       supabase.from('v2_accounts').select('id, name, account_type, currency, balance, color').eq('user_id', user.id).eq('is_active', true).order('name'),
       supabase.from('v2_investments').select('id, name, symbol, asset_type, currency, quantity, avg_purchase_price, current_price').eq('user_id', user.id).eq('is_active', true).order('name'),
       supabase.from('v2_categories').select('id, name, icon').eq('user_id', user.id).eq('is_active', true).order('name'),
-      supabase.from('v2_daily_snapshots').select('date, net_worth_eur').eq('user_id', user.id).gte('date', format(subMonths(new Date(), 1), 'yyyy-MM-dd')).order('date', { ascending: true }),
+      supabase.from('v2_daily_snapshots').select('date, net_worth_eur').eq('user_id', user.id).gte('date', format(subMonths(now, 1), 'yyyy-MM-dd')).order('date', { ascending: true }),
       supabase.from('v2_loans').select('*').eq('user_id', user.id).eq('is_settled', false).order('date', { ascending: false }),
+      supabase.from('v2_transactions').select('transaction_type, amount, currency').eq('user_id', user.id).gte('date', monthStart).lte('date', monthEnd),
     ]);
 
     setAccounts((accRes.data || []) as Account[]);
@@ -105,6 +118,7 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
     setCategories((catRes.data || []) as Category[]);
     setSnapshots((snapRes.data || []) as Snapshot[]);
     setLoans((loanRes.data || []) as Loan[]);
+    setMonthlyTransactions((txMonthRes.data || []) as Transaction[]);
     if (accRes.data?.length && !txAccountId) {
       setTxAccountId((accRes.data as Account[])[0].id);
     }
@@ -150,6 +164,20 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
     snapshots.map(s => ({ date: s.date.slice(5), value: s.net_worth_eur })),
     [snapshots]
   );
+
+  const monthlyStats = useMemo(() => {
+    let income = 0;
+    let expenses = 0;
+    monthlyTransactions.forEach(tx => {
+      const amt = tx.currency === 'USD' ? tx.amount / eurUsdRate : tx.amount;
+      if (tx.transaction_type === 'income' || tx.transaction_type === 'investment_sell') income += amt;
+      if (tx.transaction_type === 'expense' || tx.transaction_type === 'investment_buy') expenses += amt;
+    });
+    const savingsRate = income > 0 ? Math.round(((income - expenses) / income) * 100) : 0;
+    return { income, expenses, savingsRate };
+  }, [monthlyTransactions, eurUsdRate]);
+
+  const currentMonthLabel = format(new Date(), 'MMM', { locale: de });
 
   const fmt = (v: number) => v.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
 
@@ -327,32 +355,42 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
         </div>
       </div>
 
-      {/* Net Worth */}
-      <div>
-        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Nettovermoegen</p>
-        <p className="text-2xl font-bold tracking-tight">{fmt(netWorth)}</p>
+      {/* Net Worth + Breakdown */}
+      <div className="flex items-end justify-between">
+        <div>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Nettovermoegen</p>
+          <p className="text-2xl font-bold tracking-tight">{fmt(netWorth)}</p>
+        </div>
+        <div className="text-right space-y-0.5">
+          <div className="flex items-center gap-1 justify-end">
+            <Wallet className="w-2.5 h-2.5 text-muted-foreground" strokeWidth={1.5} />
+            <span className="text-[10px] text-muted-foreground font-mono">{fmt(totalAccounts)}</span>
+          </div>
+          <div className="flex items-center gap-1 justify-end">
+            <TrendingUp className="w-2.5 h-2.5 text-muted-foreground" strokeWidth={1.5} />
+            <span className="text-[10px] text-muted-foreground font-mono">{fmt(totalInvestments)}</span>
+          </div>
+        </div>
       </div>
 
-      {/* Accounts / Investments split */}
-      <div className="grid grid-cols-2 gap-2">
-        <div className="rounded-xl bg-muted/30 p-2.5">
-          <div className="flex items-center gap-1.5 mb-1">
-            <Wallet className="w-3 h-3 text-muted-foreground" strokeWidth={1.5} />
-            <span className="text-[10px] text-muted-foreground">Konten</span>
+      {/* Monthly Stats */}
+      <div className="rounded-xl bg-muted/30 p-2.5">
+        <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">{currentMonthLabel}</p>
+        <div className="grid grid-cols-3 gap-2">
+          <div>
+            <p className="text-xs font-bold text-emerald-500">{fmt(monthlyStats.income)}</p>
+            <p className="text-[9px] text-muted-foreground">Einnahmen</p>
           </div>
-          <p className="text-sm font-bold">{fmt(totalAccounts)}</p>
-        </div>
-        <div className="rounded-xl bg-muted/30 p-2.5">
-          <div className="flex items-center gap-1.5 mb-1">
-            <TrendingUp className="w-3 h-3 text-muted-foreground" strokeWidth={1.5} />
-            <span className="text-[10px] text-muted-foreground">Investments</span>
+          <div>
+            <p className="text-xs font-bold text-destructive">{fmt(monthlyStats.expenses)}</p>
+            <p className="text-[9px] text-muted-foreground">Ausgaben</p>
           </div>
-          <p className="text-sm font-bold">{fmt(totalInvestments)}</p>
-          {investmentProfit !== 0 && (
-            <p className={`text-[10px] font-mono ${investmentProfit >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>
-              {investmentProfit >= 0 ? '+' : ''}{fmt(investmentProfit)}
+          <div>
+            <p className={`text-xs font-bold ${monthlyStats.savingsRate >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>
+              {monthlyStats.savingsRate}%
             </p>
-          )}
+            <p className="text-[9px] text-muted-foreground">Sparquote</p>
+          </div>
         </div>
       </div>
 
