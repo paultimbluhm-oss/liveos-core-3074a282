@@ -232,7 +232,7 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
             <button onClick={() => adjustCount(habit, 1)} className="w-6 h-6 rounded-md bg-primary/10 hover:bg-primary/20 flex items-center justify-center transition-colors shrink-0">
               <Plus className="w-3 h-3 text-primary" />
             </button>
-            <button onClick={() => setSelectedHabitId(habit.id)} className={`flex-1 text-xs truncate text-left hover:underline underline-offset-2 ${isNegative && !isDoneToday ? 'text-destructive' : ''}`}>
+            <button onClick={() => setSelectedHabitId(habit.id)} className={`flex-1 text-sm truncate text-left hover:underline underline-offset-2 ${isNegative && !isDoneToday ? 'text-destructive' : ''}`}>
               {habit.name}
             </button>
             {streak !== 0 && (
