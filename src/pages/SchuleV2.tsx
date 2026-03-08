@@ -12,6 +12,12 @@ import { CreateCourseDialogV2 } from '@/components/schule-v2/courses/CreateCours
 import { CourseDetailSheetV2 } from '@/components/schule-v2/course-detail/CourseDetailSheetV2';
 import { V2Course, V2TimetableSlot } from '@/components/schule-v2/types';
 import { VocabSection } from '@/components/schule-v2/vocab/VocabSection';
+import { AbiCalculator } from '@/components/schule-v2/analytics/AbiCalculator';
+import { AbsenceDashboard } from '@/components/schule-v2/analytics/AbsenceDashboard';
+import { WeeklySummary } from '@/components/schule-v2/analytics/WeeklySummary';
+import { GradeStatistics } from '@/components/schule-v2/analytics/GradeStatistics';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Calculator, UserX, CalendarDays, BarChart3 } from 'lucide-react';
 
 function SchuleV2Content() {
   const { user, loading: authLoading } = useAuth();

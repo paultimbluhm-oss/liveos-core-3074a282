@@ -89,15 +89,15 @@ export function WeeklySummary() {
       // Upcoming events (next 2 weeks)
       const { data: events } = await supabase
         .from('v2_course_events')
-        .select('title, event_date, course_id, event_type')
+        .select('topic, date, course_id, event_type')
         .in('course_id', Array.from(memberIds))
-        .gte('event_date', format(now, 'yyyy-MM-dd'))
-        .lte('event_date', nextWeekEnd)
-        .order('event_date');
+        .gte('date', format(now, 'yyyy-MM-dd'))
+        .lte('date', nextWeekEnd)
+        .order('date');
 
-      setUpcomingEvents((events || []).map(e => ({
-        title: e.title,
-        date: e.event_date,
+      setUpcomingEvents((events || []).map((e: any) => ({
+        title: e.topic || e.event_type || 'Termin',
+        date: e.date,
         courseName: courseMap[e.course_id]?.name || '?',
         color: courseMap[e.course_id]?.color || '#6366f1',
       })));
