@@ -43,6 +43,12 @@ interface Snapshot {
   net_worth_eur: number;
 }
 
+interface Transaction {
+  transaction_type: string;
+  amount: number;
+  currency: string;
+}
+
 interface Loan {
   id: string;
   loan_type: 'lent' | 'borrowed';
