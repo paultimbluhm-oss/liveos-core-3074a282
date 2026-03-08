@@ -79,7 +79,7 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
       supabase.from('habit_completions').select('*').eq('user_id', user.id).eq('completed_date', yesterday),
     ]);
     if (hRes.data) {
-      const habitsWithType = hRes.data.map((h: any) => ({ id: h.id, name: h.name, habit_type: h.habit_type || 'check', created_at: h.created_at || null }));
+      const habitsWithType = hRes.data.map((h: any) => ({ id: h.id, name: h.name, icon: h.icon || null, habit_type: h.habit_type || 'check', created_at: h.created_at || null }));
       setHabits(habitsWithType);
       const ids = habitsWithType.map((h: Habit) => h.id);
       if (ids.length > 0) {
