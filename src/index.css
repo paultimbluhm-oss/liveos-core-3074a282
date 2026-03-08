@@ -151,7 +151,7 @@
     --border: 0 0% 12%;
     --input: 0 0% 9%;
     --ring: 217 70% 60%;
-    --radius: 9999px;
+    --radius: 1rem;
     --sidebar-background: 0 0% 3%;
     --sidebar-foreground: 0 0% 85%;
     --sidebar-primary: 217 70% 60%;
@@ -1003,6 +1003,19 @@
 }
 
 /* ===== Midnight 3D Depth Styling ===== */
+
+/* Pill-shaped elements in Midnight */
+[data-theme="midnight"] button:not([class*="rounded-"]),
+[data-theme="midnight"] [role="tab"],
+[data-theme="midnight"] .badge,
+[data-theme="midnight"] input,
+[data-theme="midnight"] textarea,
+[data-theme="midnight"] select {
+  border-radius: 9999px;
+}
+[data-theme="midnight"] textarea {
+  border-radius: 1rem;
+}
 
 /* Midnight cards get subtle 3D depth */
 [data-theme="midnight"] [class*="bg-card"],
