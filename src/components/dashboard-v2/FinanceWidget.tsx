@@ -489,7 +489,7 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
       {/* Open Loans */}
       {loans.length > 0 && (
         <div className="space-y-1 pt-1 border-t border-border/30">
-          <span className="text-[10px] text-muted-foreground uppercase tracking-wider px-1">Offen</span>
+          <span className="text-xs text-muted-foreground uppercase tracking-wider px-1">Offen</span>
           {loans.map(loan => (
             <div key={loan.id} className="space-y-1.5">
               <div className="finance-loan-row flex items-center justify-between py-1.5 px-2.5 rounded-xl bg-muted/20">
