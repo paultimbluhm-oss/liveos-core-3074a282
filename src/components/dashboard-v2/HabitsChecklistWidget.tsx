@@ -259,8 +259,8 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
                 <span className={`text-xs font-mono ${streakColor} ${streakWeight}`}>{streak}</span>
               </div>
             )}
-            {adopted && <Sparkles className="w-2.5 h-2.5 text-success shrink-0" />}
-            <span className="text-[10px] text-muted-foreground font-mono shrink-0">{ltPct}%</span>
+             {adopted && <Sparkles className="w-3 h-3 text-success shrink-0" />}
+            <span className="text-xs text-muted-foreground font-mono shrink-0">{ltPct}%</span>
           </div>
         ) : (
           <div className={`flex items-center gap-1.5 p-1.5 rounded-lg transition-all ${negativeBg || 'bg-muted/30 hover:bg-muted/60'}`}>
