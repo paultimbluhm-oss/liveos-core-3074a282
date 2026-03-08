@@ -387,6 +387,119 @@
   --glass-radius: 1.5rem;
 }
 
+/* ---- No-Glass Zone: completely immune to all liquid glass effects ---- */
+[data-no-glass="true"],
+[data-no-glass="true"] *,
+[data-no-glass="true"] [role="tablist"],
+[data-no-glass="true"] [role="tablist"] [role="tab"],
+[data-no-glass="true"] [role="tablist"] [data-state="active"],
+[data-no-glass="true"] input,
+[data-no-glass="true"] textarea,
+[data-no-glass="true"] select,
+[data-no-glass="true"] button[role="combobox"],
+[data-no-glass="true"] [data-radix-select-trigger],
+[data-no-glass="true"] button[role="switch"],
+[data-no-glass="true"] button[role="checkbox"],
+[data-no-glass="true"] [role="progressbar"],
+[data-no-glass="true"] [data-radix-popper-content-wrapper] > * {
+  background: revert !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: revert !important;
+  border-radius: revert !important;
+  box-shadow: revert !important;
+  transition: revert !important;
+}
+
+/* Re-apply basic theme colors inside no-glass zones */
+[data-no-glass="true"] {
+  background: hsl(var(--background)) !important;
+  border: none !important;
+  border-radius: revert !important;
+  box-shadow: revert !important;
+}
+[data-no-glass="true"] .bg-card {
+  background: hsl(var(--card)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: var(--radius) !important;
+}
+[data-no-glass="true"] .bg-background {
+  background: hsl(var(--background)) !important;
+}
+[data-no-glass="true"] .bg-muted,
+[data-no-glass="true"] .bg-muted\/50 {
+  background: hsl(var(--muted)) !important;
+}
+[data-no-glass="true"] .bg-secondary {
+  background: hsl(var(--secondary)) !important;
+}
+[data-no-glass="true"] .bg-popover {
+  background: hsl(var(--popover)) !important;
+}
+[data-no-glass="true"] input,
+[data-no-glass="true"] textarea,
+[data-no-glass="true"] select {
+  background: hsl(var(--input)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: var(--radius) !important;
+  color: hsl(var(--foreground)) !important;
+}
+[data-no-glass="true"] button[role="combobox"],
+[data-no-glass="true"] [data-radix-select-trigger] {
+  background: hsl(var(--input)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: var(--radius) !important;
+}
+[data-no-glass="true"] [role="tablist"] {
+  background: hsl(var(--muted)) !important;
+  border: none !important;
+  border-radius: var(--radius) !important;
+  padding: 4px !important;
+}
+[data-no-glass="true"] [role="tablist"] [role="tab"] {
+  border-radius: calc(var(--radius) - 2px) !important;
+  color: hsl(var(--muted-foreground)) !important;
+  border: none !important;
+  box-shadow: none !important;
+  transition: none !important;
+}
+[data-no-glass="true"] [role="tablist"] [data-state="active"] {
+  background: hsl(var(--background)) !important;
+  color: hsl(var(--foreground)) !important;
+  box-shadow: 0 1px 3px hsl(0 0% 0% / 0.1) !important;
+}
+[data-no-glass="true"] button[role="switch"] {
+  background: hsl(var(--input)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: 999px !important;
+}
+[data-no-glass="true"] button[role="switch"][data-state="checked"] {
+  background: hsl(var(--primary)) !important;
+  border-color: hsl(var(--primary)) !important;
+}
+[data-no-glass="true"] button[role="checkbox"] {
+  background: hsl(var(--input)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: calc(var(--radius) - 4px) !important;
+}
+[data-no-glass="true"] button[role="checkbox"][data-state="checked"] {
+  background: hsl(var(--primary)) !important;
+  border-color: hsl(var(--primary)) !important;
+}
+[data-no-glass="true"] .bg-primary {
+  box-shadow: none !important;
+  border-radius: var(--radius) !important;
+}
+[data-no-glass="true"] .rounded-lg {
+  border-radius: var(--radius) !important;
+}
+[data-no-glass="true"] .rounded-md {
+  border-radius: calc(var(--radius) - 2px) !important;
+}
+[data-no-glass="true"] .rounded-xl {
+  border-radius: calc(var(--radius) + 4px) !important;
+}
+
 /* Smooth transitions */
 [data-liquid-glass="true"] *:not(svg):not(path) {
   transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
