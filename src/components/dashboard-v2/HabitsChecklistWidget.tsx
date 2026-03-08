@@ -228,7 +228,7 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
             <button onClick={() => adjustCount(habit, -1)} className="w-6 h-6 rounded-md bg-muted/60 hover:bg-muted flex items-center justify-center transition-colors shrink-0">
               <Minus className="w-3 h-3" />
             </button>
-            <span className="text-xs font-mono font-semibold min-w-[2ch] text-center">{currentVal}</span>
+            <span className="text-sm font-mono font-semibold min-w-[2ch] text-center">{currentVal}</span>
             <button onClick={() => adjustCount(habit, 1)} className="w-6 h-6 rounded-md bg-primary/10 hover:bg-primary/20 flex items-center justify-center transition-colors shrink-0">
               <Plus className="w-3 h-3 text-primary" />
             </button>
