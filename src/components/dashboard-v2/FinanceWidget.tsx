@@ -100,12 +100,17 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
     if (!user) return;
     setLoading(true);
 
-    const [accRes, invRes, catRes, snapRes, loanRes] = await Promise.all([
+    const now = new Date();
+    const monthStart = format(startOfMonth(now), 'yyyy-MM-dd');
+    const monthEnd = format(endOfMonth(now), 'yyyy-MM-dd');
+
+    const [accRes, invRes, catRes, snapRes, loanRes, txMonthRes] = await Promise.all([
       supabase.from('v2_accounts').select('id, name, account_type, currency, balance, color').eq('user_id', user.id).eq('is_active', true).order('name'),
       supabase.from('v2_investments').select('id, name, symbol, asset_type, currency, quantity, avg_purchase_price, current_price').eq('user_id', user.id).eq('is_active', true).order('name'),
       supabase.from('v2_categories').select('id, name, icon').eq('user_id', user.id).eq('is_active', true).order('name'),
-      supabase.from('v2_daily_snapshots').select('date, net_worth_eur').eq('user_id', user.id).gte('date', format(subMonths(new Date(), 1), 'yyyy-MM-dd')).order('date', { ascending: true }),
+      supabase.from('v2_daily_snapshots').select('date, net_worth_eur').eq('user_id', user.id).gte('date', format(subMonths(now, 1), 'yyyy-MM-dd')).order('date', { ascending: true }),
       supabase.from('v2_loans').select('*').eq('user_id', user.id).eq('is_settled', false).order('date', { ascending: false }),
+      supabase.from('v2_transactions').select('transaction_type, amount, currency').eq('user_id', user.id).gte('date', monthStart).lte('date', monthEnd),
     ]);
 
     setAccounts((accRes.data || []) as Account[]);
@@ -113,6 +118,7 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
     setCategories((catRes.data || []) as Category[]);
     setSnapshots((snapRes.data || []) as Snapshot[]);
     setLoans((loanRes.data || []) as Loan[]);
+    setMonthlyTransactions((txMonthRes.data || []) as Transaction[]);
     if (accRes.data?.length && !txAccountId) {
       setTxAccountId((accRes.data as Account[])[0].id);
     }
