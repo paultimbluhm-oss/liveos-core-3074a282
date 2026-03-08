@@ -29,6 +29,9 @@ const automationTypeConfig: Record<string, { icon: React.ReactNode; color: strin
   investment: { icon: <TrendingUp className="w-4 h-4" />, color: 'text-violet-400', bg: 'bg-violet-500/20' },
   investment_buy: { icon: <TrendingUp className="w-4 h-4" />, color: 'text-violet-400', bg: 'bg-violet-500/20' },
   investment_sell: { icon: <TrendingUp className="w-4 h-4" />, color: 'text-emerald-400', bg: 'bg-emerald-500/20' },
+  loan_lent: { icon: <HandCoins className="w-4 h-4" />, color: 'text-amber-400', bg: 'bg-amber-500/20' },
+  loan_borrowed: { icon: <HandCoins className="w-4 h-4" />, color: 'text-orange-400', bg: 'bg-orange-500/20' },
+  loan_settled: { icon: <HandCoins className="w-4 h-4" />, color: 'text-emerald-400', bg: 'bg-emerald-500/20' },
 };
 
 const typeLabels: Record<string, string> = {
