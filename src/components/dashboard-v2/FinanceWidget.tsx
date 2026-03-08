@@ -165,7 +165,19 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
     [snapshots]
   );
 
-  const fmt = (v: number) => v.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+  const monthlyStats = useMemo(() => {
+    let income = 0;
+    let expenses = 0;
+    monthlyTransactions.forEach(tx => {
+      const amt = tx.currency === 'USD' ? tx.amount / eurUsdRate : tx.amount;
+      if (tx.transaction_type === 'income' || tx.transaction_type === 'investment_sell') income += amt;
+      if (tx.transaction_type === 'expense' || tx.transaction_type === 'investment_buy') expenses += amt;
+    });
+    const savingsRate = income > 0 ? Math.round(((income - expenses) / income) * 100) : 0;
+    return { income, expenses, savingsRate };
+  }, [monthlyTransactions, eurUsdRate]);
+
+  const currentMonthLabel = format(new Date(), 'MMM', { locale: de });
 
   const startEditBalances = () => {
     const edits: Record<string, string> = {};
