@@ -78,26 +78,61 @@ export function TransactionsTab() {
   const formatCurrency = (value: number, currency: string = 'EUR') => 
     value.toLocaleString('de-DE', { style: 'currency', currency, maximumFractionDigits: 2 });
 
-  // Filter transactions by month
-  const filteredTransactions = useMemo(() => {
+  // Unified item type for display
+  type UnifiedItem = 
+    | { type: 'transaction'; data: V2Transaction; date: string }
+    | { type: 'loan'; data: V2Loan; date: string };
+
+  // Filter and merge transactions + loans by month
+  const filteredItems = useMemo(() => {
     const monthStart = startOfMonth(filterMonth);
     const monthEnd = endOfMonth(filterMonth);
     
-    return transactions.filter(tx => {
-      const txDate = new Date(tx.date);
-      return isWithinInterval(txDate, { start: monthStart, end: monthEnd });
-    });
+    const txItems: UnifiedItem[] = transactions
+      .filter(tx => isWithinInterval(new Date(tx.date), { start: monthStart, end: monthEnd }))
+      .map(tx => ({ type: 'transaction' as const, data: tx, date: tx.date }));
+
+    const loanItems: UnifiedItem[] = loans
+      .filter(loan => {
+        const loanDate = new Date(loan.date);
+        const inMonth = isWithinInterval(loanDate, { start: monthStart, end: monthEnd });
+        // Also check settlement date
+        const settledInMonth = loan.is_settled && loan.settled_date && 
+          isWithinInterval(new Date(loan.settled_date), { start: monthStart, end: monthEnd });
+        return inMonth || settledInMonth;
+      })
+      .flatMap(loan => {
+        const items: UnifiedItem[] = [];
+        if (isWithinInterval(new Date(loan.date), { start: monthStart, end: monthEnd })) {
+          items.push({ type: 'loan' as const, data: loan, date: loan.date });
+        }
+        if (loan.is_settled && loan.settled_date && 
+            isWithinInterval(new Date(loan.settled_date), { start: monthStart, end: monthEnd }) &&
+            loan.settled_date !== loan.date) {
+          items.push({ type: 'loan' as const, data: { ...loan, _isSettlement: true } as any, date: loan.settled_date });
+        }
+        return items;
+      });
+
+    return [...txItems, ...loanItems];
+  }, [transactions, loans, filterMonth]);
+
+  // Keep filtered transactions for totals
+  const filteredTransactions = useMemo(() => {
+    const monthStart = startOfMonth(filterMonth);
+    const monthEnd = endOfMonth(filterMonth);
+    return transactions.filter(tx => isWithinInterval(new Date(tx.date), { start: monthStart, end: monthEnd }));
   }, [transactions, filterMonth]);
 
-  // Group transactions by date
-  const groupedTransactions = useMemo(() => {
-    const groups: Record<string, V2Transaction[]> = {};
-    filteredTransactions.forEach(tx => {
-      const dateKey = tx.date;
-      if (!groups[dateKey]) groups[dateKey] = [];
-      groups[dateKey].push(tx);
+  // Group unified items by date
+  const groupedItems = useMemo(() => {
+    const groups: Record<string, UnifiedItem[]> = {};
+    filteredItems.forEach(item => {
+      if (!groups[item.date]) groups[item.date] = [];
+      groups[item.date].push(item);
     });
     return Object.entries(groups)
+      .sort(([a], [b]) => new Date(b).getTime() - new Date(a).getTime());
       .sort(([a], [b]) => new Date(b).getTime() - new Date(a).getTime());
   }, [filteredTransactions]);
 
