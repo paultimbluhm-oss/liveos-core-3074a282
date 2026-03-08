@@ -12,7 +12,7 @@ import { HabitDetailSheet } from './HabitDetailSheet';
 import { HabitCreationWizard } from './HabitCreationWizard';
 import type { WidgetSize, DashboardSettings } from '@/hooks/useDashboardV2';
 
-interface Habit { id: string; name: string; icon: string | null; habit_type: string; created_at: string | null; }
+interface Habit { id: string; name: string; icon: string | null; habit_type: string; created_at: string | null; half_width: boolean; }
 
 interface Props {
   size: WidgetSize;
