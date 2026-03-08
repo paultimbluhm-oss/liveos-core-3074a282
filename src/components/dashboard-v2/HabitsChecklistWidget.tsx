@@ -335,7 +335,7 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
             <span>Erledigt ({fullWidthDone.length})</span>
           </CollapsibleTrigger>
           <CollapsibleContent className="space-y-1.5 pt-1.5">
-            {doneHabits.map(habit => renderHabitRow(habit, true))}
+            {fullWidthDone.map(habit => renderHabitRow(habit, true))}
           </CollapsibleContent>
         </Collapsible>
       )}
