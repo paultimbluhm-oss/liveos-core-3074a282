@@ -327,6 +327,15 @@ export function WeekTimetableV2({ onSlotClick, onOpenSheet }: WeekTimetableV2Pro
         </button>
         
         <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onOpenSheet?.('abi')}>
+            <Calculator className="w-4 h-4" strokeWidth={1.5} />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onOpenSheet?.('stats')}>
+            <BarChart3 className="w-4 h-4" strokeWidth={1.5} />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onOpenSheet?.('absences')}>
+            <UserX className="w-4 h-4" strokeWidth={1.5} />
+          </Button>
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goToNextWeek}>
             <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
           </Button>
