@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, ArrowUpRight, ArrowDownRight, ArrowLeftRight, RefreshCw, TrendingUp, Calendar, Filter, Trash2, Pencil } from 'lucide-react';
-import { useFinanceV2, V2Automation, V2Transaction } from '../context/FinanceV2Context';
+import { Plus, ArrowUpRight, ArrowDownRight, ArrowLeftRight, RefreshCw, TrendingUp, Calendar, Filter, Trash2, Pencil, HandCoins } from 'lucide-react';
+import { useFinanceV2, V2Automation, V2Transaction, V2Loan } from '../context/FinanceV2Context';
 import { AddAutomationDialog } from '../dialogs/AddAutomationDialog';
 import { AddTransactionDialog } from '../dialogs/AddTransactionDialog';
 import { TransactionDetailSheet } from '../sheets/TransactionDetailSheet';
