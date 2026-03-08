@@ -40,6 +40,8 @@ interface ThemeContextType {
   setLiquidGlass: (enabled: boolean) => void;
   liquidGlassMode: LiquidGlassMode;
   setLiquidGlassMode: (mode: LiquidGlassMode) => void;
+  dashboardLiquidGlass: boolean;
+  setDashboardLiquidGlass: (enabled: boolean) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType>({
@@ -51,6 +53,8 @@ const ThemeContext = createContext<ThemeContextType>({
   setLiquidGlass: () => {},
   liquidGlassMode: 'dark',
   setLiquidGlassMode: () => {},
+  dashboardLiquidGlass: false,
+  setDashboardLiquidGlass: () => {},
 });
 
 export const useTheme = () => useContext(ThemeContext);
