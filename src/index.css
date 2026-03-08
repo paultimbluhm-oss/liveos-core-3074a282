@@ -128,18 +128,18 @@
 
   /* ===== Midnight Dark ===== */
   [data-theme="midnight"] {
-    --background: 225 50% 3%;
-    --foreground: 210 20% 93%;
-    --card: 225 45% 6%;
-    --card-foreground: 210 20% 93%;
-    --popover: 225 45% 7%;
-    --popover-foreground: 210 20% 93%;
+    --background: 0 0% 2%;
+    --foreground: 0 0% 93%;
+    --card: 0 0% 6%;
+    --card-foreground: 0 0% 93%;
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 93%;
     --primary: 217 70% 60%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 225 35% 10%;
-    --secondary-foreground: 210 20% 85%;
-    --muted: 225 30% 9%;
-    --muted-foreground: 215 15% 50%;
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 0 0% 85%;
+    --muted: 0 0% 9%;
+    --muted-foreground: 0 0% 50%;
     --accent: 195 80% 55%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 65% 55%;
@@ -147,18 +147,18 @@
     --success: 155 60% 45%;
     --success-foreground: 0 0% 100%;
     --warning: 40 85% 55%;
-    --warning-foreground: 225 50% 3%;
-    --border: 225 30% 12%;
-    --input: 225 30% 9%;
+    --warning-foreground: 0 0% 3%;
+    --border: 0 0% 12%;
+    --input: 0 0% 9%;
     --ring: 217 70% 60%;
-    --radius: 1rem;
-    --sidebar-background: 225 50% 4%;
-    --sidebar-foreground: 210 20% 85%;
+    --radius: 9999px;
+    --sidebar-background: 0 0% 3%;
+    --sidebar-foreground: 0 0% 85%;
     --sidebar-primary: 217 70% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 225 35% 9%;
-    --sidebar-accent-foreground: 210 20% 90%;
-    --sidebar-border: 225 30% 10%;
+    --sidebar-accent: 0 0% 9%;
+    --sidebar-accent-foreground: 0 0% 90%;
+    --sidebar-border: 0 0% 10%;
     --sidebar-ring: 217 70% 60%;
     --xp: 280 70% 60%;
     --xp-foreground: 0 0% 100%;
@@ -1003,39 +1003,23 @@
 }
 
 /* ===== Midnight 3D Depth Styling ===== */
-[data-theme="midnight"] .rounded-t-2xl {
-  border-radius: 1.5rem 1.5rem 0 0;
-}
-
-[data-theme="midnight"] [data-vaul-drawer],
-[data-theme="midnight"] [role="dialog"] {
-  border-radius: 1.25rem;
-}
-
-[data-theme="midnight"] .rounded-lg {
-  border-radius: 1rem;
-}
-
-[data-theme="midnight"] .rounded-xl {
-  border-radius: 1.25rem;
-}
 
 /* Midnight cards get subtle 3D depth */
 [data-theme="midnight"] [class*="bg-card"],
 [data-theme="midnight"] .rounded-lg[class*="border"] {
-  box-shadow: 0 2px 12px -4px hsl(225 50% 0% / 0.6),
-              0 1px 3px -1px hsl(225 50% 0% / 0.3),
-              inset 0 0.5px 0 hsl(225 30% 18% / 0.5);
+  box-shadow: 0 2px 12px -4px hsl(0 0% 0% / 0.6),
+              0 1px 3px -1px hsl(0 0% 0% / 0.3),
+              inset 0 0.5px 0 hsl(0 0% 18% / 0.5);
 }
 
 /* Midnight sheet overlays - deeper black with soft edge glow */
 [data-theme="midnight"] [data-vaul-drawer] > div,
 [data-theme="midnight"] [role="dialog"][class*="SheetContent"] {
-  background: hsl(225 50% 4%);
-  border: 1px solid hsl(225 30% 14%);
-  box-shadow: 0 -4px 30px -5px hsl(217 70% 60% / 0.06),
-              0 -1px 15px -3px hsl(225 50% 0% / 0.5),
-              inset 0 0.5px 0 hsl(225 30% 16% / 0.6);
+  background: hsl(0 0% 4%);
+  border: 1px solid hsl(0 0% 14%);
+  box-shadow: 0 -4px 30px -5px hsl(0 0% 0% / 0.5),
+              0 -1px 15px -3px hsl(0 0% 0% / 0.4),
+              inset 0 0.5px 0 hsl(0 0% 16% / 0.6);
 }
 
 /* Midnight buttons get subtle depth */
@@ -1049,5 +1033,5 @@
 [data-theme="midnight"] textarea,
 [data-theme="midnight"] select,
 [data-theme="midnight"] [role="combobox"] {
-  box-shadow: inset 0 1px 3px hsl(225 50% 0% / 0.3);
+  box-shadow: inset 0 1px 3px hsl(0 0% 0% / 0.3);
 }
