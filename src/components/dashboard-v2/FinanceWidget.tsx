@@ -451,7 +451,7 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
                   className="h-6 w-24 text-xs text-right font-mono bg-muted/30 border-border/30"
                 />
               ) : (
-                <span className="text-xs font-mono font-medium">
+                <span className="text-sm font-mono font-medium">
                   {acc.balance.toLocaleString('de-DE', { style: 'currency', currency: acc.currency })}
                 </span>
               )}
