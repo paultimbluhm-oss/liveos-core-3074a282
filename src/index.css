@@ -511,14 +511,22 @@
   box-shadow: none !important;
 }
 
-/* Muted elements inside dialogs get slightly different shade for contrast */
+/* Muted inside dialogs: slightly lighter for visual separation */
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] .bg-muted,
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] .bg-muted\/50,
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] [class*="bg-muted"],
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] .bg-muted,
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] .bg-muted\/50,
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] [class*="bg-muted"] {
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] .bg-muted\/50 {
   background: hsl(220 18% 15%) !important;
+}
+
+/* Popovers INSIDE dialogs: also solid */
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] [data-radix-popper-content-wrapper] > *,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] [data-radix-popper-content-wrapper] > * {
+  background: hsl(220 20% 14%) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid hsl(220 12% 22%) !important;
+  box-shadow: 0 8px 24px hsl(0 0% 0% / 0.4) !important;
 }
 
 /* Popover / dropdown menus (dark) */
