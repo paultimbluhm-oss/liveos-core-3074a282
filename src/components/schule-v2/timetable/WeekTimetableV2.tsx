@@ -28,6 +28,7 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
   const [currentWeek, setCurrentWeek] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [slots, setSlots] = useState<(V2TimetableSlot & { course: V2Course })[]>([]);
   const [courseAverages, setCourseAverages] = useState<Record<string, number | null>>({});
+  const [gradeSourceMap, setGradeSourceMap] = useState<Record<string, 'current' | 'hj1only' | 'combined'>>({});
   const [homeworkByDate, setHomeworkByDate] = useState<Record<string, V2Homework[]>>({});
   const [completedHwByDate, setCompletedHwByDate] = useState<Record<string, V2Homework[]>>({});
   const [absenceMap, setAbsenceMap] = useState<Record<string, { is_eva: boolean; status: 'excused' | 'unexcused' }>>({});
