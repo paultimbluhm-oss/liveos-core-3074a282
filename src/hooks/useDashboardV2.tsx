@@ -310,9 +310,10 @@ export function useTodayStats() {
 
   useEffect(() => {
     if (!user) return;
-    const ch1 = supabase.channel('dv2-tasks').on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => { fetchStats(); computeStreak(); }).subscribe();
-    const ch3 = supabase.channel('dv2-hc').on('postgres_changes', { event: '*', schema: 'public', table: 'habit_completions' }, () => { fetchStats(); computeStreak(); }).subscribe();
-    const ch4 = supabase.channel('dv2-habits').on('postgres_changes', { event: '*', schema: 'public', table: 'habits' }, () => { fetchStats(); computeStreak(); }).subscribe();
+    const uid = crypto.randomUUID().slice(0, 8);
+    const ch1 = supabase.channel(`dv2-tasks-${uid}`).on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => { fetchStats(); computeStreak(); }).subscribe();
+    const ch3 = supabase.channel(`dv2-hc-${uid}`).on('postgres_changes', { event: '*', schema: 'public', table: 'habit_completions' }, () => { fetchStats(); computeStreak(); }).subscribe();
+    const ch4 = supabase.channel(`dv2-habits-${uid}`).on('postgres_changes', { event: '*', schema: 'public', table: 'habits' }, () => { fetchStats(); computeStreak(); }).subscribe();
     return () => { supabase.removeChannel(ch1); supabase.removeChannel(ch3); supabase.removeChannel(ch4); };
   }, [user, fetchStats, computeStreak]);
 
