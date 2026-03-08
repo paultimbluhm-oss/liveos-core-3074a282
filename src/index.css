@@ -444,8 +444,8 @@
   ) !important;
 }
 
-/* Glass cards on background (dark) - the main glass effect */
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] .bg-card:not([role="dialog"] .bg-card):not([data-vaul-drawer] .bg-card) {
+/* Glass cards (dark) - main glass effect */
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] .bg-card {
   background: hsl(220 20% 13% / 0.55) !important;
   backdrop-filter: blur(40px) saturate(1.6) !important;
   -webkit-backdrop-filter: blur(40px) saturate(1.6) !important;
@@ -465,7 +465,7 @@
   border-right: 0.5px solid hsl(0 0% 100% / 0.06) !important;
 }
 
-/* --- DIALOGS / SHEETS / POPUPS (dark) - SOLID, no glass nesting --- */
+/* --- DIALOGS / SHEETS / POPUPS (dark) - SOLID backgrounds --- */
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"],
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] {
   background: hsl(220 22% 10%) !important;
@@ -476,22 +476,40 @@
   box-shadow: 0 24px 80px hsl(0 0% 0% / 0.5) !important;
 }
 
-/* Kill glass on ALL nested elements inside dialogs/sheets (dark) */
+/* CRITICAL: Kill glass on ALL elements inside dialogs/sheets (dark) */
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] .bg-card,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] .bg-background,
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] .bg-muted,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] .bg-muted\/50,
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] [class*="bg-muted"],
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] [class*="bg-card"],
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] [class*="bg-secondary"],
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] [class*="bg-background"],
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] [class*="bg-popover"],
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] .bg-card,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] .bg-background,
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] .bg-muted,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] .bg-muted\/50,
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] [class*="bg-muted"],
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] [class*="bg-card"],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] [class*="bg-secondary"] {
-  background: hsl(220 18% 14%) !important;
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] [class*="bg-secondary"],
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] [class*="bg-background"],
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] [class*="bg-popover"] {
+  background: hsl(220 20% 12%) !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   border-color: hsl(220 12% 22%) !important;
   box-shadow: none !important;
+}
+
+/* Muted elements inside dialogs get slightly different shade for contrast */
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] .bg-muted,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] .bg-muted\/50,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] [class*="bg-muted"],
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] .bg-muted,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] .bg-muted\/50,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] [class*="bg-muted"] {
+  background: hsl(220 18% 15%) !important;
 }
 
 /* Popover / dropdown menus (dark) */
@@ -551,7 +569,7 @@
   color: hsl(var(--foreground)) !important;
 }
 
-/* Badges (dark) - subtle, no glass */
+/* Badges (dark) */
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] .inline-flex.items-center.rounded-full,
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] .inline-flex.items-center.rounded-md {
   backdrop-filter: none !important;
@@ -653,8 +671,8 @@
   ) !important;
 }
 
-/* Glass cards on background (light) */
-[data-liquid-glass="true"][data-liquid-glass-mode="light"] .bg-card:not([role="dialog"] .bg-card):not([data-vaul-drawer] .bg-card) {
+/* Glass cards (light) */
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] .bg-card {
   background: hsl(0 0% 100% / 0.45) !important;
   backdrop-filter: blur(48px) saturate(2) brightness(1.05) !important;
   -webkit-backdrop-filter: blur(48px) saturate(2) brightness(1.05) !important;
@@ -687,11 +705,15 @@
 
 /* Kill glass on nested inside dialogs (light) */
 [data-liquid-glass="true"][data-liquid-glass-mode="light"] [role="dialog"] .bg-card,
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] [role="dialog"] .bg-background,
 [data-liquid-glass="true"][data-liquid-glass-mode="light"] [role="dialog"] [class*="bg-card"],
 [data-liquid-glass="true"][data-liquid-glass-mode="light"] [role="dialog"] [class*="bg-muted"],
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] [role="dialog"] [class*="bg-background"],
 [data-liquid-glass="true"][data-liquid-glass-mode="light"] [data-vaul-drawer] .bg-card,
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] [data-vaul-drawer] .bg-background,
 [data-liquid-glass="true"][data-liquid-glass-mode="light"] [data-vaul-drawer] [class*="bg-card"],
-[data-liquid-glass="true"][data-liquid-glass-mode="light"] [data-vaul-drawer] [class*="bg-muted"] {
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] [data-vaul-drawer] [class*="bg-muted"],
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] [data-vaul-drawer] [class*="bg-background"] {
   background: hsl(0 0% 100% / 0.5) !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
