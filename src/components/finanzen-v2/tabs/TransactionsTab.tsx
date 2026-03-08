@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, ArrowUpRight, ArrowDownRight, ArrowLeftRight, RefreshCw, TrendingUp, Calendar, Filter, Trash2, Pencil } from 'lucide-react';
-import { useFinanceV2, V2Automation, V2Transaction } from '../context/FinanceV2Context';
+import { Plus, ArrowUpRight, ArrowDownRight, ArrowLeftRight, RefreshCw, TrendingUp, Calendar, Filter, Trash2, Pencil, HandCoins } from 'lucide-react';
+import { useFinanceV2, V2Automation, V2Transaction, V2Loan } from '../context/FinanceV2Context';
 import { AddAutomationDialog } from '../dialogs/AddAutomationDialog';
 import { AddTransactionDialog } from '../dialogs/AddTransactionDialog';
 import { TransactionDetailSheet } from '../sheets/TransactionDetailSheet';
@@ -29,6 +29,9 @@ const automationTypeConfig: Record<string, { icon: React.ReactNode; color: strin
   investment: { icon: <TrendingUp className="w-4 h-4" />, color: 'text-violet-400', bg: 'bg-violet-500/20' },
   investment_buy: { icon: <TrendingUp className="w-4 h-4" />, color: 'text-violet-400', bg: 'bg-violet-500/20' },
   investment_sell: { icon: <TrendingUp className="w-4 h-4" />, color: 'text-emerald-400', bg: 'bg-emerald-500/20' },
+  loan_lent: { icon: <HandCoins className="w-4 h-4" />, color: 'text-amber-400', bg: 'bg-amber-500/20' },
+  loan_borrowed: { icon: <HandCoins className="w-4 h-4" />, color: 'text-orange-400', bg: 'bg-orange-500/20' },
+  loan_settled: { icon: <HandCoins className="w-4 h-4" />, color: 'text-emerald-400', bg: 'bg-emerald-500/20' },
 };
 
 const typeLabels: Record<string, string> = {
@@ -38,6 +41,9 @@ const typeLabels: Record<string, string> = {
   investment: 'Investment',
   investment_buy: 'Kauf',
   investment_sell: 'Verkauf',
+  loan_lent: 'Verliehen',
+  loan_borrowed: 'Geliehen',
+  loan_settled: 'Rueckzahlung',
 };
 
 const intervalLabels: Record<string, string> = {
@@ -53,6 +59,7 @@ export function TransactionsTab() {
     accounts, 
     investments, 
     categories,
+    loans,
     loading, 
     refreshTransactions, 
     refreshAutomations 
@@ -71,28 +78,62 @@ export function TransactionsTab() {
   const formatCurrency = (value: number, currency: string = 'EUR') => 
     value.toLocaleString('de-DE', { style: 'currency', currency, maximumFractionDigits: 2 });
 
-  // Filter transactions by month
-  const filteredTransactions = useMemo(() => {
+  // Unified item type for display
+  type UnifiedItem = 
+    | { type: 'transaction'; data: V2Transaction; date: string }
+    | { type: 'loan'; data: V2Loan; date: string };
+
+  // Filter and merge transactions + loans by month
+  const filteredItems = useMemo(() => {
     const monthStart = startOfMonth(filterMonth);
     const monthEnd = endOfMonth(filterMonth);
     
-    return transactions.filter(tx => {
-      const txDate = new Date(tx.date);
-      return isWithinInterval(txDate, { start: monthStart, end: monthEnd });
-    });
+    const txItems: UnifiedItem[] = transactions
+      .filter(tx => isWithinInterval(new Date(tx.date), { start: monthStart, end: monthEnd }))
+      .map(tx => ({ type: 'transaction' as const, data: tx, date: tx.date }));
+
+    const loanItems: UnifiedItem[] = loans
+      .filter(loan => {
+        const loanDate = new Date(loan.date);
+        const inMonth = isWithinInterval(loanDate, { start: monthStart, end: monthEnd });
+        // Also check settlement date
+        const settledInMonth = loan.is_settled && loan.settled_date && 
+          isWithinInterval(new Date(loan.settled_date), { start: monthStart, end: monthEnd });
+        return inMonth || settledInMonth;
+      })
+      .flatMap(loan => {
+        const items: UnifiedItem[] = [];
+        if (isWithinInterval(new Date(loan.date), { start: monthStart, end: monthEnd })) {
+          items.push({ type: 'loan' as const, data: loan, date: loan.date });
+        }
+        if (loan.is_settled && loan.settled_date && 
+            isWithinInterval(new Date(loan.settled_date), { start: monthStart, end: monthEnd }) &&
+            loan.settled_date !== loan.date) {
+          items.push({ type: 'loan' as const, data: { ...loan, _isSettlement: true } as any, date: loan.settled_date });
+        }
+        return items;
+      });
+
+    return [...txItems, ...loanItems];
+  }, [transactions, loans, filterMonth]);
+
+  // Keep filtered transactions for totals
+  const filteredTransactions = useMemo(() => {
+    const monthStart = startOfMonth(filterMonth);
+    const monthEnd = endOfMonth(filterMonth);
+    return transactions.filter(tx => isWithinInterval(new Date(tx.date), { start: monthStart, end: monthEnd }));
   }, [transactions, filterMonth]);
 
-  // Group transactions by date
-  const groupedTransactions = useMemo(() => {
-    const groups: Record<string, V2Transaction[]> = {};
-    filteredTransactions.forEach(tx => {
-      const dateKey = tx.date;
-      if (!groups[dateKey]) groups[dateKey] = [];
-      groups[dateKey].push(tx);
+  // Group unified items by date
+  const groupedItems = useMemo(() => {
+    const groups: Record<string, UnifiedItem[]> = {};
+    filteredItems.forEach(item => {
+      if (!groups[item.date]) groups[item.date] = [];
+      groups[item.date].push(item);
     });
     return Object.entries(groups)
       .sort(([a], [b]) => new Date(b).getTime() - new Date(a).getTime());
-  }, [filteredTransactions]);
+  }, [filteredItems]);
 
   // Monthly totals for automations
   const monthlyTotals = useMemo(() => {
@@ -266,59 +307,96 @@ export function TransactionsTab() {
             Neue Transaktion
           </Button>
 
-          {/* Transactions List */}
+          {/* Transactions & Loans List */}
           <div className="space-y-3">
-            {groupedTransactions.map(([date, txs]) => (
+            {groupedItems.map(([date, items]) => (
               <div key={date}>
                 <p className="text-xs text-muted-foreground mb-2 px-1">
                   {format(new Date(date), 'EEEE, d. MMMM', { locale: de })}
                 </p>
                 <div className="rounded-2xl overflow-hidden bg-card border border-border">
-                  {txs.map((tx, index) => {
-                    const config = automationTypeConfig[tx.transaction_type] || automationTypeConfig.expense;
-                    const categoryName = getCategoryName(tx.category_id);
-                    const categoryColor = getCategoryColor(tx.category_id);
-                    
-                    return (
-                      <button 
-                        key={tx.id}
-                        onClick={() => setSelectedTransaction(tx)}
-                        className={`w-full flex items-center gap-3 p-3 text-left hover:bg-muted/50 transition-colors ${index !== txs.length - 1 ? 'border-b border-border' : ''}`}
-                      >
-                        <div className={`w-10 h-10 rounded-xl ${config.bg} flex items-center justify-center`}>
-                          <span className={config.color}>{config.icon}</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium truncate">
-                              {tx.note || typeLabels[tx.transaction_type]}
-                            </p>
-                            {categoryName && (
-                              <span 
-                                className="text-[10px] px-1.5 py-0.5 rounded-full text-white"
-                                style={{ backgroundColor: categoryColor }}
-                              >
-                                {categoryName}
-                              </span>
-                            )}
+                  {items.map((item, index) => {
+                    if (item.type === 'transaction') {
+                      const tx = item.data;
+                      const config = automationTypeConfig[tx.transaction_type] || automationTypeConfig.expense;
+                      const categoryName = getCategoryName(tx.category_id);
+                      const categoryColor = getCategoryColor(tx.category_id);
+                      
+                      return (
+                        <button 
+                          key={`tx-${tx.id}`}
+                          onClick={() => setSelectedTransaction(tx)}
+                          className={`w-full flex items-center gap-3 p-3 text-left hover:bg-muted/50 transition-colors ${index !== items.length - 1 ? 'border-b border-border' : ''}`}
+                        >
+                          <div className={`w-10 h-10 rounded-xl ${config.bg} flex items-center justify-center`}>
+                            <span className={config.color}>{config.icon}</span>
                           </div>
-                          <p className="text-xs text-muted-foreground">
-                            {getAccountName(tx.account_id)}
-                            {tx.to_account_id && ` → ${getAccountName(tx.to_account_id)}`}
-                          </p>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-medium truncate">
+                                {tx.note || typeLabels[tx.transaction_type]}
+                              </p>
+                              {categoryName && (
+                                <span 
+                                  className="text-[10px] px-1.5 py-0.5 rounded-full text-white"
+                                  style={{ backgroundColor: categoryColor }}
+                                >
+                                  {categoryName}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              {getAccountName(tx.account_id)}
+                              {tx.to_account_id && ` -> ${getAccountName(tx.to_account_id)}`}
+                            </p>
+                          </div>
+                          <span className={`font-semibold ${config.color}`}>
+                            {tx.transaction_type === 'income' ? '+' : tx.transaction_type === 'expense' ? '-' : ''}
+                            {formatCurrency(tx.amount, tx.currency)}
+                          </span>
+                        </button>
+                      );
+                    } else {
+                      // Loan item
+                      const loan = item.data as V2Loan & { _isSettlement?: boolean };
+                      const isSettlement = !!(loan as any)._isSettlement;
+                      const loanTypeKey = isSettlement ? 'loan_settled' : loan.loan_type === 'lent' ? 'loan_lent' : 'loan_borrowed';
+                      const config = automationTypeConfig[loanTypeKey];
+                      
+                      const subtitle = isSettlement
+                        ? `${loan.person_name} -> ${getAccountName(loan.settled_account_id)}`
+                        : loan.loan_type === 'lent'
+                          ? `${getAccountName(loan.account_id)} -> ${loan.person_name}`
+                          : `${loan.person_name} -> ${getAccountName(loan.account_id)}`;
+
+                      return (
+                        <div 
+                          key={`loan-${loan.id}-${isSettlement ? 'settled' : 'created'}`}
+                          className={`w-full flex items-center gap-3 p-3 ${index !== items.length - 1 ? 'border-b border-border' : ''}`}
+                        >
+                          <div className={`w-10 h-10 rounded-xl ${config.bg} flex items-center justify-center`}>
+                            <span className={config.color}>{config.icon}</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">
+                              {loan.note || typeLabels[loanTypeKey]}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {subtitle}
+                            </p>
+                          </div>
+                          <span className={`font-semibold ${config.color}`}>
+                            {formatCurrency(loan.amount, loan.currency)}
+                          </span>
                         </div>
-                        <span className={`font-semibold ${config.color}`}>
-                          {tx.transaction_type === 'income' ? '+' : tx.transaction_type === 'expense' ? '-' : ''}
-                          {formatCurrency(tx.amount, tx.currency)}
-                        </span>
-                      </button>
-                    );
+                      );
+                    }
                   })}
                 </div>
               </div>
             ))}
 
-            {groupedTransactions.length === 0 && (
+            {groupedItems.length === 0 && (
               <div className="rounded-2xl bg-card border border-border p-8 text-center">
                 <Calendar className="w-10 h-10 mx-auto mb-3 text-muted-foreground/50" />
                 <p className="font-medium">Keine Transaktionen</p>
