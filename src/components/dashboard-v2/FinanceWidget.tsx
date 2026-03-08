@@ -355,32 +355,42 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
         </div>
       </div>
 
-      {/* Net Worth */}
-      <div>
-        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Nettovermoegen</p>
-        <p className="text-2xl font-bold tracking-tight">{fmt(netWorth)}</p>
+      {/* Net Worth + Breakdown */}
+      <div className="flex items-end justify-between">
+        <div>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Nettovermoegen</p>
+          <p className="text-2xl font-bold tracking-tight">{fmt(netWorth)}</p>
+        </div>
+        <div className="text-right space-y-0.5">
+          <div className="flex items-center gap-1 justify-end">
+            <Wallet className="w-2.5 h-2.5 text-muted-foreground" strokeWidth={1.5} />
+            <span className="text-[10px] text-muted-foreground font-mono">{fmt(totalAccounts)}</span>
+          </div>
+          <div className="flex items-center gap-1 justify-end">
+            <TrendingUp className="w-2.5 h-2.5 text-muted-foreground" strokeWidth={1.5} />
+            <span className="text-[10px] text-muted-foreground font-mono">{fmt(totalInvestments)}</span>
+          </div>
+        </div>
       </div>
 
-      {/* Accounts / Investments split */}
-      <div className="grid grid-cols-2 gap-2">
-        <div className="rounded-xl bg-muted/30 p-2.5">
-          <div className="flex items-center gap-1.5 mb-1">
-            <Wallet className="w-3 h-3 text-muted-foreground" strokeWidth={1.5} />
-            <span className="text-[10px] text-muted-foreground">Konten</span>
+      {/* Monthly Stats */}
+      <div className="rounded-xl bg-muted/30 p-2.5">
+        <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">{currentMonthLabel}</p>
+        <div className="grid grid-cols-3 gap-2">
+          <div>
+            <p className="text-xs font-bold text-emerald-500">{fmt(monthlyStats.income)}</p>
+            <p className="text-[9px] text-muted-foreground">Einnahmen</p>
           </div>
-          <p className="text-sm font-bold">{fmt(totalAccounts)}</p>
-        </div>
-        <div className="rounded-xl bg-muted/30 p-2.5">
-          <div className="flex items-center gap-1.5 mb-1">
-            <TrendingUp className="w-3 h-3 text-muted-foreground" strokeWidth={1.5} />
-            <span className="text-[10px] text-muted-foreground">Investments</span>
+          <div>
+            <p className="text-xs font-bold text-destructive">{fmt(monthlyStats.expenses)}</p>
+            <p className="text-[9px] text-muted-foreground">Ausgaben</p>
           </div>
-          <p className="text-sm font-bold">{fmt(totalInvestments)}</p>
-          {investmentProfit !== 0 && (
-            <p className={`text-[10px] font-mono ${investmentProfit >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>
-              {investmentProfit >= 0 ? '+' : ''}{fmt(investmentProfit)}
+          <div>
+            <p className={`text-xs font-bold ${monthlyStats.savingsRate >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>
+              {monthlyStats.savingsRate}%
             </p>
-          )}
+            <p className="text-[9px] text-muted-foreground">Sparquote</p>
+          </div>
         </div>
       </div>
 
