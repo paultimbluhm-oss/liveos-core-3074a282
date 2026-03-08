@@ -174,7 +174,37 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
     );
   }
 
+  const renderCompactHabit = (habit: Habit) => {
+    const isDoneToday = completions.includes(habit.id);
+    const isCount = habit.habit_type === 'count';
+    const currentVal = countValues[habit.id] || 0;
+    const streak = habitStreaks[habit.id] || 0;
+    const isNegative = streak < 0;
+    const HabitIcon = icons[(habit.icon || 'Check') as keyof typeof icons] || icons.Check;
+
+    return (
+      <button
+        key={habit.id}
+        onClick={() => isCount ? adjustCount(habit, 1) : toggle(habit)}
+        onContextMenu={(e) => { e.preventDefault(); setSelectedHabitId(habit.id); }}
+        className={`flex flex-col items-center justify-center gap-1 p-2 rounded-xl transition-all min-h-[52px] ${
+          isDoneToday
+            ? 'bg-success/10 ring-1 ring-success/30'
+            : isNegative
+              ? 'bg-destructive/8 border border-destructive/20'
+              : 'bg-muted/30 hover:bg-muted/60'
+        }`}
+      >
+        <HabitIcon className={`w-5 h-5 ${isDoneToday ? 'text-success' : isNegative ? 'text-destructive' : 'text-muted-foreground'}`} strokeWidth={1.5} />
+        {isCount && (
+          <span className="text-[10px] font-mono font-semibold">{currentVal}</span>
+        )}
+      </button>
+    );
+  };
+
   const renderHabitRow = (habit: Habit, isDone: boolean) => {
+    if (habit.half_width) return null; // rendered separately in grid
     const ltCount = lifetimeCounts[habit.id] || 0;
     const ltPct = Math.min(ltCount, 100);
     const streak = habitStreaks[habit.id] || 0;
@@ -254,6 +284,10 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
       </div>
     );
   };
+
+  const compactHabits = habits.filter(h => h.half_width);
+  const fullWidthOpen = displayOpen.filter(h => !h.half_width);
+  const fullWidthDone = doneHabits.filter(h => !h.half_width);
 
   return (
     <div className={`rounded-2xl bg-card border border-border/50 p-4 space-y-3 ${allDone ? 'ring-1 ring-success/30' : ''}`}>
