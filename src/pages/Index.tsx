@@ -233,7 +233,18 @@ export default function Index() {
 
         {/* Bottom edit mode trigger */}
         {!editMode && (
-          <div className="flex justify-center pt-4">
+          <div className="flex justify-center gap-2 pt-4">
+            {!liquidGlass && (
+              <Button
+                variant={dashboardLiquidGlass ? 'default' : 'ghost'}
+                size="sm"
+                className="text-xs gap-1.5"
+                onClick={() => setDashboardLiquidGlass(!dashboardLiquidGlass)}
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                Liquid Glass
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="sm"
