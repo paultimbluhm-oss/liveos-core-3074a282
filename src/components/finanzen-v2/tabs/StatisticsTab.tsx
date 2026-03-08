@@ -242,8 +242,8 @@ export function StatisticsTab() {
       {netWorthHistory.length > 1 && (
         <div className="rounded-2xl bg-card border border-border p-4">
           <h3 className="text-sm font-semibold mb-3">Vermoegensentwicklung</h3>
-          <ResponsiveContainer width="100%" height={160}>
-            <AreaChart data={netWorthHistory}>
+          <ResponsiveContainer width="100%" height={220}>
+            <AreaChart data={netWorthHistory} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorAccounts" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="hsl(210, 80%, 55%)" stopOpacity={0.3}/>
@@ -255,7 +255,14 @@ export function StatisticsTab() {
                 </linearGradient>
               </defs>
               <XAxis dataKey="date" tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
-              <YAxis hide />
+              <YAxis 
+                domain={[0, 'auto']}
+                tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}`}
+                width={40}
+              />
               <Tooltip 
                 formatter={(value: number) => formatCurrency(value)}
                 contentStyle={{ backgroundColor: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: '11px' }}

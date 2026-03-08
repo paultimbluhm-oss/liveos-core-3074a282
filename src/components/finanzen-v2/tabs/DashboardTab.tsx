@@ -183,8 +183,8 @@ export function DashboardTab() {
       {netWorthChartData.length > 1 && (
         <div className="rounded-2xl bg-card border border-border p-4">
           <h3 className="text-xs font-medium text-muted-foreground mb-3">Vermögensentwicklung</h3>
-          <ResponsiveContainer width="100%" height={120}>
-            <AreaChart data={netWorthChartData}>
+          <ResponsiveContainer width="100%" height={220}>
+            <AreaChart data={netWorthChartData} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorNetWorth" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
@@ -197,7 +197,14 @@ export function DashboardTab() {
                 axisLine={false} 
                 tickLine={false} 
               />
-              <YAxis hide domain={['dataMin - 100', 'dataMax + 100']} />
+              <YAxis 
+                domain={[0, 'auto']}
+                tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}`}
+                width={40}
+              />
               <Tooltip 
                 formatter={(value: number) => formatCurrency(value)}
                 contentStyle={{ 
