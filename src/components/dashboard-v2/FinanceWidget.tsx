@@ -69,6 +69,7 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [loans, setLoans] = useState<Loan[]>([]);
   const [monthlyTransactions, setMonthlyTransactions] = useState<Transaction[]>([]);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAddTx, setShowAddTx] = useState(false);
   const [showChart, setShowChart] = useState(false);
@@ -105,7 +106,7 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
     const monthEnd = format(endOfMonth(now), 'yyyy-MM-dd');
 
     const [accRes, invRes, catRes, snapRes, loanRes, txMonthRes] = await Promise.all([
-      supabase.from('v2_accounts').select('id, name, account_type, currency, balance, color').eq('user_id', user.id).eq('is_active', true).order('name'),
+      supabase.from('v2_accounts').select('id, name, account_type, currency, balance, color, updated_at').eq('user_id', user.id).eq('is_active', true).order('name'),
       supabase.from('v2_investments').select('id, name, symbol, asset_type, currency, quantity, avg_purchase_price, current_price').eq('user_id', user.id).eq('is_active', true).order('name'),
       supabase.from('v2_categories').select('id, name, icon').eq('user_id', user.id).eq('is_active', true).order('name'),
       supabase.from('v2_daily_snapshots').select('date, net_worth_eur').eq('user_id', user.id).gte('date', format(subMonths(now, 1), 'yyyy-MM-dd')).order('date', { ascending: true }),
@@ -119,6 +120,13 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
     setSnapshots((snapRes.data || []) as Snapshot[]);
     setLoans((loanRes.data || []) as Loan[]);
     setMonthlyTransactions((txMonthRes.data || []) as Transaction[]);
+    
+    // Determine last updated from most recent account/transaction update
+    const accDates = (accRes.data || []).map((a: any) => a.updated_at).filter(Boolean);
+    const latestDate = accDates.length > 0 
+      ? new Date(accDates.sort().reverse()[0]) 
+      : null;
+    setLastUpdated(latestDate);
     if (accRes.data?.length && !txAccountId) {
       setTxAccountId((accRes.data as Account[])[0].id);
     }
@@ -178,6 +186,11 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
   }, [monthlyTransactions, eurUsdRate]);
 
   const currentMonthLabel = format(new Date(), 'MMM', { locale: de });
+
+  const isStale = lastUpdated ? (Date.now() - lastUpdated.getTime()) > 24 * 60 * 60 * 1000 : false;
+  const lastUpdatedLabel = lastUpdated 
+    ? format(lastUpdated, 'EEE dd.MM, HH:mm', { locale: de }) 
+    : null;
 
   const fmt = (v: number) => v.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
 
@@ -343,7 +356,14 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
           <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
             <Wallet className="w-4 h-4 text-primary" strokeWidth={1.5} />
           </div>
-          <button onClick={onOpenSheet} className="text-sm font-semibold hover:text-primary transition-colors">Finanzen</button>
+          <div>
+            <button onClick={onOpenSheet} className="text-sm font-semibold hover:text-primary transition-colors">Finanzen</button>
+            {lastUpdatedLabel && (
+              <p className={`text-[9px] ${isStale ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
+                {lastUpdatedLabel}
+              </p>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setShowLoanForm(!showLoanForm); setShowAddTx(false); }}>
