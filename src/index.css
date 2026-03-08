@@ -382,27 +382,37 @@
 
 /* ===== iOS 26 Liquid Glass Mode ===== */
 
-/* Glass shared variables */
+/* ---- Shared ---- */
 [data-liquid-glass="true"] {
-  --glass-blur: 48px;
-  --glass-saturation: 2.2;
   --glass-radius: 1.5rem;
 }
 
-/* ---- Dark Mode (default) ---- */
+/* Smooth transitions */
+[data-liquid-glass="true"] *:not(svg):not(path) {
+  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Rounder corners globally */
+[data-liquid-glass="true"] .rounded-lg { border-radius: var(--glass-radius) !important; }
+[data-liquid-glass="true"] .rounded-md { border-radius: 1rem !important; }
+[data-liquid-glass="true"] .rounded-xl { border-radius: 1.75rem !important; }
+
+/* =============================================
+   DARK MODE
+   ============================================= */
 [data-liquid-glass="true"][data-liquid-glass-mode="dark"] {
-  --background: 220 25% 8%;
-  --foreground: 210 20% 92%;
-  --card: 220 20% 14%;
-  --card-foreground: 210 20% 92%;
-  --popover: 220 20% 16%;
-  --popover-foreground: 210 20% 92%;
+  --background: 220 25% 7%;
+  --foreground: 210 20% 93%;
+  --card: 220 20% 12%;
+  --card-foreground: 210 20% 93%;
+  --popover: 220 20% 14%;
+  --popover-foreground: 210 20% 93%;
   --primary: 217 70% 60%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 220 18% 20%;
+  --secondary: 220 18% 16%;
   --secondary-foreground: 210 20% 80%;
-  --muted: 220 15% 18%;
-  --muted-foreground: 215 15% 58%;
+  --muted: 220 15% 14%;
+  --muted-foreground: 215 15% 55%;
   --accent: 195 80% 55%;
   --accent-foreground: 0 0% 100%;
   --destructive: 0 65% 55%;
@@ -411,26 +421,194 @@
   --success-foreground: 0 0% 100%;
   --warning: 40 85% 55%;
   --warning-foreground: 220 25% 8%;
-  --border: 220 15% 22%;
-  --input: 220 15% 18%;
+  --border: 220 12% 20%;
+  --input: 220 15% 15%;
   --ring: 217 70% 60%;
-  --sidebar-background: 220 25% 9%;
+  --sidebar-background: 220 25% 8%;
   --sidebar-foreground: 210 20% 85%;
   --sidebar-primary: 217 70% 60%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 220 18% 18%;
+  --sidebar-accent: 220 18% 15%;
   --sidebar-accent-foreground: 210 20% 90%;
-  --sidebar-border: 220 15% 20%;
+  --sidebar-border: 220 12% 18%;
   --sidebar-ring: 217 70% 60%;
-  --glass-blur: 0px;
-  --glass-saturation: 1;
-  --glass-bg: 0.96;
-  --glass-border-light: 0;
-  --glass-shine: 0;
-  --glass-shadow: none;
 }
 
-/* ---- Light Mode ---- */
+/* Background gradient (dark) */
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] .bg-background {
+  background: linear-gradient(
+    155deg,
+    hsl(220 28% 8%) 0%,
+    hsl(225 22% 10%) 50%,
+    hsl(215 18% 12%) 100%
+  ) !important;
+}
+
+/* Glass cards on background (dark) - the main glass effect */
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] .bg-card:not([role="dialog"] .bg-card):not([data-vaul-drawer] .bg-card) {
+  background: hsl(220 20% 13% / 0.55) !important;
+  backdrop-filter: blur(40px) saturate(1.6) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(1.6) !important;
+  border: 0.5px solid hsl(0 0% 100% / 0.07) !important;
+  border-radius: var(--glass-radius) !important;
+  box-shadow:
+    0 8px 32px hsl(0 0% 0% / 0.25),
+    inset 0 0.5px 0 0 hsl(0 0% 100% / 0.06) !important;
+}
+
+/* Sidebar (dark) */
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] aside,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] nav {
+  background: hsl(220 25% 8% / 0.7) !important;
+  backdrop-filter: blur(48px) saturate(1.8) !important;
+  -webkit-backdrop-filter: blur(48px) saturate(1.8) !important;
+  border-right: 0.5px solid hsl(0 0% 100% / 0.06) !important;
+}
+
+/* --- DIALOGS / SHEETS / POPUPS (dark) - SOLID, no glass nesting --- */
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"],
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] {
+  background: hsl(220 22% 10%) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid hsl(220 12% 20%) !important;
+  border-radius: var(--glass-radius) !important;
+  box-shadow: 0 24px 80px hsl(0 0% 0% / 0.5) !important;
+}
+
+/* Kill glass on ALL nested elements inside dialogs/sheets (dark) */
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] .bg-card,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] .bg-muted,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] [class*="bg-muted"],
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] [class*="bg-card"],
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] [class*="bg-secondary"],
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] .bg-card,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] .bg-muted,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] [class*="bg-muted"],
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] [class*="bg-card"],
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] [class*="bg-secondary"] {
+  background: hsl(220 18% 14%) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-color: hsl(220 12% 22%) !important;
+  box-shadow: none !important;
+}
+
+/* Popover / dropdown menus (dark) */
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-radix-popper-content-wrapper] > * {
+  background: hsl(220 22% 12%) !important;
+  backdrop-filter: blur(40px) saturate(1.5) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(1.5) !important;
+  border: 0.5px solid hsl(0 0% 100% / 0.08) !important;
+  border-radius: var(--glass-radius) !important;
+  box-shadow: 0 16px 48px hsl(0 0% 0% / 0.4) !important;
+}
+
+/* Tabs (dark) */
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="tablist"] {
+  background: hsl(220 18% 12% / 0.8) !important;
+  border: 1px solid hsl(220 12% 22%) !important;
+  border-radius: var(--glass-radius) !important;
+  padding: 3px !important;
+  backdrop-filter: none !important;
+}
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="tablist"] [role="tab"] {
+  border-radius: calc(var(--glass-radius) - 4px) !important;
+  color: hsl(var(--muted-foreground)) !important;
+}
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="tablist"] [data-state="active"] {
+  background: hsl(220 18% 18%) !important;
+  color: hsl(var(--foreground)) !important;
+  box-shadow: 0 2px 8px hsl(0 0% 0% / 0.2) !important;
+}
+
+/* Inputs (dark) */
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] input,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] textarea,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] select {
+  background: hsl(220 18% 11%) !important;
+  border: 1px solid hsl(220 12% 22%) !important;
+  border-radius: 1rem !important;
+  color: hsl(var(--foreground)) !important;
+  backdrop-filter: none !important;
+}
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] input::placeholder,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] textarea::placeholder {
+  color: hsl(var(--muted-foreground)) !important;
+}
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] input:focus,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] textarea:focus {
+  border-color: hsl(var(--ring) / 0.5) !important;
+  box-shadow: 0 0 0 3px hsl(var(--ring) / 0.12) !important;
+}
+
+/* Select trigger (dark) */
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] button[role="combobox"],
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-radix-select-trigger] {
+  background: hsl(220 18% 11%) !important;
+  border: 1px solid hsl(220 12% 22%) !important;
+  border-radius: 1rem !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+/* Badges (dark) - subtle, no glass */
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] .inline-flex.items-center.rounded-full,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] .inline-flex.items-center.rounded-md {
+  backdrop-filter: none !important;
+}
+
+/* Switch (dark) */
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] button[role="switch"] {
+  background: hsl(220 15% 18%) !important;
+  border: 0.5px solid hsl(0 0% 100% / 0.06) !important;
+}
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] button[role="switch"][data-state="checked"] {
+  background: hsl(var(--primary) / 0.7) !important;
+  border-color: hsl(var(--primary) / 0.3) !important;
+  box-shadow: 0 2px 12px hsl(var(--primary) / 0.3) !important;
+}
+
+/* Checkbox (dark) */
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] button[role="checkbox"] {
+  background: hsl(220 15% 16%) !important;
+  border: 0.5px solid hsl(0 0% 100% / 0.08) !important;
+  border-radius: 0.5rem !important;
+}
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] button[role="checkbox"][data-state="checked"] {
+  background: hsl(var(--primary) / 0.7) !important;
+  border-color: hsl(var(--primary) / 0.4) !important;
+}
+
+/* Progress bars (dark) */
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="progressbar"] {
+  background: hsl(220 15% 16%) !important;
+  border-radius: 999px !important;
+}
+
+/* Toast (dark) */
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-sonner-toast] {
+  background: hsl(220 20% 12% / 0.85) !important;
+  backdrop-filter: blur(40px) saturate(1.8) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(1.8) !important;
+  border: 0.5px solid hsl(0 0% 100% / 0.08) !important;
+  border-radius: var(--glass-radius) !important;
+  box-shadow: 0 8px 32px hsl(0 0% 0% / 0.4) !important;
+}
+
+/* Separator (dark) */
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-orientation="horizontal"] {
+  background: hsl(0 0% 100% / 0.06) !important;
+}
+
+/* Primary button glow (dark) */
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] .bg-primary {
+  box-shadow: 0 4px 20px hsl(var(--primary) / 0.35), inset 0 0.5px 0 hsl(0 0% 100% / 0.12) !important;
+  border-radius: 1rem !important;
+}
+
+/* =============================================
+   LIGHT MODE
+   ============================================= */
 [data-liquid-glass="true"][data-liquid-glass-mode="light"] {
   --background: 220 15% 94%;
   --foreground: 220 20% 14%;
@@ -463,47 +641,9 @@
   --sidebar-accent-foreground: 220 15% 18%;
   --sidebar-border: 220 10% 85%;
   --sidebar-ring: 217 70% 50%;
-  --glass-bg: 0.45;
-  --glass-border-light: 0.35;
-  --glass-shine: 0.45;
-  --glass-shadow: 0 4px 24px -4px hsl(220 20% 30% / 0.1);
 }
 
-/* Smooth transitions */
-[data-liquid-glass="true"] *:not(svg):not(path) {
-  transition: background 0.35s ease, backdrop-filter 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease, border-radius 0.35s ease;
-}
-
-/* Rounder corners globally */
-[data-liquid-glass="true"] .rounded-lg { border-radius: var(--glass-radius) !important; }
-[data-liquid-glass="true"] .rounded-md { border-radius: 1rem !important; }
-[data-liquid-glass="true"] .rounded-xl { border-radius: 1.75rem !important; }
-
-/* ---- Glass Card ---- */
-[data-liquid-glass="true"] .rounded-lg.border.bg-card,
-[data-liquid-glass="true"] [class*="glass-card"],
-[data-liquid-glass="true"] .bg-card {
-  background: hsl(var(--card) / var(--glass-bg)) !important;
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation)) brightness(1.05) !important;
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation)) brightness(1.05) !important;
-  border: 0.5px solid hsl(0 0% 100% / var(--glass-border-light)) !important;
-  border-radius: var(--glass-radius) !important;
-  box-shadow:
-    var(--glass-shadow),
-    inset 0 0.5px 0 0 hsl(0 0% 100% / var(--glass-shine)),
-    inset 0 -0.5px 0 0 hsl(0 0% 0% / 0.1) !important;
-}
-
-/* ---- Background gradients ---- */
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] .bg-background {
-  background: linear-gradient(
-    155deg,
-    hsl(220 30% 10%) 0%,
-    hsl(225 25% 12%) 40%,
-    hsl(215 20% 14%) 100%
-  ) !important;
-}
-
+/* Background gradient (light) */
 [data-liquid-glass="true"][data-liquid-glass-mode="light"] .bg-background {
   background: linear-gradient(
     155deg,
@@ -513,68 +653,63 @@
   ) !important;
 }
 
-/* ---- Popover / Dropdown ---- */
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-radix-popper-content-wrapper] > *,
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"]:not([data-vaul-drawer-wrapper] *),
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] {
-  background: hsl(var(--background) / 0.96) !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  border: 1px solid hsl(var(--border) / 0.55) !important;
+/* Glass cards on background (light) */
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] .bg-card:not([role="dialog"] .bg-card):not([data-vaul-drawer] .bg-card) {
+  background: hsl(0 0% 100% / 0.45) !important;
+  backdrop-filter: blur(48px) saturate(2) brightness(1.05) !important;
+  -webkit-backdrop-filter: blur(48px) saturate(2) brightness(1.05) !important;
+  border: 0.5px solid hsl(0 0% 100% / 0.5) !important;
   border-radius: var(--glass-radius) !important;
-  box-shadow: none !important;
+  box-shadow:
+    0 8px 32px hsl(220 15% 30% / 0.08),
+    inset 0 0.5px 0 0 hsl(0 0% 100% / 0.6) !important;
 }
 
-[data-liquid-glass="true"][data-liquid-glass-mode="light"] [data-radix-popper-content-wrapper] > *,
-[data-liquid-glass="true"][data-liquid-glass-mode="light"] [role="dialog"]:not([data-vaul-drawer-wrapper] *),
-[data-liquid-glass="true"][data-liquid-glass-mode="light"] [data-vaul-drawer] {
-  background: hsl(0 0% 100% / 0.5) !important;
-  backdrop-filter: blur(60px) saturate(2) brightness(1.05) !important;
-  -webkit-backdrop-filter: blur(60px) saturate(2) brightness(1.05) !important;
-  border: 0.5px solid hsl(220 15% 50% / 0.12) !important;
-  border-radius: var(--glass-radius) !important;
-  box-shadow: 0 16px 64px -12px hsl(220 15% 30% / 0.12), inset 0 0.5px 0 hsl(0 0% 100% / 0.5) !important;
-}
-
-/* ---- Sidebar ---- */
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] aside,
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] nav {
-  background: hsl(220 25% 9% / 0.6) !important;
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation)) !important;
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation)) !important;
-  border-right: 0.5px solid hsl(0 0% 100% / 0.08) !important;
-}
-
+/* Sidebar (light) */
 [data-liquid-glass="true"][data-liquid-glass-mode="light"] aside,
 [data-liquid-glass="true"][data-liquid-glass-mode="light"] nav {
   background: hsl(220 15% 96% / 0.5) !important;
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation)) !important;
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation)) !important;
+  backdrop-filter: blur(48px) saturate(2) !important;
+  -webkit-backdrop-filter: blur(48px) saturate(2) !important;
   border-right: 0.5px solid hsl(220 15% 50% / 0.08) !important;
 }
 
-/* ---- Tabs (Dark) ---- */
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="tablist"] {
-  background: hsl(var(--muted) / 0.7) !important;
+/* Dialogs / sheets (light) */
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] [role="dialog"],
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] [data-vaul-drawer] {
+  background: hsl(220 12% 96% / 0.85) !important;
+  backdrop-filter: blur(64px) saturate(2) brightness(1.03) !important;
+  -webkit-backdrop-filter: blur(64px) saturate(2) brightness(1.03) !important;
+  border: 0.5px solid hsl(0 0% 100% / 0.4) !important;
+  border-radius: var(--glass-radius) !important;
+  box-shadow: 0 24px 80px hsl(220 15% 30% / 0.12), inset 0 0.5px 0 hsl(0 0% 100% / 0.5) !important;
+}
+
+/* Kill glass on nested inside dialogs (light) */
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] [role="dialog"] .bg-card,
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] [role="dialog"] [class*="bg-card"],
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] [role="dialog"] [class*="bg-muted"],
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] [data-vaul-drawer] .bg-card,
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] [data-vaul-drawer] [class*="bg-card"],
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] [data-vaul-drawer] [class*="bg-muted"] {
+  background: hsl(0 0% 100% / 0.5) !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
-  border: 1px solid hsl(var(--border) / 0.55) !important;
-  border-radius: var(--glass-radius) !important;
-  box-shadow: none !important;
-  padding: 3px !important;
-}
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="tablist"] [role="tab"] {
-  border-radius: calc(var(--glass-radius) - 3px) !important;
-  color: hsl(var(--muted-foreground)) !important;
-}
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="tablist"] [data-state="active"] {
-  background: hsl(var(--card) / 0.95) !important;
-  backdrop-filter: none !important;
-  color: hsl(var(--foreground)) !important;
+  border-color: hsl(220 10% 80%) !important;
   box-shadow: none !important;
 }
 
-/* ---- Tabs (Light) ---- */
+/* Popover / dropdown (light) */
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] [data-radix-popper-content-wrapper] > * {
+  background: hsl(0 0% 100% / 0.55) !important;
+  backdrop-filter: blur(60px) saturate(2) brightness(1.05) !important;
+  -webkit-backdrop-filter: blur(60px) saturate(2) brightness(1.05) !important;
+  border: 0.5px solid hsl(0 0% 100% / 0.4) !important;
+  border-radius: var(--glass-radius) !important;
+  box-shadow: 0 16px 48px hsl(220 15% 30% / 0.1), inset 0 0.5px 0 hsl(0 0% 100% / 0.5) !important;
+}
+
+/* Tabs (light) */
 [data-liquid-glass="true"][data-liquid-glass-mode="light"] [role="tablist"] {
   background: hsl(220 10% 85% / 0.35) !important;
   backdrop-filter: blur(24px) saturate(1.8) !important;
@@ -585,7 +720,7 @@
   padding: 3px !important;
 }
 [data-liquid-glass="true"][data-liquid-glass-mode="light"] [role="tablist"] [role="tab"] {
-  border-radius: calc(var(--glass-radius) - 3px) !important;
+  border-radius: calc(var(--glass-radius) - 4px) !important;
   color: hsl(220 15% 40%) !important;
 }
 [data-liquid-glass="true"][data-liquid-glass-mode="light"] [role="tablist"] [data-state="active"] {
@@ -595,28 +730,7 @@
   box-shadow: 0 2px 8px hsl(220 15% 30% / 0.08), inset 0 0.5px 0 hsl(0 0% 100% / 0.5) !important;
 }
 
-/* ---- Inputs (Dark) ---- */
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] input,
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] textarea,
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] select {
-  background: hsl(var(--card) / 0.92) !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  border: 1px solid hsl(var(--border) / 0.55) !important;
-  border-radius: 1rem !important;
-  color: hsl(var(--foreground)) !important;
-}
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] input::placeholder,
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] textarea::placeholder {
-  color: hsl(var(--muted-foreground)) !important;
-}
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] input:focus,
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] textarea:focus {
-  border-color: hsl(var(--ring) / 0.6) !important;
-  box-shadow: 0 0 0 2px hsl(var(--ring) / 0.18) !important;
-}
-
-/* ---- Inputs (Light) ---- */
+/* Inputs (light) */
 [data-liquid-glass="true"][data-liquid-glass-mode="light"] input,
 [data-liquid-glass="true"][data-liquid-glass-mode="light"] textarea,
 [data-liquid-glass="true"][data-liquid-glass-mode="light"] select {
@@ -637,42 +751,17 @@
   box-shadow: 0 0 0 3px hsl(var(--primary) / 0.12), inset 0 0.5px 0 hsl(0 0% 100% / 0.4) !important;
 }
 
-/* ---- Sheet / Bottom sheet (Dark) ---- */
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [class*="SheetContent"],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] .fixed [role="dialog"] {
-  background: hsl(var(--background) / 0.97) !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  border: 1px solid hsl(var(--border) / 0.55) !important;
-}
-
-/* ---- Sheet / Bottom sheet (Light) ---- */
-[data-liquid-glass="true"][data-liquid-glass-mode="light"] [data-vaul-drawer],
-[data-liquid-glass="true"][data-liquid-glass-mode="light"] [class*="SheetContent"],
-[data-liquid-glass="true"][data-liquid-glass-mode="light"] .fixed [role="dialog"] {
-  background: hsl(220 15% 96% / 0.8) !important;
-  backdrop-filter: blur(72px) saturate(2) brightness(1.05) !important;
-  -webkit-backdrop-filter: blur(72px) saturate(2) brightness(1.05) !important;
-  border: 0.5px solid hsl(220 15% 50% / 0.08) !important;
-}
-
-/* ---- Primary button glow ---- */
-[data-liquid-glass="true"] .bg-primary {
-  box-shadow: 0 4px 16px hsl(var(--primary) / 0.3), inset 0 0.5px 0 hsl(0 0% 100% / 0.15) !important;
+/* Select trigger (light) */
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] button[role="combobox"],
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] [data-radix-select-trigger] {
+  background: hsl(0 0% 100% / 0.5) !important;
+  backdrop-filter: blur(20px) saturate(1.6) !important;
+  border: 0.5px solid hsl(220 15% 50% / 0.12) !important;
   border-radius: 1rem !important;
+  color: hsl(220 15% 15%) !important;
 }
 
-/* ---- Badges (Dark) ---- */
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] .inline-flex.items-center.rounded-full,
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] .inline-flex.items-center.rounded-md {
-  background: hsl(220 15% 20% / 0.4) !important;
-  backdrop-filter: blur(16px) saturate(1.8) !important;
-  -webkit-backdrop-filter: blur(16px) saturate(1.8) !important;
-  border: 0.5px solid hsl(0 0% 100% / 0.08) !important;
-}
-
-/* ---- Badges (Light) ---- */
+/* Badges (light) */
 [data-liquid-glass="true"][data-liquid-glass-mode="light"] .inline-flex.items-center.rounded-full,
 [data-liquid-glass="true"][data-liquid-glass-mode="light"] .inline-flex.items-center.rounded-md {
   background: hsl(0 0% 100% / 0.45) !important;
@@ -681,31 +770,7 @@
   border: 0.5px solid hsl(220 15% 50% / 0.1) !important;
 }
 
-/* ---- Progress bars ---- */
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="progressbar"] {
-  background: hsl(220 15% 20% / 0.3) !important;
-  backdrop-filter: blur(8px) !important;
-  border-radius: 999px !important;
-}
-[data-liquid-glass="true"][data-liquid-glass-mode="light"] [role="progressbar"] {
-  background: hsl(220 10% 70% / 0.25) !important;
-  backdrop-filter: blur(8px) !important;
-  border-radius: 999px !important;
-}
-
-/* ---- Switch (Dark) ---- */
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] button[role="switch"] {
-  background: hsl(220 15% 20% / 0.4) !important;
-  backdrop-filter: blur(12px) !important;
-  border: 0.5px solid hsl(0 0% 100% / 0.08) !important;
-}
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] button[role="switch"][data-state="checked"] {
-  background: hsl(var(--primary) / 0.6) !important;
-  border-color: hsl(var(--primary) / 0.3) !important;
-  box-shadow: 0 2px 12px hsl(var(--primary) / 0.25), inset 0 0.5px 0 hsl(0 0% 100% / 0.15) !important;
-}
-
-/* ---- Switch (Light) ---- */
+/* Switch (light) */
 [data-liquid-glass="true"][data-liquid-glass-mode="light"] button[role="switch"] {
   background: hsl(220 10% 80% / 0.4) !important;
   backdrop-filter: blur(12px) !important;
@@ -717,19 +782,7 @@
   box-shadow: 0 2px 12px hsl(var(--primary) / 0.2), inset 0 0.5px 0 hsl(0 0% 100% / 0.3) !important;
 }
 
-/* ---- Checkbox (Dark) ---- */
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] button[role="checkbox"] {
-  background: hsl(220 15% 20% / 0.3) !important;
-  backdrop-filter: blur(8px) !important;
-  border: 0.5px solid hsl(0 0% 100% / 0.1) !important;
-  border-radius: 0.5rem !important;
-}
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] button[role="checkbox"][data-state="checked"] {
-  background: hsl(var(--primary) / 0.7) !important;
-  border-color: hsl(var(--primary) / 0.4) !important;
-}
-
-/* ---- Checkbox (Light) ---- */
+/* Checkbox (light) */
 [data-liquid-glass="true"][data-liquid-glass-mode="light"] button[role="checkbox"] {
   background: hsl(0 0% 100% / 0.4) !important;
   backdrop-filter: blur(8px) !important;
@@ -741,25 +794,13 @@
   border-color: hsl(var(--primary) / 0.4) !important;
 }
 
-/* ---- Separator ---- */
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-orientation="horizontal"] {
-  background: hsl(0 0% 100% / 0.06) !important;
-}
-[data-liquid-glass="true"][data-liquid-glass-mode="light"] [data-orientation="horizontal"] {
-  background: hsl(220 15% 30% / 0.08) !important;
+/* Progress bars (light) */
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] [role="progressbar"] {
+  background: hsl(220 10% 70% / 0.25) !important;
+  border-radius: 999px !important;
 }
 
-/* ---- Toast (Dark) ---- */
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-sonner-toast] {
-  background: hsl(220 20% 14% / 0.6) !important;
-  backdrop-filter: blur(48px) saturate(2.2) !important;
-  -webkit-backdrop-filter: blur(48px) saturate(2.2) !important;
-  border: 0.5px solid hsl(0 0% 100% / 0.1) !important;
-  border-radius: var(--glass-radius) !important;
-  box-shadow: 0 8px 32px hsl(0 0% 0% / 0.3), inset 0 0.5px 0 hsl(0 0% 100% / 0.1) !important;
-}
-
-/* ---- Toast (Light) ---- */
+/* Toast (light) */
 [data-liquid-glass="true"][data-liquid-glass-mode="light"] [data-sonner-toast] {
   background: hsl(0 0% 100% / 0.55) !important;
   backdrop-filter: blur(48px) saturate(2) !important;
@@ -769,22 +810,15 @@
   box-shadow: 0 8px 32px hsl(220 15% 30% / 0.1), inset 0 0.5px 0 hsl(0 0% 100% / 0.5) !important;
 }
 
-/* ---- Select trigger ---- */
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] button[role="combobox"],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-radix-select-trigger] {
-  background: hsl(220 15% 15% / 0.4) !important;
-  backdrop-filter: blur(20px) saturate(1.6) !important;
-  border: 0.5px solid hsl(0 0% 100% / 0.08) !important;
-  border-radius: 1rem !important;
-  color: hsl(210 20% 92%) !important;
+/* Separator (light) */
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] [data-orientation="horizontal"] {
+  background: hsl(220 15% 30% / 0.08) !important;
 }
-[data-liquid-glass="true"][data-liquid-glass-mode="light"] button[role="combobox"],
-[data-liquid-glass="true"][data-liquid-glass-mode="light"] [data-radix-select-trigger] {
-  background: hsl(0 0% 100% / 0.5) !important;
-  backdrop-filter: blur(20px) saturate(1.6) !important;
-  border: 0.5px solid hsl(220 15% 50% / 0.12) !important;
+
+/* Primary button glow (light) */
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] .bg-primary {
+  box-shadow: 0 4px 16px hsl(var(--primary) / 0.25), inset 0 0.5px 0 hsl(0 0% 100% / 0.2) !important;
   border-radius: 1rem !important;
-  color: hsl(220 15% 15%) !important;
 }
 
 /* ---- Scrollable areas ---- */
@@ -795,67 +829,4 @@
 [data-liquid-glass="true"] .overflow-y-auto,
 [data-liquid-glass="true"] .overflow-auto {
   overflow: auto !important;
-}
-
-/* ---- RESET: Kill glass effects on nested elements inside dialogs/sheets (Dark) ---- */
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] .bg-card,
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] .bg-muted,
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] .bg-muted\/50,
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] .bg-card,
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] .bg-muted,
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] .bg-muted\/50 {
-  background: hsl(var(--muted) / 0.35) !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  border: 1px solid hsl(var(--border) / 0.3) !important;
-  box-shadow: none !important;
-}
-
-/* Reset badges inside dialogs/sheets (Dark) */
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] .inline-flex.items-center.rounded-full,
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] .inline-flex.items-center.rounded-md,
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] .inline-flex.items-center.rounded-full,
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] .inline-flex.items-center.rounded-md {
-  background: hsl(var(--muted) / 0.4) !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  border: 1px solid hsl(var(--border) / 0.3) !important;
-  box-shadow: none !important;
-}
-
-/* Reset outline buttons inside dialogs/sheets (Dark) */
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] button[class*="border"],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] button[class*="border"] {
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  box-shadow: none !important;
-}
-
-/* ---- GLOBAL HAZE GUARD (Dark) ---- */
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [class*="bg-card"],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [class*="bg-muted"],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [class*="bg-secondary"],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [class*="bg-popover"],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-sonner-toast],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] button[role="switch"],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] button[role="checkbox"],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] button[role="combobox"],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-radix-select-trigger],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="progressbar"],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] .inline-flex.items-center.rounded-full,
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] .inline-flex.items-center.rounded-md {
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  box-shadow: none !important;
-  border-color: hsl(var(--border) / 0.45) !important;
-}
-
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [class*="bg-card"],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [class*="bg-popover"] {
-  background: hsl(var(--card) / 0.96) !important;
-}
-
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [class*="bg-muted"],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [class*="bg-secondary"] {
-  background: hsl(var(--muted) / 0.85) !important;
 }
