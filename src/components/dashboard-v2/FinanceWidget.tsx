@@ -187,7 +187,10 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
 
   const currentMonthLabel = format(new Date(), 'MMM', { locale: de });
 
-  const fmt = (v: number) => v.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+  const isStale = lastUpdated ? (Date.now() - lastUpdated.getTime()) > 24 * 60 * 60 * 1000 : false;
+  const lastUpdatedLabel = lastUpdated 
+    ? format(lastUpdated, 'EEE dd.MM, HH:mm', { locale: de }) 
+    : null;
 
   const startEditBalances = () => {
     const edits: Record<string, string> = {};
