@@ -57,6 +57,7 @@ export function HabitDetailSheet({ open, onOpenChange, habitId, onUpdated }: Hab
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState('');
   const [editIcon, setEditIcon] = useState('Check');
+  const [editHalfWidth, setEditHalfWidth] = useState(false);
 
   useEffect(() => {
     if (!open || !habitId || !user) return;
