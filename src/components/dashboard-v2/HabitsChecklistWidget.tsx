@@ -228,21 +228,21 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
             <button onClick={() => adjustCount(habit, -1)} className="w-6 h-6 rounded-md bg-muted/60 hover:bg-muted flex items-center justify-center transition-colors shrink-0">
               <Minus className="w-3 h-3" />
             </button>
-            <span className="text-xs font-mono font-semibold min-w-[2ch] text-center">{currentVal}</span>
+            <span className="text-sm font-mono font-semibold min-w-[2ch] text-center">{currentVal}</span>
             <button onClick={() => adjustCount(habit, 1)} className="w-6 h-6 rounded-md bg-primary/10 hover:bg-primary/20 flex items-center justify-center transition-colors shrink-0">
               <Plus className="w-3 h-3 text-primary" />
             </button>
-            <button onClick={() => setSelectedHabitId(habit.id)} className={`flex-1 text-xs truncate text-left hover:underline underline-offset-2 ${isNegative && !isDoneToday ? 'text-destructive' : ''}`}>
+            <button onClick={() => setSelectedHabitId(habit.id)} className={`flex-1 text-sm truncate text-left hover:underline underline-offset-2 ${isNegative && !isDoneToday ? 'text-destructive' : ''}`}>
               {habit.name}
             </button>
             {streak !== 0 && (
               <div className="flex items-center gap-0.5 shrink-0">
-                <Flame className={`w-2.5 h-2.5 ${streakColor}`} />
-                <span className={`text-[10px] font-mono ${streakColor} ${streakWeight}`}>{streak}</span>
+                <Flame className={`w-3 h-3 ${streakColor}`} />
+                <span className={`text-xs font-mono ${streakColor} ${streakWeight}`}>{streak}</span>
               </div>
             )}
-            {adopted && <Sparkles className="w-2.5 h-2.5 text-success shrink-0" />}
-            <span className="text-[10px] text-muted-foreground font-mono shrink-0">{ltPct}%</span>
+             {adopted && <Sparkles className="w-3 h-3 text-success shrink-0" />}
+            <span className="text-xs text-muted-foreground font-mono shrink-0">{ltPct}%</span>
           </div>
         ) : isDone ? (
           <div className="flex items-center gap-1.5 p-1.5 rounded-lg transition-all bg-success/5 opacity-60 hover:opacity-80">
@@ -250,17 +250,17 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
             <div className="w-6 h-6 rounded-md bg-muted/40 flex items-center justify-center shrink-0">
               <HabitIcon className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
             </div>
-            <button onClick={() => setSelectedHabitId(habit.id)} className="flex-1 text-xs truncate line-through text-muted-foreground text-left hover:underline underline-offset-2 cursor-pointer">
+            <button onClick={() => setSelectedHabitId(habit.id)} className="flex-1 text-sm truncate line-through text-muted-foreground text-left hover:underline underline-offset-2 cursor-pointer">
               {habit.name}
             </button>
             {streak !== 0 && (
               <div className="flex items-center gap-0.5 shrink-0">
-                <Flame className={`w-2.5 h-2.5 ${streakColor}`} />
-                <span className={`text-[10px] font-mono ${streakColor} ${streakWeight}`}>{streak}</span>
+                <Flame className={`w-3 h-3 ${streakColor}`} />
+                <span className={`text-xs font-mono ${streakColor} ${streakWeight}`}>{streak}</span>
               </div>
             )}
-            {adopted && <Sparkles className="w-2.5 h-2.5 text-success shrink-0" />}
-            <span className="text-[10px] text-muted-foreground font-mono shrink-0">{ltPct}%</span>
+             {adopted && <Sparkles className="w-3 h-3 text-success shrink-0" />}
+            <span className="text-xs text-muted-foreground font-mono shrink-0">{ltPct}%</span>
           </div>
         ) : (
           <div className={`flex items-center gap-1.5 p-1.5 rounded-lg transition-all ${negativeBg || 'bg-muted/30 hover:bg-muted/60'}`}>
@@ -268,17 +268,17 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
             <div className="w-6 h-6 rounded-md bg-muted/60 flex items-center justify-center shrink-0">
               <HabitIcon className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
             </div>
-            <button onClick={() => setSelectedHabitId(habit.id)} className={`flex-1 text-xs truncate text-left hover:underline underline-offset-2 ${isNegative ? 'text-destructive font-medium' : ''}`}>
+            <button onClick={() => setSelectedHabitId(habit.id)} className={`flex-1 text-sm truncate text-left hover:underline underline-offset-2 ${isNegative ? 'text-destructive font-medium' : ''}`}>
               {habit.name}
             </button>
             {streak !== 0 && (
               <div className="flex items-center gap-0.5 shrink-0">
-                <Flame className={`w-2.5 h-2.5 ${streakColor}`} />
-                <span className={`text-[10px] font-mono ${streakColor} ${streakWeight}`}>{streak}</span>
+                <Flame className={`w-3 h-3 ${streakColor}`} />
+                <span className={`text-xs font-mono ${streakColor} ${streakWeight}`}>{streak}</span>
               </div>
             )}
-            {adopted && <Sparkles className="w-2.5 h-2.5 text-success shrink-0" />}
-            <span className="text-[10px] text-muted-foreground font-mono shrink-0">{ltPct}%</span>
+             {adopted && <Sparkles className="w-3 h-3 text-success shrink-0" />}
+            <span className="text-xs text-muted-foreground font-mono shrink-0">{ltPct}%</span>
           </div>
         )}
       </div>

@@ -87,15 +87,15 @@ function EventCountdown({ event }: { event: UpcomingEvent }) {
     : `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
   return (
-    <div className="event-countdown-row flex items-center gap-1.5 py-1 px-1.5 rounded-lg bg-muted/30">
+    <div className="event-countdown-row flex items-center gap-2 py-1.5 px-2 rounded-lg bg-muted/30">
       <div
-        className="w-4 h-4 rounded-full shrink-0 flex items-center justify-center text-[6px] font-bold text-white"
+        className="w-5 h-5 rounded-full shrink-0 flex items-center justify-center text-[8px] font-bold text-white"
         style={{ backgroundColor: typeColors[event.event_type] || '#94a3b8' }}
       >
         {typeLabels[event.event_type]}
       </div>
-      <span className="text-[10px] font-medium truncate flex-1 min-w-0">{event.topic || event.course_name}</span>
-      <span className={`text-[10px] font-mono font-bold shrink-0 ${diffMs === 0 ? 'text-destructive' : isTodayEvent ? 'text-destructive' : 'text-primary'}`}>
+      <span className="text-xs font-medium truncate flex-1 min-w-0">{event.topic || event.course_name}</span>
+      <span className={`text-xs font-mono font-bold shrink-0 ${diffMs === 0 ? 'text-destructive' : isTodayEvent ? 'text-destructive' : 'text-primary'}`}>
         {diffMs === 0 ? 'Jetzt' : timerStr}
       </span>
     </div>
@@ -323,7 +323,7 @@ function TimetableWidgetInner({ size, onOpenSheet }: { size: WidgetSize; onOpenS
     hw: HomeworkItem; completed: boolean; onToggle: () => void;
     isOverdue: (d: string) => boolean; formatDueDate: (d: string) => string;
   }) => (
-    <div className={`flex items-center gap-2 p-1.5 rounded-lg ${completed ? 'opacity-50' : isOD(hw.due_date) ? 'bg-destructive/5' : 'bg-muted/30'}`}>
+    <div className={`flex items-center gap-2 p-2 rounded-lg ${completed ? 'opacity-50' : isOD(hw.due_date) ? 'bg-destructive/5' : 'bg-muted/30'}`}>
       <Checkbox checked={completed} onCheckedChange={onToggle} className="shrink-0" />
       <div
         className="w-6 h-6 rounded-full shrink-0 flex items-center justify-center text-[8px] font-bold text-white"
@@ -331,8 +331,8 @@ function TimetableWidgetInner({ size, onOpenSheet }: { size: WidgetSize; onOpenS
       >
         {(hw.course_short_name || hw.course_name).slice(0, 3)}
       </div>
-      <span className={`text-xs flex-1 truncate ${completed ? 'line-through text-muted-foreground' : ''}`}>{hw.title}</span>
-      <span className={`text-[10px] font-mono shrink-0 ${!completed && isOD(hw.due_date) ? 'text-destructive font-bold' : 'text-muted-foreground'}`}>
+      <span className={`text-sm flex-1 truncate ${completed ? 'line-through text-muted-foreground' : 'font-medium'}`}>{hw.title}</span>
+      <span className={`text-xs font-mono shrink-0 ${!completed && isOD(hw.due_date) ? 'text-destructive font-bold' : 'text-muted-foreground'}`}>
         {fdd(hw.due_date)}
       </span>
     </div>
@@ -388,10 +388,10 @@ function TimetableWidgetInner({ size, onOpenSheet }: { size: WidgetSize; onOpenS
                     style={{ backgroundColor: slot.course.color || 'hsl(var(--primary))' }}
                   />
                   <div className="min-w-0 flex-1">
-                    <span className={`text-xs font-medium truncate block ${past ? 'line-through' : ''}`}>
+                    <span className={`text-sm font-medium truncate block ${past ? 'line-through' : ''}`}>
                       {slot.course.short_name || slot.course.name}
                     </span>
-                    <span className="text-[9px] text-muted-foreground font-mono">
+                    <span className="text-[10px] text-muted-foreground font-mono">
                       {time?.start || ''}{slot.room ? ` · ${slot.room}` : ''}{slot.is_double_lesson ? ' · 2h' : ''}
                     </span>
                   </div>
@@ -415,7 +415,7 @@ function TimetableWidgetInner({ size, onOpenSheet }: { size: WidgetSize; onOpenS
           <div className="pt-1 border-t border-border/30 space-y-2">
             <div className="flex items-center gap-1">
               <BookOpen className="w-3 h-3 text-muted-foreground" strokeWidth={1.5} />
-              <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+              <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
                 Hausaufgaben ({openHomework.length} offen)
               </span>
             </div>

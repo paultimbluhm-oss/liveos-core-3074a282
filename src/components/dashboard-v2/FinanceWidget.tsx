@@ -378,17 +378,17 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
       {/* Net Worth + Breakdown */}
       <div className="flex items-end justify-between">
         <div>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Nettovermoegen</p>
+          <p className="text-xs text-muted-foreground uppercase tracking-wider">Nettovermoegen</p>
           <p className="text-2xl font-bold tracking-tight">{fmt(netWorth)}</p>
         </div>
         <div className="text-right space-y-0.5">
           <div className="flex items-center gap-1 justify-end">
-            <Wallet className="w-2.5 h-2.5 text-muted-foreground" strokeWidth={1.5} />
-            <span className="text-[10px] text-muted-foreground font-mono">{fmt(totalAccounts)}</span>
+             <Wallet className="w-3 h-3 text-muted-foreground" strokeWidth={1.5} />
+            <span className="text-xs text-muted-foreground font-mono">{fmt(totalAccounts)}</span>
           </div>
           <div className="flex items-center gap-1 justify-end">
-            <TrendingUp className="w-2.5 h-2.5 text-muted-foreground" strokeWidth={1.5} />
-            <span className="text-[10px] text-muted-foreground font-mono">{fmt(totalInvestments)}</span>
+            <TrendingUp className="w-3 h-3 text-muted-foreground" strokeWidth={1.5} />
+            <span className="text-xs text-muted-foreground font-mono">{fmt(totalInvestments)}</span>
           </div>
         </div>
       </div>
@@ -398,20 +398,20 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div>
-              <p className="text-xs font-bold text-emerald-500 leading-tight">{fmt(monthlyStats.income)}</p>
-              <p className="text-[8px] text-muted-foreground uppercase">Einnahmen</p>
+              <p className="text-sm font-bold text-emerald-500 leading-tight">{fmt(monthlyStats.income)}</p>
+              <p className="text-[10px] text-muted-foreground uppercase">Einnahmen</p>
             </div>
             <div className="w-px h-5 bg-border/40" />
             <div>
-              <p className="text-xs font-bold text-destructive leading-tight">{fmt(monthlyStats.expenses)}</p>
-              <p className="text-[8px] text-muted-foreground uppercase">Ausgaben</p>
+              <p className="text-sm font-bold text-destructive leading-tight">{fmt(monthlyStats.expenses)}</p>
+              <p className="text-[10px] text-muted-foreground uppercase">Ausgaben</p>
             </div>
           </div>
           <div className="text-right">
-            <p className={`text-sm font-bold ${monthlyStats.savingsRate >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>
+            <p className={`text-base font-bold ${monthlyStats.savingsRate >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>
               {monthlyStats.savingsRate}%
             </p>
-            <p className="text-[8px] text-muted-foreground uppercase">{currentMonthLabel}</p>
+            <p className="text-[10px] text-muted-foreground uppercase">{currentMonthLabel}</p>
           </div>
         </div>
       </div>
@@ -420,7 +420,7 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
       {size === 'large' && accounts.length > 0 && (
         <div className="space-y-0.5">
           <div className="flex items-center justify-between px-1 pb-1">
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Konten</span>
+            <span className="text-xs text-muted-foreground uppercase tracking-wider">Konten</span>
             {!editingBalances ? (
               <button onClick={startEditBalances} className="p-1 rounded-lg hover:bg-muted/50 transition-colors">
                 <Pencil className="w-3 h-3 text-muted-foreground" />
@@ -440,7 +440,7 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
             <div key={acc.id} className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-muted/20 transition-colors">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: acc.color || 'hsl(var(--primary))' }} />
-                <span className="text-xs">{acc.name}</span>
+                <span className="text-sm">{acc.name}</span>
               </div>
               {editingBalances ? (
                 <Input
@@ -451,7 +451,7 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
                   className="h-6 w-24 text-xs text-right font-mono bg-muted/30 border-border/30"
                 />
               ) : (
-                <span className="text-xs font-mono font-medium">
+                <span className="text-sm font-mono font-medium">
                   {acc.balance.toLocaleString('de-DE', { style: 'currency', currency: acc.currency })}
                 </span>
               )}
@@ -469,13 +469,13 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
             const pnl = val - cost;
             return (
               <div key={inv.id} className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-muted/20 transition-colors">
-                <span className="text-xs">{inv.name}</span>
+                <span className="text-sm">{inv.name}</span>
                 <div className="text-right">
-                  <span className="text-xs font-mono font-medium">
+                  <span className="text-sm font-mono font-medium">
                     {val.toLocaleString('de-DE', { style: 'currency', currency: inv.currency })}
                   </span>
                   {pnl !== 0 && (
-                    <span className={`text-[9px] font-mono ml-1.5 ${pnl >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>
+                    <span className={`text-xs font-mono ml-1.5 ${pnl >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>
                       {pnl >= 0 ? '+' : ''}{((pnl / cost) * 100).toFixed(1)}%
                     </span>
                   )}
@@ -489,7 +489,7 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
       {/* Open Loans */}
       {loans.length > 0 && (
         <div className="space-y-1 pt-1 border-t border-border/30">
-          <span className="text-[10px] text-muted-foreground uppercase tracking-wider px-1">Offen</span>
+          <span className="text-xs text-muted-foreground uppercase tracking-wider px-1">Offen</span>
           {loans.map(loan => (
             <div key={loan.id} className="space-y-1.5">
               <div className="finance-loan-row flex items-center justify-between py-1.5 px-2.5 rounded-xl bg-muted/20">
