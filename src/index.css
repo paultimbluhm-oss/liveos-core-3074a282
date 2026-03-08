@@ -1003,3 +1003,226 @@
 [data-liquid-glass="true"] .overflow-auto {
   overflow: auto !important;
 }
+
+/* =============================================
+   BUSINESS GLASS - Custom glass for business popup
+   Overrides dialog-kill rules to restore glass inside [data-business-glass]
+   ============================================= */
+
+/* --- Dark mode --- */
+[data-business-glass="true"][data-liquid-glass-mode="dark"] {
+  background: linear-gradient(
+    165deg,
+    hsl(220 28% 8%) 0%,
+    hsl(225 22% 10%) 50%,
+    hsl(218 20% 12%) 100%
+  ) !important;
+  border: 0.5px solid hsl(0 0% 100% / 0.06) !important;
+  backdrop-filter: none !important;
+}
+
+/* Tabs */
+[data-business-glass="true"][data-liquid-glass-mode="dark"] [role="tablist"] {
+  background: hsl(220 18% 12% / 0.8) !important;
+  border: 1px solid hsl(220 12% 22%) !important;
+  border-radius: 1.25rem !important;
+  padding: 3px !important;
+  backdrop-filter: none !important;
+}
+[data-business-glass="true"][data-liquid-glass-mode="dark"] [role="tablist"] [role="tab"] {
+  border-radius: 1rem !important;
+  color: hsl(215 15% 55%) !important;
+  transition: all 0.2s ease !important;
+}
+[data-business-glass="true"][data-liquid-glass-mode="dark"] [role="tablist"] [data-state="active"] {
+  background: hsl(220 18% 18%) !important;
+  color: hsl(210 20% 93%) !important;
+  box-shadow: 0 2px 8px hsl(0 0% 0% / 0.2) !important;
+}
+
+/* Glass cards for list items */
+[data-business-glass="true"][data-liquid-glass-mode="dark"] .bg-muted\/50,
+[data-business-glass="true"][data-liquid-glass-mode="dark"] .bg-muted\/30,
+[data-business-glass="true"][data-liquid-glass-mode="dark"] .bg-muted\/20 {
+  background: hsl(220 18% 14% / 0.7) !important;
+  backdrop-filter: blur(20px) saturate(1.4) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.4) !important;
+  border: 0.5px solid hsl(0 0% 100% / 0.05) !important;
+  border-radius: 1rem !important;
+}
+
+/* Inputs - solid for readability */
+[data-business-glass="true"][data-liquid-glass-mode="dark"] input,
+[data-business-glass="true"][data-liquid-glass-mode="dark"] textarea,
+[data-business-glass="true"][data-liquid-glass-mode="dark"] select {
+  background: hsl(220 18% 11%) !important;
+  border: 1px solid hsl(220 12% 22%) !important;
+  border-radius: 0.75rem !important;
+  color: hsl(210 20% 93%) !important;
+  backdrop-filter: none !important;
+}
+[data-business-glass="true"][data-liquid-glass-mode="dark"] input::placeholder,
+[data-business-glass="true"][data-liquid-glass-mode="dark"] textarea::placeholder {
+  color: hsl(215 15% 45%) !important;
+}
+[data-business-glass="true"][data-liquid-glass-mode="dark"] input:focus,
+[data-business-glass="true"][data-liquid-glass-mode="dark"] textarea:focus {
+  border-color: hsl(var(--ring) / 0.5) !important;
+  box-shadow: 0 0 0 3px hsl(var(--ring) / 0.12) !important;
+}
+
+/* Select triggers */
+[data-business-glass="true"][data-liquid-glass-mode="dark"] button[role="combobox"],
+[data-business-glass="true"][data-liquid-glass-mode="dark"] [data-radix-select-trigger] {
+  background: hsl(220 18% 11%) !important;
+  border: 1px solid hsl(220 12% 22%) !important;
+  border-radius: 0.75rem !important;
+  color: hsl(210 20% 93%) !important;
+}
+
+/* Labels */
+[data-business-glass="true"][data-liquid-glass-mode="dark"] label {
+  color: hsl(210 20% 80%) !important;
+}
+
+/* Separator */
+[data-business-glass="true"][data-liquid-glass-mode="dark"] [data-orientation="horizontal"] {
+  background: hsl(0 0% 100% / 0.06) !important;
+}
+
+/* Section headers */
+[data-business-glass="true"][data-liquid-glass-mode="dark"] .text-muted-foreground {
+  color: hsl(215 15% 55%) !important;
+}
+
+/* Checkbox */
+[data-business-glass="true"][data-liquid-glass-mode="dark"] button[role="checkbox"] {
+  background: hsl(220 15% 16%) !important;
+  border: 0.5px solid hsl(0 0% 100% / 0.08) !important;
+  border-radius: 0.375rem !important;
+}
+[data-business-glass="true"][data-liquid-glass-mode="dark"] button[role="checkbox"][data-state="checked"] {
+  background: hsl(var(--primary) / 0.7) !important;
+  border-color: hsl(var(--primary) / 0.4) !important;
+}
+
+/* Primary buttons */
+[data-business-glass="true"][data-liquid-glass-mode="dark"] .bg-primary {
+  box-shadow: 0 4px 20px hsl(var(--primary) / 0.35), inset 0 0.5px 0 hsl(0 0% 100% / 0.12) !important;
+  border-radius: 0.75rem !important;
+}
+
+/* Timeline icons */
+[data-business-glass="true"][data-liquid-glass-mode="dark"] .rounded-full.flex.items-center.justify-center {
+  backdrop-filter: none !important;
+}
+
+/* Contact card avatar circle */
+[data-business-glass="true"][data-liquid-glass-mode="dark"] .bg-primary\/10 {
+  background: hsl(var(--primary) / 0.15) !important;
+}
+
+/* Kill stale bg-card/bg-background that dialog rules set */
+[data-business-glass="true"][data-liquid-glass-mode="dark"] .bg-card,
+[data-business-glass="true"][data-liquid-glass-mode="dark"] .bg-background {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* --- Light mode --- */
+[data-business-glass="true"][data-liquid-glass-mode="light"] {
+  background: linear-gradient(
+    165deg,
+    hsl(220 15% 93%) 0%,
+    hsl(215 12% 95%) 50%,
+    hsl(225 10% 96%) 100%
+  ) !important;
+  border: 0.5px solid hsl(220 10% 85%) !important;
+  backdrop-filter: none !important;
+}
+
+/* Tabs */
+[data-business-glass="true"][data-liquid-glass-mode="light"] [role="tablist"] {
+  background: hsl(220 10% 88%) !important;
+  border: 0.5px solid hsl(220 10% 82%) !important;
+  border-radius: 1.25rem !important;
+  padding: 3px !important;
+  backdrop-filter: none !important;
+}
+[data-business-glass="true"][data-liquid-glass-mode="light"] [role="tablist"] [role="tab"] {
+  border-radius: 1rem !important;
+  color: hsl(220 15% 45%) !important;
+}
+[data-business-glass="true"][data-liquid-glass-mode="light"] [role="tablist"] [data-state="active"] {
+  background: hsl(0 0% 100%) !important;
+  color: hsl(220 15% 15%) !important;
+  box-shadow: 0 2px 8px hsl(220 15% 30% / 0.08) !important;
+}
+
+/* Glass items */
+[data-business-glass="true"][data-liquid-glass-mode="light"] .bg-muted\/50,
+[data-business-glass="true"][data-liquid-glass-mode="light"] .bg-muted\/30,
+[data-business-glass="true"][data-liquid-glass-mode="light"] .bg-muted\/20 {
+  background: hsl(0 0% 100% / 0.55) !important;
+  backdrop-filter: blur(20px) saturate(1.5) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.5) !important;
+  border: 0.5px solid hsl(0 0% 100% / 0.4) !important;
+  border-radius: 1rem !important;
+}
+
+/* Inputs */
+[data-business-glass="true"][data-liquid-glass-mode="light"] input,
+[data-business-glass="true"][data-liquid-glass-mode="light"] textarea,
+[data-business-glass="true"][data-liquid-glass-mode="light"] select {
+  background: hsl(0 0% 100% / 0.75) !important;
+  border: 0.5px solid hsl(220 10% 80%) !important;
+  border-radius: 0.75rem !important;
+  color: hsl(220 15% 15%) !important;
+  backdrop-filter: none !important;
+}
+[data-business-glass="true"][data-liquid-glass-mode="light"] input:focus,
+[data-business-glass="true"][data-liquid-glass-mode="light"] textarea:focus {
+  border-color: hsl(var(--primary) / 0.4) !important;
+  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.12) !important;
+}
+
+/* Select triggers */
+[data-business-glass="true"][data-liquid-glass-mode="light"] button[role="combobox"],
+[data-business-glass="true"][data-liquid-glass-mode="light"] [data-radix-select-trigger] {
+  background: hsl(0 0% 100% / 0.75) !important;
+  border: 0.5px solid hsl(220 10% 80%) !important;
+  border-radius: 0.75rem !important;
+  color: hsl(220 15% 15%) !important;
+}
+
+/* Clean bg-card/bg-background */
+[data-business-glass="true"][data-liquid-glass-mode="light"] .bg-card,
+[data-business-glass="true"][data-liquid-glass-mode="light"] .bg-background {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Separator */
+[data-business-glass="true"][data-liquid-glass-mode="light"] [data-orientation="horizontal"] {
+  background: hsl(220 15% 30% / 0.08) !important;
+}
+
+/* Checkbox */
+[data-business-glass="true"][data-liquid-glass-mode="light"] button[role="checkbox"] {
+  background: hsl(0 0% 100% / 0.5) !important;
+  border: 0.5px solid hsl(220 10% 78%) !important;
+  border-radius: 0.375rem !important;
+  backdrop-filter: none !important;
+}
+[data-business-glass="true"][data-liquid-glass-mode="light"] button[role="checkbox"][data-state="checked"] {
+  background: hsl(var(--primary) / 0.7) !important;
+  border-color: hsl(var(--primary) / 0.4) !important;
+}
+
+/* Primary button */
+[data-business-glass="true"][data-liquid-glass-mode="light"] .bg-primary {
+  box-shadow: 0 4px 16px hsl(var(--primary) / 0.25) !important;
+  border-radius: 0.75rem !important;
+}
