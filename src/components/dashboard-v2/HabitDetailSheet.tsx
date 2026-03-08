@@ -70,6 +70,7 @@ export function HabitDetailSheet({ open, onOpenChange, habitId, onUpdated }: Hab
         setHabit(data as any);
         setEditName((data as any).name);
         setEditIcon((data as any).icon || 'Check');
+        setEditHalfWidth((data as any).half_width || false);
       }
 
       const { data: completions } = await supabase
