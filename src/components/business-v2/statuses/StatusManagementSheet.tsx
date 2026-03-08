@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pencil, Trash2, Plus } from 'lucide-react';
+import { Pencil, Trash2, Plus, ChevronUp, ChevronDown } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -53,6 +53,17 @@ export function StatusManagementSheet({ open, onOpenChange }: StatusManagementSh
 
   const sorted = [...statuses].sort((a, b) => a.order_index - b.order_index);
 
+  const moveStatus = async (index: number, direction: 'up' | 'down') => {
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= sorted.length) return;
+    const current = sorted[index];
+    const target = sorted[targetIndex];
+    await Promise.all([
+      updateStatus(current.id, { order_index: target.order_index }),
+      updateStatus(target.id, { order_index: current.order_index }),
+    ]);
+  };
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="max-h-[85vh] rounded-t-2xl">
@@ -60,7 +71,7 @@ export function StatusManagementSheet({ open, onOpenChange }: StatusManagementSh
           <SheetTitle>Status verwalten</SheetTitle>
         </SheetHeader>
         <div className="mt-4 space-y-2 overflow-y-auto max-h-[60vh]">
-          {sorted.map(s => (
+          {sorted.map((s, idx) => (
             <div key={s.id}>
               {editingId === s.id ? (
                 <div className="space-y-3 p-3 rounded-lg border border-border bg-muted/30">
@@ -97,6 +108,26 @@ export function StatusManagementSheet({ open, onOpenChange }: StatusManagementSh
               ) : (
                 <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
                   <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="flex flex-col -my-1 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-5 w-5 p-0"
+                        disabled={idx === 0}
+                        onClick={() => moveStatus(idx, 'up')}
+                      >
+                        <ChevronUp className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-5 w-5 p-0"
+                        disabled={idx === sorted.length - 1}
+                        onClick={() => moveStatus(idx, 'down')}
+                      >
+                        <ChevronDown className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
                     <div className="w-3.5 h-3.5 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
                     <span className="text-sm font-medium truncate">{s.name}</span>
                   </div>
@@ -117,7 +148,6 @@ export function StatusManagementSheet({ open, onOpenChange }: StatusManagementSh
               )}
             </div>
           ))}
-
           {addMode ? (
             <div className="space-y-3 p-3 rounded-lg border border-border bg-muted/30">
               <div className="space-y-1.5">
