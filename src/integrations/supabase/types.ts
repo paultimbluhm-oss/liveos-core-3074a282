@@ -2489,6 +2489,45 @@ export type Database = {
           },
         ]
       }
+      v2_business_costs: {
+        Row: {
+          amount: number
+          category: string | null
+          cost_type: string
+          created_at: string
+          date: string | null
+          frequency: string | null
+          id: string
+          notes: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          category?: string | null
+          cost_type?: string
+          created_at?: string
+          date?: string | null
+          frequency?: string | null
+          id?: string
+          notes?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          category?: string | null
+          cost_type?: string
+          created_at?: string
+          date?: string | null
+          frequency?: string | null
+          id?: string
+          notes?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       v2_cash_denominations: {
         Row: {
           account_id: string
