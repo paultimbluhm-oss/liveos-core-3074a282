@@ -18,6 +18,7 @@ interface EventInfo {
 
 interface WeekTimetableV2Props {
   onSlotClick?: (slot: V2TimetableSlot, course: V2Course) => void;
+  onOpenSheet?: (sheet: 'abi' | 'stats' | 'absences') => void;
 }
 
 export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
