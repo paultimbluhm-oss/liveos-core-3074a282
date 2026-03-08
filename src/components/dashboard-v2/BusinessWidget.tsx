@@ -299,27 +299,23 @@ export function BusinessWidget({ size, onOpenSheet }: { size: WidgetSize; onOpen
             </div>
           )}
         </div>
+        {lastActivity && (
+          <div className="flex flex-col gap-2 ml-auto shrink-0">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Hinzugefuegt</span>
+              <span className="text-xs font-medium">
+                {lastActivity.lastAddedDays === 0 ? 'Heute' : lastActivity.lastAddedDays === 1 ? 'Gestern' : `vor ${lastActivity.lastAddedDays}d`}
+              </span>
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Update</span>
+              <span className="text-xs font-medium">
+                {lastActivity.lastUpdatedDays === 0 ? 'Heute' : lastActivity.lastUpdatedDays === 1 ? 'Gestern' : `vor ${lastActivity.lastUpdatedDays}d`}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
-
-      {/* Last activity info */}
-      {lastActivity && (
-        <div className="grid grid-cols-2 gap-2 pt-1 border-t border-border/30">
-          <div className="flex flex-col gap-0.5 px-2 py-1.5 rounded-lg bg-muted/20">
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Zuletzt hinzugefuegt</span>
-            <span className="text-xs font-medium truncate">{lastActivity.lastAddedName}</span>
-            <span className="text-[10px] text-muted-foreground">
-              {lastActivity.lastAddedDays === 0 ? 'Heute' : lastActivity.lastAddedDays === 1 ? 'Gestern' : `vor ${lastActivity.lastAddedDays} Tagen`}
-            </span>
-          </div>
-          <div className="flex flex-col gap-0.5 px-2 py-1.5 rounded-lg bg-muted/20">
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Letztes Update</span>
-            <span className="text-xs font-medium truncate">{lastActivity.lastUpdatedName}</span>
-            <span className="text-[10px] text-muted-foreground">
-              {lastActivity.lastUpdatedDays === 0 ? 'Heute' : lastActivity.lastUpdatedDays === 1 ? 'Gestern' : `vor ${lastActivity.lastUpdatedDays} Tagen`}
-            </span>
-          </div>
-        </div>
-      )}
 
       {/* Follow-up reminder */}
       {followUps.length > 0 && (
