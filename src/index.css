@@ -128,17 +128,17 @@
 
   /* ===== Midnight Dark ===== */
   [data-theme="midnight"] {
-    --background: 222 47% 6%;
-    --foreground: 210 20% 92%;
-    --card: 222 40% 10%;
-    --card-foreground: 210 20% 92%;
-    --popover: 222 40% 12%;
-    --popover-foreground: 210 20% 92%;
+    --background: 225 50% 3%;
+    --foreground: 210 20% 93%;
+    --card: 225 45% 6%;
+    --card-foreground: 210 20% 93%;
+    --popover: 225 45% 7%;
+    --popover-foreground: 210 20% 93%;
     --primary: 217 70% 60%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 222 30% 16%;
+    --secondary: 225 35% 10%;
     --secondary-foreground: 210 20% 85%;
-    --muted: 222 25% 14%;
+    --muted: 225 30% 9%;
     --muted-foreground: 215 15% 50%;
     --accent: 195 80% 55%;
     --accent-foreground: 0 0% 100%;
@@ -147,18 +147,18 @@
     --success: 155 60% 45%;
     --success-foreground: 0 0% 100%;
     --warning: 40 85% 55%;
-    --warning-foreground: 222 47% 6%;
-    --border: 222 25% 18%;
-    --input: 222 25% 14%;
+    --warning-foreground: 225 50% 3%;
+    --border: 225 30% 12%;
+    --input: 225 30% 9%;
     --ring: 217 70% 60%;
-    --radius: 0.75rem;
-    --sidebar-background: 222 45% 7%;
+    --radius: 1rem;
+    --sidebar-background: 225 50% 4%;
     --sidebar-foreground: 210 20% 85%;
     --sidebar-primary: 217 70% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 30% 14%;
+    --sidebar-accent: 225 35% 9%;
     --sidebar-accent-foreground: 210 20% 90%;
-    --sidebar-border: 222 25% 16%;
+    --sidebar-border: 225 30% 10%;
     --sidebar-ring: 217 70% 60%;
     --xp: 280 70% 60%;
     --xp-foreground: 0 0% 100%;
