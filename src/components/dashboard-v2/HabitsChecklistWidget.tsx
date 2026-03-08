@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Check, Flame, Plus, Minus, ChevronDown, Sparkles } from 'lucide-react';
+import { icons } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -11,7 +12,7 @@ import { HabitDetailSheet } from './HabitDetailSheet';
 import { HabitCreationWizard } from './HabitCreationWizard';
 import type { WidgetSize, DashboardSettings } from '@/hooks/useDashboardV2';
 
-interface Habit { id: string; name: string; habit_type: string; created_at: string | null; }
+interface Habit { id: string; name: string; icon: string | null; habit_type: string; created_at: string | null; }
 
 interface Props {
   size: WidgetSize;
