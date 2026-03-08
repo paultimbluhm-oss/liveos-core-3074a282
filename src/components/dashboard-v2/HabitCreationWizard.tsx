@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { IconPicker } from './IconPicker';
 
 interface HabitCreationWizardProps {
   open: boolean;
@@ -16,6 +17,7 @@ interface HabitCreationWizardProps {
 
 interface HabitFormData {
   name: string;
+  icon: string;
   habit_type: 'check' | 'count';
   identity_statement: string;
   when_trigger: string;
