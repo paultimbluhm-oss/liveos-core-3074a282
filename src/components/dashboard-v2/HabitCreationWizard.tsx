@@ -57,7 +57,7 @@ const STEPS = [
   {
     title: 'Grundlagen',
     subtitle: 'Was moechtest du zur Gewohnheit machen?',
-    fields: ['name', 'habit_type', 'identity_statement'] as const,
+    fields: ['name', 'icon', 'habit_type', 'identity_statement'] as const,
   },
   {
     title: 'Wann & Wo',
