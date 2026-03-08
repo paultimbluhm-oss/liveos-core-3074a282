@@ -469,13 +469,13 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
             const pnl = val - cost;
             return (
               <div key={inv.id} className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-muted/20 transition-colors">
-                <span className="text-xs">{inv.name}</span>
+                <span className="text-sm">{inv.name}</span>
                 <div className="text-right">
-                  <span className="text-xs font-mono font-medium">
+                  <span className="text-sm font-mono font-medium">
                     {val.toLocaleString('de-DE', { style: 'currency', currency: inv.currency })}
                   </span>
                   {pnl !== 0 && (
-                    <span className={`text-[9px] font-mono ml-1.5 ${pnl >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>
+                    <span className={`text-xs font-mono ml-1.5 ${pnl >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>
                       {pnl >= 0 ? '+' : ''}{((pnl / cost) * 100).toFixed(1)}%
                     </span>
                   )}
