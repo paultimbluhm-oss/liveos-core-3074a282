@@ -709,33 +709,59 @@
   border-right: 0.5px solid hsl(220 15% 50% / 0.08) !important;
 }
 
-/* Dialogs / sheets (light) */
+/* --- DIALOGS / SHEETS / DRAWERS (light) - FULLY SOLID --- */
 [data-liquid-glass="true"][data-liquid-glass-mode="light"] [role="dialog"],
 [data-liquid-glass="true"][data-liquid-glass-mode="light"] [data-vaul-drawer] {
-  background: hsl(220 12% 96% / 0.85) !important;
-  backdrop-filter: blur(64px) saturate(2) brightness(1.03) !important;
-  -webkit-backdrop-filter: blur(64px) saturate(2) brightness(1.03) !important;
-  border: 0.5px solid hsl(0 0% 100% / 0.4) !important;
+  background: hsl(220 12% 96%) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 0.5px solid hsl(220 10% 85%) !important;
   border-radius: var(--glass-radius) !important;
-  box-shadow: 0 24px 80px hsl(220 15% 30% / 0.12), inset 0 0.5px 0 hsl(0 0% 100% / 0.5) !important;
+  box-shadow: 0 24px 80px hsl(220 15% 30% / 0.15), inset 0 0.5px 0 hsl(0 0% 100% / 0.5) !important;
 }
 
-/* Kill glass on nested inside dialogs (light) */
+/* CRITICAL: Kill ALL glass/transparency on elements inside dialogs (light) */
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] [role="dialog"] *,
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] [data-vaul-drawer] * {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
 [data-liquid-glass="true"][data-liquid-glass-mode="light"] [role="dialog"] .bg-card,
 [data-liquid-glass="true"][data-liquid-glass-mode="light"] [role="dialog"] .bg-background,
 [data-liquid-glass="true"][data-liquid-glass-mode="light"] [role="dialog"] [class*="bg-card"],
 [data-liquid-glass="true"][data-liquid-glass-mode="light"] [role="dialog"] [class*="bg-muted"],
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] [role="dialog"] [class*="bg-secondary"],
 [data-liquid-glass="true"][data-liquid-glass-mode="light"] [role="dialog"] [class*="bg-background"],
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] [role="dialog"] [class*="bg-popover"],
 [data-liquid-glass="true"][data-liquid-glass-mode="light"] [data-vaul-drawer] .bg-card,
 [data-liquid-glass="true"][data-liquid-glass-mode="light"] [data-vaul-drawer] .bg-background,
 [data-liquid-glass="true"][data-liquid-glass-mode="light"] [data-vaul-drawer] [class*="bg-card"],
 [data-liquid-glass="true"][data-liquid-glass-mode="light"] [data-vaul-drawer] [class*="bg-muted"],
-[data-liquid-glass="true"][data-liquid-glass-mode="light"] [data-vaul-drawer] [class*="bg-background"] {
-  background: hsl(0 0% 100% / 0.5) !important;
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] [data-vaul-drawer] [class*="bg-secondary"],
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] [data-vaul-drawer] [class*="bg-background"],
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] [data-vaul-drawer] [class*="bg-popover"] {
+  background: hsl(220 12% 97%) !important;
+  border-color: hsl(220 10% 85%) !important;
+  box-shadow: none !important;
+}
+
+/* Muted inside dialogs (light): subtle contrast */
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] [role="dialog"] .bg-muted,
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] [role="dialog"] .bg-muted\/50,
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] [data-vaul-drawer] .bg-muted,
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] [data-vaul-drawer] .bg-muted\/50 {
+  background: hsl(220 10% 93%) !important;
+}
+
+/* Popovers INSIDE dialogs (light): also solid */
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] [role="dialog"] [data-radix-popper-content-wrapper] > *,
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] [data-vaul-drawer] [data-radix-popper-content-wrapper] > * {
+  background: hsl(0 0% 100%) !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
-  border-color: hsl(220 10% 80%) !important;
-  box-shadow: none !important;
+  border: 1px solid hsl(220 10% 85%) !important;
+  box-shadow: 0 8px 24px hsl(220 15% 30% / 0.1) !important;
 }
 
 /* Popover / dropdown (light) */
