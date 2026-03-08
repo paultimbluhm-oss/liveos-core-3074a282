@@ -120,6 +120,13 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
     setSnapshots((snapRes.data || []) as Snapshot[]);
     setLoans((loanRes.data || []) as Loan[]);
     setMonthlyTransactions((txMonthRes.data || []) as Transaction[]);
+    
+    // Determine last updated from most recent account/transaction update
+    const accDates = (accRes.data || []).map((a: any) => a.updated_at).filter(Boolean);
+    const latestDate = accDates.length > 0 
+      ? new Date(accDates.sort().reverse()[0]) 
+      : null;
+    setLastUpdated(latestDate);
     if (accRes.data?.length && !txAccountId) {
       setTxAccountId((accRes.data as Account[])[0].id);
     }
