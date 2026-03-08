@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Flame, Eye, EyeOff, Pencil, X as XIcon } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { icons } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -57,6 +58,7 @@ export function HabitDetailSheet({ open, onOpenChange, habitId, onUpdated }: Hab
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState('');
   const [editIcon, setEditIcon] = useState('Check');
+  const [editHalfWidth, setEditHalfWidth] = useState(false);
 
   useEffect(() => {
     if (!open || !habitId || !user) return;
@@ -69,6 +71,7 @@ export function HabitDetailSheet({ open, onOpenChange, habitId, onUpdated }: Hab
         setHabit(data as any);
         setEditName((data as any).name);
         setEditIcon((data as any).icon || 'Check');
+        setEditHalfWidth((data as any).half_width || false);
       }
 
       const { data: completions } = await supabase
@@ -101,7 +104,8 @@ export function HabitDetailSheet({ open, onOpenChange, habitId, onUpdated }: Hab
     if (!habit || !editName.trim()) return;
     const { error } = await supabase.from('habits').update({ 
       name: editName.trim(), 
-      icon: editIcon 
+      icon: editIcon,
+      half_width: editHalfWidth,
     } as any).eq('id', habit.id);
     if (error) {
       toast.error('Fehler beim Speichern');
@@ -154,6 +158,13 @@ export function HabitDetailSheet({ open, onOpenChange, habitId, onUpdated }: Hab
               <div className="space-y-1.5">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Icon</p>
                 <IconPicker value={editIcon} onChange={setEditIcon} />
+              </div>
+              <div className="flex items-center justify-between py-1">
+                <div>
+                  <p className="text-xs font-medium">Kompakt (halbe Breite)</p>
+                  <p className="text-[11px] text-muted-foreground">Nur Icon anzeigen, zwei nebeneinander</p>
+                </div>
+                <Switch checked={editHalfWidth} onCheckedChange={setEditHalfWidth} />
               </div>
               <Button size="sm" onClick={saveEdit} disabled={!editName.trim()} className="w-full h-8 text-xs">
                 Speichern

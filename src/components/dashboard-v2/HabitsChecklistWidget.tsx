@@ -12,7 +12,7 @@ import { HabitDetailSheet } from './HabitDetailSheet';
 import { HabitCreationWizard } from './HabitCreationWizard';
 import type { WidgetSize, DashboardSettings } from '@/hooks/useDashboardV2';
 
-interface Habit { id: string; name: string; icon: string | null; habit_type: string; created_at: string | null; }
+interface Habit { id: string; name: string; icon: string | null; habit_type: string; created_at: string | null; half_width: boolean; }
 
 interface Props {
   size: WidgetSize;
@@ -79,7 +79,7 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
       supabase.from('habit_completions').select('*').eq('user_id', user.id).eq('completed_date', yesterday),
     ]);
     if (hRes.data) {
-      const habitsWithType = hRes.data.map((h: any) => ({ id: h.id, name: h.name, icon: h.icon || null, habit_type: h.habit_type || 'check', created_at: h.created_at || null }));
+      const habitsWithType = hRes.data.map((h: any) => ({ id: h.id, name: h.name, icon: h.icon || null, habit_type: h.habit_type || 'check', created_at: h.created_at || null, half_width: h.half_width || false }));
       setHabits(habitsWithType);
       const ids = habitsWithType.map((h: Habit) => h.id);
       if (ids.length > 0) {
@@ -174,7 +174,37 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
     );
   }
 
+  const renderCompactHabit = (habit: Habit) => {
+    const isDoneToday = completions.includes(habit.id);
+    const isCount = habit.habit_type === 'count';
+    const currentVal = countValues[habit.id] || 0;
+    const streak = habitStreaks[habit.id] || 0;
+    const isNegative = streak < 0;
+    const HabitIcon = icons[(habit.icon || 'Check') as keyof typeof icons] || icons.Check;
+
+    return (
+      <button
+        key={habit.id}
+        onClick={() => isCount ? adjustCount(habit, 1) : toggle(habit)}
+        onContextMenu={(e) => { e.preventDefault(); setSelectedHabitId(habit.id); }}
+        className={`flex flex-col items-center justify-center gap-1 p-2 rounded-xl transition-all min-h-[52px] ${
+          isDoneToday
+            ? 'bg-success/10 ring-1 ring-success/30'
+            : isNegative
+              ? 'bg-destructive/8 border border-destructive/20'
+              : 'bg-muted/30 hover:bg-muted/60'
+        }`}
+      >
+        <HabitIcon className={`w-5 h-5 ${isDoneToday ? 'text-success' : isNegative ? 'text-destructive' : 'text-muted-foreground'}`} strokeWidth={1.5} />
+        {isCount && (
+          <span className="text-[10px] font-mono font-semibold">{currentVal}</span>
+        )}
+      </button>
+    );
+  };
+
   const renderHabitRow = (habit: Habit, isDone: boolean) => {
+    if (habit.half_width) return null; // rendered separately in grid
     const ltCount = lifetimeCounts[habit.id] || 0;
     const ltPct = Math.min(ltCount, 100);
     const streak = habitStreaks[habit.id] || 0;
@@ -255,6 +285,10 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
     );
   };
 
+  const compactHabits = habits.filter(h => h.half_width);
+  const fullWidthOpen = displayOpen.filter(h => !h.half_width);
+  const fullWidthDone = doneHabits.filter(h => !h.half_width);
+
   return (
     <div className={`rounded-2xl bg-card border border-border/50 p-4 space-y-3 ${allDone ? 'ring-1 ring-success/30' : ''}`}>
       <div className="flex items-center justify-between">
@@ -279,8 +313,14 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
         />
       </div>
 
+      {compactHabits.length > 0 && (
+        <div className="grid grid-cols-4 gap-1.5">
+          {compactHabits.map(habit => renderCompactHabit(habit))}
+        </div>
+      )}
+
       <div className={`space-y-1.5 ${limit > 0 ? 'max-h-48 overflow-y-auto scrollbar-hide' : ''}`}>
-        {displayOpen.map(habit => renderHabitRow(habit, false))}
+        {fullWidthOpen.map(habit => renderHabitRow(habit, false))}
         {hiddenCount > 0 && (
           <button onClick={() => setShowManagement(true)} className="w-full text-center text-xs text-muted-foreground py-1.5 hover:text-foreground transition-colors">
             +{hiddenCount} weitere
@@ -288,14 +328,14 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
         )}
       </div>
 
-      {doneHabits.length > 0 && (
+      {fullWidthDone.length > 0 && (
         <Collapsible open={showDone} onOpenChange={setShowDone}>
           <CollapsibleTrigger className="flex items-center gap-2 w-full py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
             <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showDone ? 'rotate-180' : ''}`} />
-            <span>Erledigt ({doneHabits.length})</span>
+            <span>Erledigt ({fullWidthDone.length})</span>
           </CollapsibleTrigger>
           <CollapsibleContent className="space-y-1.5 pt-1.5">
-            {doneHabits.map(habit => renderHabitRow(habit, true))}
+            {fullWidthDone.map(habit => renderHabitRow(habit, true))}
           </CollapsibleContent>
         </Collapsible>
       )}
