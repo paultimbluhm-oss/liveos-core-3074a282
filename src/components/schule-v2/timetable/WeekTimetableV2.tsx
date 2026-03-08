@@ -28,6 +28,7 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
   const [currentWeek, setCurrentWeek] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [slots, setSlots] = useState<(V2TimetableSlot & { course: V2Course })[]>([]);
   const [courseAverages, setCourseAverages] = useState<Record<string, number | null>>({});
+  const [gradeSourceMap, setGradeSourceMap] = useState<Record<string, 'current' | 'hj1only' | 'combined'>>({});
   const [homeworkByDate, setHomeworkByDate] = useState<Record<string, V2Homework[]>>({});
   const [completedHwByDate, setCompletedHwByDate] = useState<Record<string, V2Homework[]>>({});
   const [absenceMap, setAbsenceMap] = useState<Record<string, { is_eva: boolean; status: 'excused' | 'unexcused' }>>({});
@@ -81,38 +82,87 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
         .select('*')
         .in('course_id', scopeCourseIds);
 
-      // Grades
+      // Helper: calculate weighted average for a course given its grades
+      const calcCourseAvg = (courseGrades: any[], course: any): number | null => {
+        if (courseGrades.length === 0) return null;
+        const semesterGrade = courseGrades.find((g: any) => g.grade_type === 'semester');
+        if (semesterGrade) return semesterGrade.points;
+        const oralGrades = courseGrades.filter((g: any) => g.grade_type === 'oral');
+        const writtenGrades = courseGrades.filter((g: any) => g.grade_type === 'written');
+        const practicalGrades = courseGrades.filter((g: any) => g.grade_type === 'practical');
+        const oralAvg = oralGrades.length > 0 ? oralGrades.reduce((s: number, g: any) => s + g.points, 0) / oralGrades.length : null;
+        const writtenAvg = writtenGrades.length > 0 ? writtenGrades.reduce((s: number, g: any) => s + g.points, 0) / writtenGrades.length : null;
+        const practicalAvg = practicalGrades.length > 0 ? practicalGrades.reduce((s: number, g: any) => s + g.points, 0) / practicalGrades.length : null;
+        let totalWeight = 0, weightedSum = 0;
+        if (oralAvg !== null) { weightedSum += oralAvg * course.oral_weight; totalWeight += course.oral_weight; }
+        if (writtenAvg !== null) { weightedSum += writtenAvg * course.written_weight; totalWeight += course.written_weight; }
+        if (practicalAvg !== null && course.has_practical) { weightedSum += practicalAvg * course.practical_weight; totalWeight += course.practical_weight; }
+        return totalWeight > 0 ? Math.round((weightedSum / totalWeight) * 10) / 10 : null;
+      };
+
+      // Grades for current semester
       const { data: gradesData } = await supabase
         .from('v2_grades')
         .select('*')
         .eq('user_id', user.id)
         .in('course_id', scopeCourseIds);
 
+      // If in semester 2, also load semester 1 courses + grades for cross-semester display
+      let hj1Averages: Record<string, number | null> = {}; // keyed by HJ2 course name
+      if (scope.semester === 2) {
+        const { data: hj1Courses } = await supabase
+          .from('v2_courses')
+          .select('*')
+          .eq('school_id', scope.school.id)
+          .eq('grade_level', scope.gradeLevel)
+          .eq('semester', 1)
+          .or(`class_name.is.null,class_name.eq.${scope.className}`);
+
+        if (hj1Courses && hj1Courses.length > 0) {
+          const hj1CourseIds = hj1Courses.map(c => c.id);
+          const { data: hj1GradesData } = await supabase
+            .from('v2_grades')
+            .select('*')
+            .eq('user_id', user.id)
+            .in('course_id', hj1CourseIds);
+
+          hj1Courses.forEach(hj1Course => {
+            const grades = (hj1GradesData || []).filter((g: any) => g.course_id === hj1Course.id);
+            const avg = calcCourseAvg(grades, hj1Course);
+            if (avg !== null) {
+              hj1Averages[hj1Course.name] = avg;
+            }
+          });
+        }
+      }
+
+      // Build averages: { courseId: { current, hj1Only, combined } }
       const averages: Record<string, number | null> = {};
+      const gradeSource: Record<string, 'current' | 'hj1only' | 'combined'> = {};
+      
       courses.forEach(course => {
-        const courseGrades = (gradesData || []).filter(g => g.course_id === course.id);
-        if (courseGrades.length === 0) {
-          averages[course.id] = null;
+        const courseGrades = (gradesData || []).filter((g: any) => g.course_id === course.id);
+        const currentAvg = calcCourseAvg(courseGrades, course);
+        const hj1Avg = scope.semester === 2 ? (hj1Averages[course.name] ?? null) : null;
+
+        if (currentAvg !== null && hj1Avg !== null) {
+          // Both semesters: (rounded HJ1 + rounded HJ2) / 2, rounded
+          const roundedHj1 = Math.round(hj1Avg);
+          const roundedHj2 = Math.round(currentAvg);
+          averages[course.id] = Math.round((roundedHj1 + roundedHj2) / 2 * 10) / 10;
+          gradeSource[course.id] = 'combined';
+        } else if (currentAvg !== null) {
+          averages[course.id] = currentAvg;
+          gradeSource[course.id] = 'current';
+        } else if (hj1Avg !== null) {
+          averages[course.id] = hj1Avg;
+          gradeSource[course.id] = 'hj1only';
         } else {
-          const semesterGrade = courseGrades.find(g => g.grade_type === 'semester');
-          if (semesterGrade) {
-            averages[course.id] = semesterGrade.points;
-          } else {
-            const oralGrades = courseGrades.filter(g => g.grade_type === 'oral');
-            const writtenGrades = courseGrades.filter(g => g.grade_type === 'written');
-            const practicalGrades = courseGrades.filter(g => g.grade_type === 'practical');
-            const oralAvg = oralGrades.length > 0 ? oralGrades.reduce((s, g) => s + g.points, 0) / oralGrades.length : null;
-            const writtenAvg = writtenGrades.length > 0 ? writtenGrades.reduce((s, g) => s + g.points, 0) / writtenGrades.length : null;
-            const practicalAvg = practicalGrades.length > 0 ? practicalGrades.reduce((s, g) => s + g.points, 0) / practicalGrades.length : null;
-            let totalWeight = 0, weightedSum = 0;
-            if (oralAvg !== null) { weightedSum += oralAvg * course.oral_weight; totalWeight += course.oral_weight; }
-            if (writtenAvg !== null) { weightedSum += writtenAvg * course.written_weight; totalWeight += course.written_weight; }
-            if (practicalAvg !== null && course.has_practical) { weightedSum += practicalAvg * course.practical_weight; totalWeight += course.practical_weight; }
-            averages[course.id] = totalWeight > 0 ? Math.round((weightedSum / totalWeight) * 10) / 10 : null;
-          }
+          averages[course.id] = null;
         }
       });
       setCourseAverages(averages);
+      setGradeSourceMap(gradeSource);
 
       // Homework
       const { data: homeworkData } = await supabase
@@ -445,7 +495,9 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
 
                             {/* Grade badge */}
                             {avg !== null && !isPast && !hasMissed && !hasEva && (
-                              <span className={`absolute top-0.5 right-0.5 min-w-[18px] h-[18px] text-[10px] font-bold rounded-full flex items-center justify-center text-white ${getGradeColor(avg)}`}>
+                              <span className={`absolute top-0.5 right-0.5 min-w-[18px] h-[18px] text-[10px] font-bold rounded-full flex items-center justify-center text-white ${
+                                gradeSourceMap[slot.course.id] === 'hj1only' ? 'bg-sky-500' : getGradeColor(avg)
+                              }`}>
                                 {avg}
                               </span>
                             )}
