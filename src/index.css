@@ -128,18 +128,18 @@
 
   /* ===== Midnight Dark ===== */
   [data-theme="midnight"] {
-    --background: 225 50% 3%;
-    --foreground: 210 20% 93%;
-    --card: 225 45% 6%;
-    --card-foreground: 210 20% 93%;
-    --popover: 225 45% 7%;
-    --popover-foreground: 210 20% 93%;
+    --background: 0 0% 2%;
+    --foreground: 0 0% 93%;
+    --card: 0 0% 6%;
+    --card-foreground: 0 0% 93%;
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 93%;
     --primary: 217 70% 60%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 225 35% 10%;
-    --secondary-foreground: 210 20% 85%;
-    --muted: 225 30% 9%;
-    --muted-foreground: 215 15% 50%;
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 0 0% 85%;
+    --muted: 0 0% 9%;
+    --muted-foreground: 0 0% 50%;
     --accent: 195 80% 55%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 65% 55%;
@@ -147,18 +147,18 @@
     --success: 155 60% 45%;
     --success-foreground: 0 0% 100%;
     --warning: 40 85% 55%;
-    --warning-foreground: 225 50% 3%;
-    --border: 225 30% 12%;
-    --input: 225 30% 9%;
+    --warning-foreground: 0 0% 3%;
+    --border: 0 0% 12%;
+    --input: 0 0% 9%;
     --ring: 217 70% 60%;
-    --radius: 1rem;
-    --sidebar-background: 225 50% 4%;
-    --sidebar-foreground: 210 20% 85%;
+    --radius: 9999px;
+    --sidebar-background: 0 0% 3%;
+    --sidebar-foreground: 0 0% 85%;
     --sidebar-primary: 217 70% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 225 35% 9%;
-    --sidebar-accent-foreground: 210 20% 90%;
-    --sidebar-border: 225 30% 10%;
+    --sidebar-accent: 0 0% 9%;
+    --sidebar-accent-foreground: 0 0% 90%;
+    --sidebar-border: 0 0% 10%;
     --sidebar-ring: 217 70% 60%;
     --xp: 280 70% 60%;
     --xp-foreground: 0 0% 100%;
