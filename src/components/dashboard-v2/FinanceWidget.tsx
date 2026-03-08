@@ -398,20 +398,20 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div>
-              <p className="text-xs font-bold text-emerald-500 leading-tight">{fmt(monthlyStats.income)}</p>
-              <p className="text-[8px] text-muted-foreground uppercase">Einnahmen</p>
+              <p className="text-sm font-bold text-emerald-500 leading-tight">{fmt(monthlyStats.income)}</p>
+              <p className="text-[10px] text-muted-foreground uppercase">Einnahmen</p>
             </div>
             <div className="w-px h-5 bg-border/40" />
             <div>
-              <p className="text-xs font-bold text-destructive leading-tight">{fmt(monthlyStats.expenses)}</p>
-              <p className="text-[8px] text-muted-foreground uppercase">Ausgaben</p>
+              <p className="text-sm font-bold text-destructive leading-tight">{fmt(monthlyStats.expenses)}</p>
+              <p className="text-[10px] text-muted-foreground uppercase">Ausgaben</p>
             </div>
           </div>
           <div className="text-right">
-            <p className={`text-sm font-bold ${monthlyStats.savingsRate >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>
+            <p className={`text-base font-bold ${monthlyStats.savingsRate >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>
               {monthlyStats.savingsRate}%
             </p>
-            <p className="text-[8px] text-muted-foreground uppercase">{currentMonthLabel}</p>
+            <p className="text-[10px] text-muted-foreground uppercase">{currentMonthLabel}</p>
           </div>
         </div>
       </div>
