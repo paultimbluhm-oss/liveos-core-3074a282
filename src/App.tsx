@@ -23,30 +23,25 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
       <AuthProvider>
-        <GamificationProvider>
-          <AdminDeleteProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="/kalender" element={<Kalender />} />
-                  
-                  <Route path="/schule-v2" element={<SchuleV2 />} />
-                  <Route path="/finanzen-v2" element={<FinanzenV2 />} />
-                  <Route path="/privat" element={<Privat />} />
-                  <Route path="/business" element={<Business />} />
-                  <Route path="/business-v2" element={<BusinessV2 />} />
-                  <Route path="/freunde" element={<Freunde />} />
-                  <Route path="/profil" element={<Profile />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </BrowserRouter>
-            </TooltipProvider>
-          </AdminDeleteProvider>
-        </GamificationProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/kalender" element={<Kalender />} />
+              
+              <Route path="/schule-v2" element={<SchuleV2 />} />
+              <Route path="/finanzen-v2" element={<FinanzenV2 />} />
+              <Route path="/privat" element={<Privat />} />
+              <Route path="/business-v2" element={<BusinessV2 />} />
+              <Route path="/freunde" element={<Freunde />} />
+              <Route path="/profil" element={<Profile />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
       </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>
