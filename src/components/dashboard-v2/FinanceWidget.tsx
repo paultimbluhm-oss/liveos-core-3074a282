@@ -437,7 +437,7 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
             )}
           </div>
           {accounts.map(acc => (
-            <div key={acc.id} className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-muted/20 transition-colors">
+            <div key={acc.id} className="widget-inner-row flex items-center justify-between py-2 px-2.5 rounded-xl border border-border/40 hover:bg-muted/20 transition-colors">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: acc.color || 'hsl(var(--primary))' }} />
                 <span className="text-sm">{acc.name}</span>
@@ -468,7 +468,7 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
             const cost = inv.quantity * inv.avg_purchase_price;
             const pnl = val - cost;
             return (
-              <div key={inv.id} className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-muted/20 transition-colors">
+              <div key={inv.id} className="widget-inner-row flex items-center justify-between py-2 px-2.5 rounded-xl border border-border/40 hover:bg-muted/20 transition-colors">
                 <span className="text-sm">{inv.name}</span>
                 <div className="text-right">
                   <span className="text-sm font-mono font-medium">
@@ -492,7 +492,7 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
           <span className="text-xs text-muted-foreground uppercase tracking-wider px-1">Offen</span>
           {loans.map(loan => (
             <div key={loan.id} className="space-y-1.5">
-              <div className="finance-loan-row flex items-center justify-between py-1.5 px-2.5 rounded-xl bg-muted/20">
+              <div className="widget-inner-row flex items-center justify-between py-2 px-2.5 rounded-xl border border-border/40 bg-muted/20">
                 <div className="flex items-center gap-2 min-w-0">
                   <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${
                     loan.loan_type === 'lent' ? 'bg-amber-500/15' : 'bg-violet-500/15'
@@ -503,7 +503,7 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
                     }
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs font-medium truncate">{loan.person_name}</p>
+                    <p className="text-sm font-semibold truncate">{loan.person_name}</p>
                     {loan.note && <p className="text-[9px] text-muted-foreground truncate">{loan.note}</p>}
                   </div>
                 </div>

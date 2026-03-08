@@ -87,7 +87,7 @@ function EventCountdown({ event }: { event: UpcomingEvent }) {
     : `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
   return (
-    <div className="event-countdown-row flex items-center gap-2 py-1.5 px-2 rounded-lg bg-muted/30">
+    <div className="widget-inner-row flex items-center gap-2.5 py-2 px-2.5 rounded-xl border border-border/40 bg-muted/30">
       <div
         className="w-5 h-5 rounded-full shrink-0 flex items-center justify-center text-[8px] font-bold text-white"
         style={{ backgroundColor: typeColors[event.event_type] || '#94a3b8' }}
@@ -323,7 +323,7 @@ function TimetableWidgetInner({ size, onOpenSheet }: { size: WidgetSize; onOpenS
     hw: HomeworkItem; completed: boolean; onToggle: () => void;
     isOverdue: (d: string) => boolean; formatDueDate: (d: string) => string;
   }) => (
-    <div className={`flex items-center gap-2 p-2 rounded-lg ${completed ? 'opacity-50' : isOD(hw.due_date) ? 'bg-destructive/5' : 'bg-muted/30'}`}>
+    <div className={`widget-inner-row flex items-center gap-2.5 p-2.5 rounded-xl border border-border/40 ${completed ? 'opacity-50' : isOD(hw.due_date) ? 'bg-destructive/5 border-destructive/20' : 'bg-muted/30'}`}>
       <Checkbox checked={completed} onCheckedChange={onToggle} className="shrink-0" />
       <div
         className="w-6 h-6 rounded-full shrink-0 flex items-center justify-center text-[8px] font-bold text-white"
@@ -331,7 +331,7 @@ function TimetableWidgetInner({ size, onOpenSheet }: { size: WidgetSize; onOpenS
       >
         {(hw.course_short_name || hw.course_name).slice(0, 3)}
       </div>
-      <span className={`text-sm flex-1 truncate ${completed ? 'line-through text-muted-foreground' : 'font-medium'}`}>{hw.title}</span>
+      <span className={`text-sm flex-1 truncate ${completed ? 'line-through text-muted-foreground' : 'font-semibold'}`}>{hw.title}</span>
       <span className={`text-xs font-mono shrink-0 ${!completed && isOD(hw.due_date) ? 'text-destructive font-bold' : 'text-muted-foreground'}`}>
         {fdd(hw.due_date)}
       </span>
@@ -379,19 +379,19 @@ function TimetableWidgetInner({ size, onOpenSheet }: { size: WidgetSize; onOpenS
                 <button
                   key={slot.id}
                   onClick={() => handleSlotClick(slot)}
-                  className={`flex items-center gap-1.5 p-1.5 rounded-lg transition-all hover:bg-muted/50 active:scale-[0.98] ${
+                  className={`widget-inner-row flex items-center gap-2 p-2.5 rounded-xl border border-border/40 transition-all hover:bg-muted/50 active:scale-[0.98] ${
                     past ? 'opacity-30' : 'bg-muted/20'
                   }`}
                 >
                   <div
-                    className="w-0.5 rounded-full shrink-0 self-stretch"
+                    className="w-1 rounded-full shrink-0 self-stretch"
                     style={{ backgroundColor: slot.course.color || 'hsl(var(--primary))' }}
                   />
                   <div className="min-w-0 flex-1">
-                    <span className={`text-sm font-medium truncate block ${past ? 'line-through' : ''}`}>
+                    <span className={`text-sm font-semibold truncate block ${past ? 'line-through' : ''}`}>
                       {slot.course.short_name || slot.course.name}
                     </span>
-                    <span className="text-[10px] text-muted-foreground font-mono">
+                    <span className="text-xs text-muted-foreground font-mono">
                       {time?.start || ''}{slot.room ? ` · ${slot.room}` : ''}{slot.is_double_lesson ? ' · 2h' : ''}
                     </span>
                   </div>
