@@ -833,30 +833,15 @@
 }
 
 /* ---- GLOBAL HAZE GUARD (Dark) ---- */
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [class*="bg-card"],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [class*="bg-muted"],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [class*="bg-secondary"],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [class*="bg-popover"],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-sonner-toast],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] button[role="switch"],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] button[role="checkbox"],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] button[role="combobox"],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-radix-select-trigger],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="progressbar"],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] .inline-flex.items-center.rounded-full,
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] .inline-flex.items-center.rounded-md {
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] .bg-card,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] .bg-muted,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [role="dialog"] .bg-secondary,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] .bg-card,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] .bg-muted,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [data-vaul-drawer] .bg-secondary {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   box-shadow: none !important;
   border-color: hsl(var(--border) / 0.45) !important;
-}
-
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [class*="bg-card"],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [class*="bg-popover"] {
   background: hsl(var(--card) / 0.96) !important;
-}
-
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [class*="bg-muted"],
-[data-liquid-glass="true"][data-liquid-glass-mode="dark"] [class*="bg-secondary"] {
-  background: hsl(var(--muted) / 0.85) !important;
 }
