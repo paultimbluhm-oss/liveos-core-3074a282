@@ -87,15 +87,15 @@ function EventCountdown({ event }: { event: UpcomingEvent }) {
     : `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
   return (
-    <div className="event-countdown-row flex items-center gap-1.5 py-1 px-1.5 rounded-lg bg-muted/30">
+    <div className="event-countdown-row flex items-center gap-2 py-1.5 px-2 rounded-lg bg-muted/30">
       <div
-        className="w-4 h-4 rounded-full shrink-0 flex items-center justify-center text-[6px] font-bold text-white"
+        className="w-5 h-5 rounded-full shrink-0 flex items-center justify-center text-[8px] font-bold text-white"
         style={{ backgroundColor: typeColors[event.event_type] || '#94a3b8' }}
       >
         {typeLabels[event.event_type]}
       </div>
-      <span className="text-[10px] font-medium truncate flex-1 min-w-0">{event.topic || event.course_name}</span>
-      <span className={`text-[10px] font-mono font-bold shrink-0 ${diffMs === 0 ? 'text-destructive' : isTodayEvent ? 'text-destructive' : 'text-primary'}`}>
+      <span className="text-xs font-medium truncate flex-1 min-w-0">{event.topic || event.course_name}</span>
+      <span className={`text-xs font-mono font-bold shrink-0 ${diffMs === 0 ? 'text-destructive' : isTodayEvent ? 'text-destructive' : 'text-primary'}`}>
         {diffMs === 0 ? 'Jetzt' : timerStr}
       </span>
     </div>
