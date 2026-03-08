@@ -113,6 +113,19 @@ export function BusinessWidget({ size, onOpenSheet }: { size: WidgetSize; onOpen
     return days;
   }, [companies, contacts]);
 
+  // Last activity info
+  const lastActivity = useMemo(() => {
+    if (companies.length === 0) return null;
+    const lastAdded = companies.reduce((latest, c) => c.created_at > latest.created_at ? c : latest);
+    const lastUpdated = companies.reduce((latest, c) => c.updated_at > latest.updated_at ? c : latest);
+    return {
+      lastAddedDays: differenceInDays(new Date(), new Date(lastAdded.created_at)),
+      lastAddedName: lastAdded.name,
+      lastUpdatedDays: differenceInDays(new Date(), new Date(lastUpdated.updated_at)),
+      lastUpdatedName: lastUpdated.name,
+    };
+  }, [companies]);
+
   // Follow-ups
   const followUps = useMemo(() => {
     const completedKey = statusEntries.find(s => s.key === 'completed')?.key || 'completed';
