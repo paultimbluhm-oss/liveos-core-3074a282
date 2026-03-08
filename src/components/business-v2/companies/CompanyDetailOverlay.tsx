@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, Building2, Trash2 } from 'lucide-react';
+import { ArrowLeft, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -8,8 +8,7 @@ import { Company } from '../types';
 import { OverviewTab } from './detail-tabs/OverviewTab';
 import { TimelineTab } from './detail-tabs/TimelineTab';
 import { ContactsTab } from './detail-tabs/ContactsTab';
-import { TodosTab } from './detail-tabs/TodosTab';
-import { LinksTab } from './detail-tabs/LinksTab';
+import { OrdersTab } from './detail-tabs/OrdersTab';
 
 interface CompanyDetailOverlayProps {
   company: Company;
@@ -70,27 +69,23 @@ export function CompanyDetailOverlay({ company, onBack }: CompanyDetailOverlayPr
       </div>
 
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="w-full grid grid-cols-5 h-9">
+        <TabsList className="w-full grid grid-cols-4 h-9">
           <TabsTrigger value="overview" className="text-xs px-1">Info</TabsTrigger>
-          <TabsTrigger value="timeline" className="text-xs px-1">Timeline</TabsTrigger>
+          <TabsTrigger value="orders" className="text-xs px-1">Auftraege</TabsTrigger>
           <TabsTrigger value="contacts" className="text-xs px-1">Kontakte</TabsTrigger>
-          <TabsTrigger value="todos" className="text-xs px-1">To-Dos</TabsTrigger>
-          <TabsTrigger value="links" className="text-xs px-1">Links</TabsTrigger>
+          <TabsTrigger value="timeline" className="text-xs px-1">Timeline</TabsTrigger>
         </TabsList>
         <TabsContent value="overview" className="mt-4">
           <OverviewTab company={company} />
         </TabsContent>
-        <TabsContent value="timeline" className="mt-4">
-          <TimelineTab company={company} />
+        <TabsContent value="orders" className="mt-4">
+          <OrdersTab company={company} />
         </TabsContent>
         <TabsContent value="contacts" className="mt-4">
           <ContactsTab company={company} />
         </TabsContent>
-        <TabsContent value="todos" className="mt-4">
-          <TodosTab company={company} />
-        </TabsContent>
-        <TabsContent value="links" className="mt-4">
-          <LinksTab company={company} />
+        <TabsContent value="timeline" className="mt-4">
+          <TimelineTab company={company} />
         </TabsContent>
       </Tabs>
     </div>

@@ -1,5 +1,5 @@
 export type RelationType = 'partner' | 'competitor' | 'subsidiary' | 'supplier' | 'customer';
-export type TimelineEntryType = 'call' | 'email' | 'status_change' | 'note';
+export type TimelineEntryType = 'call' | 'email' | 'status_change' | 'note' | 'order_update';
 
 export interface CompanyStatus {
   id: string;
@@ -101,6 +101,44 @@ export interface CompanyLink {
   created_at: string;
 }
 
+export interface CompanyOrder {
+  id: string;
+  user_id: string;
+  company_id: string;
+  title: string;
+  description?: string;
+  status: string;
+  revenue: number;
+  expenses: number;
+  time_spent_minutes: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OrderChecklistItem {
+  id: string;
+  user_id: string;
+  order_id: string;
+  title: string;
+  completed: boolean;
+  completed_at?: string;
+  order_index: number;
+  created_at: string;
+}
+
+export const DEFAULT_CHECKLIST_TEMPLATE = [
+  'Auftrag erhalten',
+  'Rechtliche Pruefung',
+  'Angebot erstellen',
+  'Angebot anpassen',
+  'Anzahlung erhalten',
+  'Rechnung schreiben',
+  'Auftrag durchfuehren',
+  'Ruecksprache mit Kunde',
+  'Abnahme',
+  'Restzahlung erhalten',
+];
+
 export const DEFAULT_STATUSES = [
   { key: 'researched', name: 'Recherchiert', color: '#64748b', order_index: 0 },
   { key: 'contacted', name: 'Angeschrieben', color: '#3b82f6', order_index: 1 },
@@ -121,4 +159,5 @@ export const TIMELINE_TYPE_CONFIG: Record<TimelineEntryType, { label: string; ic
   email: { label: 'E-Mail', icon: 'Mail' },
   status_change: { label: 'Status-Wechsel', icon: 'ArrowRight' },
   note: { label: 'Notiz', icon: 'StickyNote' },
+  order_update: { label: 'Auftrags-Update', icon: 'ClipboardList' },
 };
