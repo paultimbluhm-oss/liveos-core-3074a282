@@ -845,3 +845,99 @@
   border-color: hsl(var(--border) / 0.45) !important;
   background: hsl(var(--card) / 0.96) !important;
 }
+
+/* ===== Dashboard Glass: Enhanced inner items ===== */
+
+/* ---- Dark: Inner list items (habit rows, task rows, finance rows) ---- */
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] .rounded-lg.bg-muted\/30,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] .rounded-lg.bg-success\/10,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] .rounded-lg.bg-success\/5,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] .rounded-lg.bg-destructive\/8,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] .rounded-xl.bg-muted\/30 {
+  background: hsl(220 20% 14% / 0.5) !important;
+  border: 0.5px solid hsl(0 0% 100% / 0.07) !important;
+  box-shadow: 0 2px 8px -2px hsl(0 0% 0% / 0.3), inset 0 0.5px 0 hsl(0 0% 100% / 0.05) !important;
+}
+
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] .rounded-lg.bg-success\/10,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] .rounded-lg.bg-success\/5 {
+  background: hsl(155 40% 16% / 0.45) !important;
+  border-color: hsl(155 50% 40% / 0.15) !important;
+}
+
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] .rounded-lg.bg-destructive\/8 {
+  background: hsl(0 35% 18% / 0.45) !important;
+  border-color: hsl(0 50% 45% / 0.15) !important;
+}
+
+/* Task cards with shadow */
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] .rounded-xl.bg-card.border {
+  background: hsl(220 20% 13% / 0.55) !important;
+  border: 0.5px solid hsl(0 0% 100% / 0.08) !important;
+  box-shadow: 0 3px 12px -3px hsl(0 0% 0% / 0.4), inset 0 0.5px 0 hsl(0 0% 100% / 0.06) !important;
+}
+
+/* Overdue task cards */
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] .rounded-xl.bg-rose-500\/5 {
+  background: hsl(0 30% 16% / 0.5) !important;
+  border: 0.5px solid hsl(0 50% 50% / 0.2) !important;
+  box-shadow: 0 3px 12px -3px hsl(0 40% 20% / 0.3), inset 0 0.5px 0 hsl(0 0% 100% / 0.04) !important;
+}
+
+/* Finance account rows */
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] .rounded-lg.hover\:bg-muted\/20 {
+  border: 0.5px solid hsl(0 0% 100% / 0.05) !important;
+  box-shadow: 0 1px 4px -1px hsl(0 0% 0% / 0.2) !important;
+}
+
+/* Compact habit grid items */
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] .rounded-xl.bg-muted\/30.hover\:bg-muted\/60,
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] .rounded-xl.bg-success\/10.ring-1 {
+  background: hsl(220 20% 14% / 0.5) !important;
+  border: 0.5px solid hsl(0 0% 100% / 0.07) !important;
+  box-shadow: 0 2px 8px -2px hsl(0 0% 0% / 0.3), inset 0 0.5px 0 hsl(0 0% 100% / 0.05) !important;
+}
+
+[data-liquid-glass="true"][data-liquid-glass-mode="dark"] .rounded-xl.bg-success\/10.ring-1 {
+  background: hsl(155 35% 16% / 0.45) !important;
+  border-color: hsl(155 50% 40% / 0.2) !important;
+}
+
+/* ---- Light: Inner list items ---- */
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] .rounded-lg.bg-muted\/30,
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] .rounded-lg.bg-success\/10,
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] .rounded-lg.bg-success\/5,
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] .rounded-lg.bg-destructive\/8,
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] .rounded-xl.bg-muted\/30 {
+  background: hsl(0 0% 100% / 0.45) !important;
+  border: 0.5px solid hsl(220 15% 50% / 0.1) !important;
+  box-shadow: 0 2px 8px -2px hsl(220 15% 30% / 0.1), inset 0 0.5px 0 hsl(0 0% 100% / 0.5) !important;
+}
+
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] .rounded-lg.bg-success\/10,
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] .rounded-lg.bg-success\/5 {
+  background: hsl(155 40% 95% / 0.6) !important;
+  border-color: hsl(155 40% 45% / 0.15) !important;
+}
+
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] .rounded-lg.bg-destructive\/8 {
+  background: hsl(0 40% 95% / 0.6) !important;
+  border-color: hsl(0 50% 55% / 0.15) !important;
+}
+
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] .rounded-xl.bg-card.border {
+  background: hsl(0 0% 100% / 0.5) !important;
+  border: 0.5px solid hsl(220 15% 50% / 0.12) !important;
+  box-shadow: 0 3px 12px -3px hsl(220 15% 30% / 0.1), inset 0 0.5px 0 hsl(0 0% 100% / 0.6) !important;
+}
+
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] .rounded-xl.bg-rose-500\/5 {
+  background: hsl(0 50% 97% / 0.6) !important;
+  border: 0.5px solid hsl(0 50% 55% / 0.15) !important;
+  box-shadow: 0 3px 12px -3px hsl(0 30% 50% / 0.1), inset 0 0.5px 0 hsl(0 0% 100% / 0.5) !important;
+}
+
+[data-liquid-glass="true"][data-liquid-glass-mode="light"] .rounded-lg.hover\:bg-muted\/20 {
+  border: 0.5px solid hsl(220 15% 50% / 0.08) !important;
+  box-shadow: 0 1px 4px -1px hsl(220 15% 30% / 0.06) !important;
+}
