@@ -237,6 +237,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     return (localStorage.getItem('app-liquid-glass-mode') as LiquidGlassMode) || 'dark';
   });
 
+  const [dashboardLiquidGlass, setDashboardLiquidGlassState] = useState<boolean>(() => {
+    return localStorage.getItem('app-dashboard-liquid-glass') === 'true';
+  });
+
   const setLiquidGlass = useCallback((enabled: boolean) => {
     setLiquidGlassState(enabled);
     localStorage.setItem('app-liquid-glass', String(enabled));
@@ -245,6 +249,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const setLiquidGlassMode = useCallback((mode: LiquidGlassMode) => {
     setLiquidGlassModeState(mode);
     localStorage.setItem('app-liquid-glass-mode', mode);
+  }, []);
+
+  const setDashboardLiquidGlass = useCallback((enabled: boolean) => {
+    setDashboardLiquidGlassState(enabled);
+    localStorage.setItem('app-dashboard-liquid-glass', String(enabled));
   }, []);
 
   const setTheme = (t: ThemeName) => {
@@ -276,7 +285,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [liquidGlass, liquidGlassMode]);
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, customColors, setCustomColors, liquidGlass, setLiquidGlass, liquidGlassMode, setLiquidGlassMode }}>
+    <ThemeContext.Provider value={{ theme, setTheme, customColors, setCustomColors, liquidGlass, setLiquidGlass, liquidGlassMode, setLiquidGlassMode, dashboardLiquidGlass, setDashboardLiquidGlass }}>
       {children}
     </ThemeContext.Provider>
   );
