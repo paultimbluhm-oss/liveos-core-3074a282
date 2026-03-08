@@ -103,7 +103,8 @@ export function HabitDetailSheet({ open, onOpenChange, habitId, onUpdated }: Hab
     if (!habit || !editName.trim()) return;
     const { error } = await supabase.from('habits').update({ 
       name: editName.trim(), 
-      icon: editIcon 
+      icon: editIcon,
+      half_width: editHalfWidth,
     } as any).eq('id', habit.id);
     if (error) {
       toast.error('Fehler beim Speichern');
