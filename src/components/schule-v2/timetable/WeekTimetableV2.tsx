@@ -100,15 +100,15 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
         return totalWeight > 0 ? Math.round((weightedSum / totalWeight) * 10) / 10 : null;
       };
 
-      // Grades for current semester
+      // Grades for current semester courses (may contain grades tagged semester 1 AND 2)
       const { data: gradesData } = await supabase
         .from('v2_grades')
         .select('*')
         .eq('user_id', user.id)
         .in('course_id', scopeCourseIds);
 
-      // If in semester 2, also load semester 1 courses + grades for cross-semester display
-      let hj1Averages: Record<string, number | null> = {}; // keyed by HJ2 course name
+      // Also load HJ1 courses + grades when in semester 2 (for name-matched cross-semester)
+      let hj1CourseAverages: Record<string, number | null> = {}; // keyed by course name
       if (scope.semester === 2) {
         const { data: hj1Courses } = await supabase
           .from('v2_courses')
@@ -130,23 +130,38 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
             const grades = (hj1GradesData || []).filter((g: any) => g.course_id === hj1Course.id);
             const avg = calcCourseAvg(grades, hj1Course);
             if (avg !== null) {
-              hj1Averages[hj1Course.name] = avg;
+              hj1CourseAverages[hj1Course.name] = avg;
             }
           });
         }
       }
 
-      // Build averages: { courseId: { current, hj1Only, combined } }
+      // Build averages per course
       const averages: Record<string, number | null> = {};
       const gradeSource: Record<string, 'current' | 'hj1only' | 'combined'> = {};
       
       courses.forEach(course => {
-        const courseGrades = (gradesData || []).filter((g: any) => g.course_id === course.id);
-        const currentAvg = calcCourseAvg(courseGrades, course);
-        const hj1Avg = scope.semester === 2 ? (hj1Averages[course.name] ?? null) : null;
+        const allCourseGrades = (gradesData || []).filter((g: any) => g.course_id === course.id);
+        
+        // Split grades by their semester field
+        const hj2Grades = allCourseGrades.filter((g: any) => g.semester === 2 || (scope.semester === 1 && !g.semester));
+        const hj1GradesOnThisCourse = allCourseGrades.filter((g: any) => g.semester === 1);
+        
+        // Current semester average (only grades tagged with current semester)
+        const currentSemGrades = scope.semester === 2 ? hj2Grades : allCourseGrades;
+        const currentAvg = calcCourseAvg(currentSemGrades, course);
+        
+        // HJ1 average: prefer grades tagged semester=1 on this course, fallback to name-matched HJ1 course
+        let hj1Avg: number | null = null;
+        if (scope.semester === 2) {
+          if (hj1GradesOnThisCourse.length > 0) {
+            hj1Avg = calcCourseAvg(hj1GradesOnThisCourse, course);
+          } else {
+            hj1Avg = hj1CourseAverages[course.name] ?? null;
+          }
+        }
 
         if (currentAvg !== null && hj1Avg !== null) {
-          // Both semesters: (rounded HJ1 + rounded HJ2) / 2, rounded
           const roundedHj1 = Math.round(hj1Avg);
           const roundedHj2 = Math.round(currentAvg);
           averages[course.id] = Math.round((roundedHj1 + roundedHj2) / 2 * 10) / 10;
