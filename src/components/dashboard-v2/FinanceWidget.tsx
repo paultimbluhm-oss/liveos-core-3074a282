@@ -356,7 +356,14 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
           <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
             <Wallet className="w-4 h-4 text-primary" strokeWidth={1.5} />
           </div>
-          <button onClick={onOpenSheet} className="text-sm font-semibold hover:text-primary transition-colors">Finanzen</button>
+          <div>
+            <button onClick={onOpenSheet} className="text-sm font-semibold hover:text-primary transition-colors">Finanzen</button>
+            {lastUpdatedLabel && (
+              <p className={`text-[9px] ${isStale ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
+                {lastUpdatedLabel}
+              </p>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setShowLoanForm(!showLoanForm); setShowAddTx(false); }}>
