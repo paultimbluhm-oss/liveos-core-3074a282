@@ -440,7 +440,7 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
             <div key={acc.id} className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-muted/20 transition-colors">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: acc.color || 'hsl(var(--primary))' }} />
-                <span className="text-xs">{acc.name}</span>
+                <span className="text-sm">{acc.name}</span>
               </div>
               {editingBalances ? (
                 <Input
