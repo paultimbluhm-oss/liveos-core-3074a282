@@ -355,6 +355,43 @@ export function BusinessWidget({ size, onOpenSheet }: { size: WidgetSize; onOpen
         </div>
       )}
 
+      {/* Order Stats */}
+      {orderStats.total > 0 && (
+        <div className="space-y-1.5 pt-1 border-t border-border/30">
+          <span className="text-[10px] text-muted-foreground uppercase tracking-wider px-1">Auftraege</span>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-muted/20">
+              <ClipboardList className="w-3.5 h-3.5 text-primary shrink-0" strokeWidth={1.5} />
+              <div className="min-w-0">
+                <p className="text-[10px] text-muted-foreground">Gesamt</p>
+                <p className="text-xs font-bold">{orderStats.total}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-muted/20">
+              <Euro className="w-3.5 h-3.5 text-primary shrink-0" strokeWidth={1.5} />
+              <div className="min-w-0">
+                <p className="text-[10px] text-muted-foreground">Anzahlung</p>
+                <p className="text-xs font-bold">{orderStats.withDeposit}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-muted/20">
+              <TrendingDown className="w-3.5 h-3.5 text-emerald-500 shrink-0" strokeWidth={1.5} />
+              <div className="min-w-0">
+                <p className="text-[10px] text-muted-foreground">Umsatz</p>
+                <p className="text-xs font-bold">{orderStats.totalRevenue.toFixed(0)} EUR</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-muted/20">
+              <TrendingDown className="w-3.5 h-3.5 text-destructive shrink-0" strokeWidth={1.5} />
+              <div className="min-w-0">
+                <p className="text-[10px] text-muted-foreground">Ausgaben</p>
+                <p className="text-xs font-bold">{orderStats.totalExpenses.toFixed(0)} EUR</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Quick Actions (large only) */}
       {size === 'large' && showStatusAction && (
         <div className="space-y-2 p-3 rounded-xl bg-muted/20 border border-border/30">
