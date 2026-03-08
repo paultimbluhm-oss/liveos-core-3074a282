@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Briefcase, Plus, Flame, Clock, Users, Building2, ChevronRight, StickyNote, ListChecks } from 'lucide-react';
+import { Briefcase, Plus, Flame, Clock, Users, Building2, ChevronRight, StickyNote, ListChecks, ClipboardList, Euro, TrendingDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -43,12 +43,17 @@ export function BusinessWidget({ size, onOpenSheet }: { size: WidgetSize; onOpen
 
   const [loading, setLoading] = useState(true);
 
+  // Order stats
+  const [orderStats, setOrderStats] = useState({ total: 0, withDeposit: 0, totalRevenue: 0, totalExpenses: 0 });
+
   const loadData = useCallback(async () => {
     if (!user) return;
-    const [compRes, contRes, statusRes] = await Promise.all([
+    const [compRes, contRes, statusRes, ordersRes, checklistRes] = await Promise.all([
       supabase.from('v2_companies').select('*').eq('user_id', user.id).order('updated_at', { ascending: false }),
       supabase.from('v2_company_contacts').select('id, company_id, created_at').eq('user_id', user.id),
       supabase.from('v2_company_statuses').select('*').eq('user_id', user.id).order('order_index'),
+      supabase.from('v2_company_orders').select('id, revenue, expenses, status').eq('user_id', user.id),
+      supabase.from('v2_order_checklist_items').select('order_id, title, completed').eq('user_id', user.id),
     ]);
     const todosRes = await (supabase.from('v2_company_todos').select('id').eq('user_id', user.id) as any).eq('done', false);
     setCompanies((compRes.data || []) as Company[]);
@@ -56,6 +61,23 @@ export function BusinessWidget({ size, onOpenSheet }: { size: WidgetSize; onOpen
     setOpenTodos((todosRes.data || []).length);
     const loadedStatuses = (statusRes.data || []) as StatusEntry[];
     setStatusEntries(loadedStatuses.length > 0 ? loadedStatuses : DEFAULT_STATUSES.map(s => ({ ...s })));
+
+    // Calculate order stats
+    const allOrders = (ordersRes.data || []) as { id: string; revenue: number; expenses: number; status: string }[];
+    const allChecklist = (checklistRes.data || []) as { order_id: string; title: string; completed: boolean }[];
+    const depositOrders = new Set<string>();
+    allChecklist.forEach(item => {
+      if (item.completed && item.title.toLowerCase().includes('anzahlung')) {
+        depositOrders.add(item.order_id);
+      }
+    });
+    setOrderStats({
+      total: allOrders.length,
+      withDeposit: depositOrders.size,
+      totalRevenue: allOrders.reduce((s, o) => s + Number(o.revenue || 0), 0),
+      totalExpenses: allOrders.reduce((s, o) => s + Number(o.expenses || 0), 0),
+    });
+
     setLoading(false);
   }, [user]);
 
@@ -330,6 +352,43 @@ export function BusinessWidget({ size, onOpenSheet }: { size: WidgetSize; onOpen
               <span className="text-[10px] text-muted-foreground shrink-0 ml-2">{fu.daysSince}d</span>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Order Stats */}
+      {orderStats.total > 0 && (
+        <div className="space-y-1.5 pt-1 border-t border-border/30">
+          <span className="text-[10px] text-muted-foreground uppercase tracking-wider px-1">Auftraege</span>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-muted/20">
+              <ClipboardList className="w-3.5 h-3.5 text-primary shrink-0" strokeWidth={1.5} />
+              <div className="min-w-0">
+                <p className="text-[10px] text-muted-foreground">Gesamt</p>
+                <p className="text-xs font-bold">{orderStats.total}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-muted/20">
+              <Euro className="w-3.5 h-3.5 text-primary shrink-0" strokeWidth={1.5} />
+              <div className="min-w-0">
+                <p className="text-[10px] text-muted-foreground">Anzahlung</p>
+                <p className="text-xs font-bold">{orderStats.withDeposit}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-muted/20">
+              <TrendingDown className="w-3.5 h-3.5 text-emerald-500 shrink-0" strokeWidth={1.5} />
+              <div className="min-w-0">
+                <p className="text-[10px] text-muted-foreground">Umsatz</p>
+                <p className="text-xs font-bold">{orderStats.totalRevenue.toFixed(0)} EUR</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-muted/20">
+              <TrendingDown className="w-3.5 h-3.5 text-destructive shrink-0" strokeWidth={1.5} />
+              <div className="min-w-0">
+                <p className="text-[10px] text-muted-foreground">Ausgaben</p>
+                <p className="text-xs font-bold">{orderStats.totalExpenses.toFixed(0)} EUR</p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
