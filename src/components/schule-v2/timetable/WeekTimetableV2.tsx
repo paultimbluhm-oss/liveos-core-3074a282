@@ -5,7 +5,7 @@ import { useSchoolV2 } from '../context/SchoolV2Context';
 import { useGradeColors } from '@/hooks/useGradeColors';
 import { V2Course, V2TimetableSlot, V2Grade, V2Homework, PERIOD_TIMES, WEEKDAYS } from '../types';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Settings } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Settings, Calculator, BarChart3, UserX } from 'lucide-react';
 import { format, addWeeks, subWeeks, startOfWeek, addDays, isToday } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { GradeColorSettingsV2 } from '../settings/GradeColorSettingsV2';
@@ -18,9 +18,10 @@ interface EventInfo {
 
 interface WeekTimetableV2Props {
   onSlotClick?: (slot: V2TimetableSlot, course: V2Course) => void;
+  onOpenSheet?: (sheet: 'abi' | 'stats' | 'absences') => void;
 }
 
-export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
+export function WeekTimetableV2({ onSlotClick, onOpenSheet }: WeekTimetableV2Props) {
   const { user } = useAuth();
   const { scope } = useSchoolV2();
   const { settings: gradeColorSettings } = useGradeColors();
@@ -326,6 +327,15 @@ export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
         </button>
         
         <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onOpenSheet?.('abi')}>
+            <Calculator className="w-4 h-4" strokeWidth={1.5} />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onOpenSheet?.('stats')}>
+            <BarChart3 className="w-4 h-4" strokeWidth={1.5} />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onOpenSheet?.('absences')}>
+            <UserX className="w-4 h-4" strokeWidth={1.5} />
+          </Button>
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goToNextWeek}>
             <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
           </Button>

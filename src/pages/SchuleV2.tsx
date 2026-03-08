@@ -128,7 +128,7 @@ function SchuleV2Content() {
           <div className="flex flex-col lg:flex-row gap-4">
             {/* Timetable + Vocab - links */}
             <div className={`transition-all duration-300 lg:flex-1 space-y-4`}>
-              <WeekTimetableV2 key={timetableKey} onSlotClick={handleSlotClick} />
+              <WeekTimetableV2 key={timetableKey} onSlotClick={handleSlotClick} onOpenSheet={setActiveSheet} />
               <VocabSection />
             </div>
 
