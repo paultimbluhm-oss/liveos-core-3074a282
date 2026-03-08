@@ -379,19 +379,19 @@ function TimetableWidgetInner({ size, onOpenSheet }: { size: WidgetSize; onOpenS
                 <button
                   key={slot.id}
                   onClick={() => handleSlotClick(slot)}
-                  className={`flex items-center gap-1.5 p-1.5 rounded-lg transition-all hover:bg-muted/50 active:scale-[0.98] ${
+                  className={`widget-inner-row flex items-center gap-2 p-2.5 rounded-xl border border-border/40 transition-all hover:bg-muted/50 active:scale-[0.98] ${
                     past ? 'opacity-30' : 'bg-muted/20'
                   }`}
                 >
                   <div
-                    className="w-0.5 rounded-full shrink-0 self-stretch"
+                    className="w-1 rounded-full shrink-0 self-stretch"
                     style={{ backgroundColor: slot.course.color || 'hsl(var(--primary))' }}
                   />
                   <div className="min-w-0 flex-1">
-                    <span className={`text-sm font-medium truncate block ${past ? 'line-through' : ''}`}>
+                    <span className={`text-sm font-semibold truncate block ${past ? 'line-through' : ''}`}>
                       {slot.course.short_name || slot.course.name}
                     </span>
-                    <span className="text-[10px] text-muted-foreground font-mono">
+                    <span className="text-xs text-muted-foreground font-mono">
                       {time?.start || ''}{slot.room ? ` · ${slot.room}` : ''}{slot.is_double_lesson ? ' · 2h' : ''}
                     </span>
                   </div>
