@@ -273,8 +273,8 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
             </button>
             {streak !== 0 && (
               <div className="flex items-center gap-0.5 shrink-0">
-                <Flame className={`w-2.5 h-2.5 ${streakColor}`} />
-                <span className={`text-[10px] font-mono ${streakColor} ${streakWeight}`}>{streak}</span>
+                <Flame className={`w-3 h-3 ${streakColor}`} />
+                <span className={`text-xs font-mono ${streakColor} ${streakWeight}`}>{streak}</span>
               </div>
             )}
             {adopted && <Sparkles className="w-2.5 h-2.5 text-success shrink-0" />}
