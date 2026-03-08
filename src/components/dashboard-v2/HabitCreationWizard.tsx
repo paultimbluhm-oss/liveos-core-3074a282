@@ -124,6 +124,7 @@ export function HabitCreationWizard({ open, onOpenChange, onCreated }: HabitCrea
       const { error } = await supabase.from('habits').insert({
         user_id: user.id,
         name: data.name.trim(),
+        icon: data.icon,
         habit_type: data.habit_type,
         identity_statement: data.identity_statement.trim(),
         when_trigger: data.when_trigger.trim(),
