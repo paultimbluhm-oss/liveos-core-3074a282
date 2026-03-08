@@ -2306,6 +2306,7 @@ export type Database = {
           course_id: string
           course_type: string
           created_at: string
+          exam_points: number | null
           id: string
           user_id: string
         }
@@ -2313,6 +2314,7 @@ export type Database = {
           course_id: string
           course_type?: string
           created_at?: string
+          exam_points?: number | null
           id?: string
           user_id: string
         }
@@ -2320,6 +2322,7 @@ export type Database = {
           course_id?: string
           course_type?: string
           created_at?: string
+          exam_points?: number | null
           id?: string
           user_id?: string
         }
