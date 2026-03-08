@@ -764,14 +764,14 @@
   box-shadow: 0 8px 24px hsl(220 15% 30% / 0.1) !important;
 }
 
-/* Popover / dropdown (light) */
+/* Popover / dropdown (light) - top-level only, solid enough */
 [data-liquid-glass="true"][data-liquid-glass-mode="light"] [data-radix-popper-content-wrapper] > * {
-  background: hsl(0 0% 100% / 0.55) !important;
-  backdrop-filter: blur(60px) saturate(2) brightness(1.05) !important;
-  -webkit-backdrop-filter: blur(60px) saturate(2) brightness(1.05) !important;
-  border: 0.5px solid hsl(0 0% 100% / 0.4) !important;
+  background: hsl(0 0% 100% / 0.85) !important;
+  backdrop-filter: blur(40px) saturate(1.8) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(1.8) !important;
+  border: 0.5px solid hsl(220 10% 80%) !important;
   border-radius: var(--glass-radius) !important;
-  box-shadow: 0 16px 48px hsl(220 15% 30% / 0.1), inset 0 0.5px 0 hsl(0 0% 100% / 0.5) !important;
+  box-shadow: 0 16px 48px hsl(220 15% 30% / 0.1) !important;
 }
 
 /* Tabs (light) */
