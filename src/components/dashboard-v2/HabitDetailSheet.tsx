@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Flame, Eye, EyeOff, Pencil, X as XIcon } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { icons } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
