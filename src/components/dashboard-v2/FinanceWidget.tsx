@@ -179,6 +179,8 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
 
   const currentMonthLabel = format(new Date(), 'MMM', { locale: de });
 
+  const fmt = (v: number) => v.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+
   const startEditBalances = () => {
     const edits: Record<string, string> = {};
     accounts.forEach(a => { edits[a.id] = a.balance.toString(); });
