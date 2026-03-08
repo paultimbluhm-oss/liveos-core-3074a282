@@ -1,7 +1,6 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { BusinessV2Provider } from '@/components/business-v2/context/BusinessV2Context';
 import { CompanyList } from '@/components/business-v2/companies/CompanyList';
-import { useTheme } from '@/contexts/ThemeContext';
 
 interface BusinessSheetWrapperProps {
   open: boolean;
@@ -9,16 +8,9 @@ interface BusinessSheetWrapperProps {
 }
 
 export function BusinessSheetWrapper({ open, onOpenChange }: BusinessSheetWrapperProps) {
-  const { liquidGlass, dashboardLiquidGlass, liquidGlassMode } = useTheme();
-  const glassActive = liquidGlass || dashboardLiquidGlass;
-
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="bottom"
-        className="h-[92vh] rounded-t-2xl p-0"
-        {...(glassActive ? { 'data-business-glass': 'true', 'data-liquid-glass-mode': liquidGlassMode } : {})}
-      >
+      <SheetContent side="bottom" className="h-[92vh] rounded-t-2xl p-0">
         <BusinessV2Provider>
           <SheetHeader className="px-4 pt-4 pb-2">
             <SheetTitle>Business Pipeline</SheetTitle>

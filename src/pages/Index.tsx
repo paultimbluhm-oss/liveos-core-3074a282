@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
-import { useTheme } from '@/contexts/ThemeContext';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useDashboardV2Config, WIDGET_CATALOG, type DashboardSettings } from '@/hooks/useDashboardV2';
 import { StreakRingWidget } from '@/components/dashboard-v2/StreakRingWidget';
@@ -15,7 +14,7 @@ import { SchoolSheetWrapper } from '@/components/dashboard-v2/SchoolSheetWrapper
 import { BusinessWidget } from '@/components/dashboard-v2/BusinessWidget';
 import { BusinessSheetWrapper } from '@/components/dashboard-v2/BusinessSheetWrapper';
 
-import { Settings2, X, Plus, Minus, EyeOff, ChevronUp, ChevronDown, Sparkles } from 'lucide-react';
+import { Settings2, X, Plus, Minus, EyeOff, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -42,15 +41,11 @@ export default function Index() {
   const { user, loading: authLoading } = useAuth();
   const { loading: profileLoading } = useProfile();
   const { widgets, visibleWidgets, loading: configLoading, updateWidgetSize, toggleWidget, moveWidget, resetToDefault, settings, updateSettings } = useDashboardV2Config();
-  const { liquidGlass, liquidGlassMode, dashboardLiquidGlass, setDashboardLiquidGlass } = useTheme();
   const navigate = useNavigate();
   const [editMode, setEditMode] = useState(false);
   const [financeSheetOpen, setFinanceSheetOpen] = useState(false);
   const [schoolSheetOpen, setSchoolSheetOpen] = useState(false);
   const [businessSheetOpen, setBusinessSheetOpen] = useState(false);
-
-  // Dashboard-only glass: apply when global is OFF but dashboard toggle is ON
-  const dashGlassActive = !liquidGlass && dashboardLiquidGlass;
 
   useEffect(() => {
     if (!authLoading && !user) navigate('/auth');
@@ -120,13 +115,7 @@ export default function Index() {
 
   return (
     <AppLayout>
-      <div
-        className="p-4 pt-2 pb-24 mx-auto space-y-3 max-w-lg md:max-w-3xl lg:max-w-5xl"
-        {...(dashGlassActive ? {
-          'data-liquid-glass': 'true',
-          'data-liquid-glass-mode': liquidGlassMode,
-        } : {})}
-      >
+      <div className="p-4 pt-2 pb-24 mx-auto space-y-3 max-w-lg md:max-w-3xl lg:max-w-5xl">
 
         {/* Mobile widget list */}
         <div className="md:hidden space-y-3">
@@ -233,18 +222,7 @@ export default function Index() {
 
         {/* Bottom edit mode trigger */}
         {!editMode && (
-          <div className="flex justify-center gap-2 pt-4">
-            {!liquidGlass && (
-              <Button
-                variant={dashboardLiquidGlass ? 'default' : 'ghost'}
-                size="sm"
-                className="text-xs gap-1.5"
-                onClick={() => setDashboardLiquidGlass(!dashboardLiquidGlass)}
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                Liquid Glass
-              </Button>
-            )}
+          <div className="flex justify-center pt-4">
             <Button
               variant="ghost"
               size="sm"

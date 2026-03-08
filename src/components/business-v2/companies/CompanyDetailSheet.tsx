@@ -42,7 +42,7 @@ export function CompanyDetailSheet({ open, onOpenChange, company }: CompanyDetai
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto" data-no-glass="true">
+        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
           <SheetHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="h-8 w-8">

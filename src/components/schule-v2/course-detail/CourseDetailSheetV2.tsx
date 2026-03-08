@@ -115,7 +115,7 @@ export function CourseDetailSheetV2({ open, onOpenChange, course, onTimetableCha
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl" data-no-glass="true">
+        <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl">
           <SheetHeader className="pb-4">
             <div className="flex items-center gap-3">
               <div 
