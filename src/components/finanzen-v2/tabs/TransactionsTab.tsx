@@ -59,6 +59,7 @@ export function TransactionsTab() {
     accounts, 
     investments, 
     categories,
+    loans,
     loading, 
     refreshTransactions, 
     refreshAutomations 
