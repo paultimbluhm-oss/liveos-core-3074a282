@@ -149,7 +149,9 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
     }
   };
 
-  const doneCount = completions.length;
+  const checkHabits = habits.filter(h => h.habit_type !== 'count');
+  const countHabitsWithValue = habits.filter(h => h.habit_type === 'count' && (countValues[h.id] || 0) > 0);
+  const doneCount = checkHabits.filter(h => completions.includes(h.id)).length + countHabitsWithValue.length;
   const total = habits.length;
   const pct = total > 0 ? Math.round((doneCount / total) * 100) : 0;
   const allDone = total > 0 && doneCount === total;
