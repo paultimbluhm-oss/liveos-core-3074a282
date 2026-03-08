@@ -181,6 +181,15 @@ export function HabitCreationWizard({ open, onOpenChange, onCreated }: HabitCrea
           {/* Fields */}
           <div className="space-y-4">
             {currentStep.fields.map(field => {
+              if (field === 'icon') {
+                return (
+                  <div key={field} className="space-y-1.5">
+                    <p className="text-sm font-medium">Icon</p>
+                    <IconPicker value={data.icon} onChange={(icon) => update('icon', icon)} />
+                  </div>
+                );
+              }
+
               if (field === 'habit_type') {
                 return (
                   <div key={field} className="space-y-1.5">
