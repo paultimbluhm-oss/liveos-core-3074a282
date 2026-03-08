@@ -378,7 +378,7 @@ export function FinanceWidget({ size, onOpenSheet }: { size: WidgetSize; onOpenS
       {/* Net Worth + Breakdown */}
       <div className="flex items-end justify-between">
         <div>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Nettovermoegen</p>
+          <p className="text-xs text-muted-foreground uppercase tracking-wider">Nettovermoegen</p>
           <p className="text-2xl font-bold tracking-tight">{fmt(netWorth)}</p>
         </div>
         <div className="text-right space-y-0.5">
