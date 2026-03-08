@@ -105,6 +105,25 @@ function SchuleV2Content() {
             <StatsHeaderV2 totalLessons={totalLessons} />
           </div>
 
+          {/* Analytics Quick Access */}
+          <div className="grid grid-cols-4 gap-2 mb-4">
+            {[
+              { id: 'weekly' as const, icon: CalendarDays, label: 'Woche' },
+              { id: 'abi' as const, icon: Calculator, label: 'Abi-Rechner' },
+              { id: 'stats' as const, icon: BarChart3, label: 'Statistik' },
+              { id: 'absences' as const, icon: UserX, label: 'Fehlzeiten' },
+            ].map(item => (
+              <button
+                key={item.id}
+                onClick={() => setActiveSheet(item.id)}
+                className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-card border border-border/50 hover:bg-muted/50 transition-colors"
+              >
+                <item.icon className="w-5 h-5 text-primary" strokeWidth={1.5} />
+                <span className="text-[10px] font-medium text-muted-foreground">{item.label}</span>
+              </button>
+            ))}
+          </div>
+
           {/* Main Content: Desktop = nebeneinander, Mobile = untereinander */}
           <div className="flex flex-col lg:flex-row gap-4">
             {/* Timetable + Vocab - links */}
@@ -146,6 +165,24 @@ function SchuleV2Content() {
         onAbsenceChange={handleAbsenceChange}
         onEventsChange={handleEventsChange}
       />
+
+      {/* Analytics Sheets */}
+      <Sheet open={activeSheet !== null} onOpenChange={(open) => !open && setActiveSheet(null)}>
+        <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl overflow-y-auto">
+          <SheetHeader className="pb-4">
+            <SheetTitle>
+              {activeSheet === 'abi' && 'Abi-Rechner'}
+              {activeSheet === 'absences' && 'Fehlzeiten'}
+              {activeSheet === 'weekly' && 'Wochen-Zusammenfassung'}
+              {activeSheet === 'stats' && 'Notenstatistiken'}
+            </SheetTitle>
+          </SheetHeader>
+          {activeSheet === 'abi' && <AbiCalculator />}
+          {activeSheet === 'absences' && <AbsenceDashboard />}
+          {activeSheet === 'weekly' && <WeeklySummary />}
+          {activeSheet === 'stats' && <GradeStatistics />}
+        </SheetContent>
+      </Sheet>
     </AppLayout>
   );
 }
