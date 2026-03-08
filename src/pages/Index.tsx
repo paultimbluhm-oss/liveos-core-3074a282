@@ -120,7 +120,13 @@ export default function Index() {
 
   return (
     <AppLayout>
-      <div className="p-4 pt-2 pb-24 mx-auto space-y-3 max-w-lg md:max-w-3xl lg:max-w-5xl">
+      <div
+        className="p-4 pt-2 pb-24 mx-auto space-y-3 max-w-lg md:max-w-3xl lg:max-w-5xl"
+        {...(dashGlassActive ? {
+          'data-liquid-glass': 'true',
+          'data-liquid-glass-mode': liquidGlassMode,
+        } : {})}
+      >
 
         {/* Mobile widget list */}
         <div className="md:hidden space-y-3">
