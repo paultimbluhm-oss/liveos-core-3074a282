@@ -21,7 +21,7 @@ interface WeekTimetableV2Props {
   onOpenSheet?: (sheet: 'abi' | 'stats' | 'absences') => void;
 }
 
-export function WeekTimetableV2({ onSlotClick }: WeekTimetableV2Props) {
+export function WeekTimetableV2({ onSlotClick, onOpenSheet }: WeekTimetableV2Props) {
   const { user } = useAuth();
   const { scope } = useSchoolV2();
   const { settings: gradeColorSettings } = useGradeColors();
