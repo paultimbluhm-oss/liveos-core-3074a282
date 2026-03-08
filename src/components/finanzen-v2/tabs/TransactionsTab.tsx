@@ -133,8 +133,7 @@ export function TransactionsTab() {
     });
     return Object.entries(groups)
       .sort(([a], [b]) => new Date(b).getTime() - new Date(a).getTime());
-      .sort(([a], [b]) => new Date(b).getTime() - new Date(a).getTime());
-  }, [filteredTransactions]);
+  }, [filteredItems]);
 
   // Monthly totals for automations
   const monthlyTotals = useMemo(() => {
