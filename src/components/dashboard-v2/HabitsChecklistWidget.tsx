@@ -74,7 +74,7 @@ export function HabitsChecklistWidget({ size, settings }: Props) {
     if (!user) return;
     const yesterday = format(subDays(new Date(), 1), 'yyyy-MM-dd');
     const [hRes, cRes, yRes] = await Promise.all([
-      supabase.from('habits').select('*').eq('user_id', user.id).eq('is_active', true),
+      supabase.from('habits').select('*').eq('user_id', user.id).eq('is_active', true).eq('is_queued' as any, false),
       supabase.from('habit_completions').select('*').eq('user_id', user.id).eq('completed_date', today),
       supabase.from('habit_completions').select('*').eq('user_id', user.id).eq('completed_date', yesterday),
     ]);
