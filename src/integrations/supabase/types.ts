@@ -1025,11 +1025,13 @@ export type Database = {
           id: string
           identity_statement: string | null
           is_active: boolean | null
+          is_queued: boolean | null
           name: string
           negative_consequences: string | null
           obstacle_removal: string | null
           obstacles: string | null
           positive_benefits: string | null
+          priority_order: number | null
           reward: string | null
           temptation_bundling: string | null
           user_id: string
@@ -1049,11 +1051,13 @@ export type Database = {
           id?: string
           identity_statement?: string | null
           is_active?: boolean | null
+          is_queued?: boolean | null
           name: string
           negative_consequences?: string | null
           obstacle_removal?: string | null
           obstacles?: string | null
           positive_benefits?: string | null
+          priority_order?: number | null
           reward?: string | null
           temptation_bundling?: string | null
           user_id: string
@@ -1073,11 +1077,13 @@ export type Database = {
           id?: string
           identity_statement?: string | null
           is_active?: boolean | null
+          is_queued?: boolean | null
           name?: string
           negative_consequences?: string | null
           obstacle_removal?: string | null
           obstacles?: string | null
           positive_benefits?: string | null
+          priority_order?: number | null
           reward?: string | null
           temptation_bundling?: string | null
           user_id?: string
